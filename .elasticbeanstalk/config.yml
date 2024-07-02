@@ -1,0 +1,17 @@
+branch-defaults:
+  "*":
+    environment: hice-backend
+global:
+  application_name: hice_backend
+  branch: null
+  default_ec2_keyname: null
+  default_platform: Python 3.11 running on 64bit Amazon Linux 2023
+  default_region: us-west-2
+  include_git_submodules: true
+  instance_profile: null
+  platform_name: null
+  platform_version: null
+  profile: uncc
+  repository: null
+  sc: git
+  workspace_type: Application

@@ -1,0 +1,5 @@
+[run]
+omit = */migrations/*, api/tests/tests.py
+
+[report]
+fail_under = 82
