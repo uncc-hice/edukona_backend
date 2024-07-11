@@ -1,0 +1,23 @@
+name: Close Unauthorized PRs
+on:
+  pull_request:
+    types: [opened]
+
+jobs:
+  close_pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check PR Author
+        id: check_author
+        run: |
+          if ! gh api repos/$GITHUB_REPOSITORY/collaborators/$GITHUB_ACTOR/permission | jq -e '.permission == "write" or .permission == "maintain"' > /dev/null; then
+            echo "Unauthorized user detected"
+            exit 1
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Close PR if Unauthorized
+        if: failure()
+        run: gh pr close ${{ github.event.pull_request.number }} --delete-branch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
