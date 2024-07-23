@@ -27,10 +27,12 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
 
         settings = await self.get_settings(self.code)
 
+        uc = await self.fetch_user_count()
+
         await self.send(text_data=json.dumps({
             'type': 'settings',
-            'settings': settings
-            'user_count': await self.fetch_user_count()
+            'settings': settings,
+            'user_count': uc
         }))
 
     @database_sync_to_async
