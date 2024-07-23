@@ -30,7 +30,13 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
         await self.send(text_data=json.dumps({
             'type': 'settings',
             'settings': settings
+            'user_count': await self.fetch_user_count()
         }))
+
+    @database_sync_to_async
+    def fetch_user_count(self):
+        session = QuizSession.objects.get(code=self.code)
+        return session.students.count()
 
     async def disconnect(self, close_code):
         await self.channel_layer.group_discard(self.group_name, self.channel_name)
