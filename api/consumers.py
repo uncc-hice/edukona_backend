@@ -1,5 +1,6 @@
 import json
 import logging
+import random
 
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
@@ -316,6 +317,15 @@ class StudentConsumer(AsyncWebsocketConsumer):
                             'type': 'skip_power_up_granted',
                             'skip_count': grant_response.get('skip_count')
                         }))
+            elif session_settings.get('skip_question_logic') == 'random':
+                if student.skip_count < session_settings.get('skip_count_per_student') and random.choice(
+                        [True, False]):
+                    grant_response = await self.grant_skip_power_up(student_id)
+                    if grant_response.get('status') == 'success':
+                        await self.send(text_data=json.dumps({
+                            'type': 'skip_power_up_granted',
+                            'skip_count': grant_response.get('skip_count')})
+                        )
 
     @database_sync_to_async
     def grant_skip_power_up(self, student_id):
@@ -343,6 +353,7 @@ class StudentConsumer(AsyncWebsocketConsumer):
 
         if skip_count < session_settings.get('skip_count_per_student'):
             question_marked = await self.mark_question_as_skipped_and_correct(data)
+            print(question_marked)
             if question_marked:
                 await self.increment_skip_count(student.get('id'))
                 await self.send(text_data=json.dumps({
