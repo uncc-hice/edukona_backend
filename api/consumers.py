@@ -318,7 +318,7 @@ class StudentConsumer(AsyncWebsocketConsumer):
                             'skip_count': grant_response.get('skip_count')
                         }))
             elif session_settings.get('skip_question_logic') == 'random':
-                skip_percentage = session_settings.get('skip_question_percentage', 0.5)  # Default to 50% if not set
+                skip_percentage = session_settings.get('skip_question_percentage', 0.2)  # Default to 50% if not set
                 if student.skip_count < session_settings.get('skip_count_per_student') and \
                         random.random() < skip_percentage:
                     grant_response = await self.grant_skip_power_up(student_id)
