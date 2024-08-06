@@ -11,6 +11,7 @@ from api.serializers import QuizSessionStudentSerializer, QuestionMultipleChoice
 from rest_framework import serializers
 from .permissions import AllowInstructor
 
+
 class SignUpInstructor(APIView):
     permission_classes = [AllowAny]
 
@@ -213,33 +214,33 @@ class InstructorView(APIView):
         return JsonResponse({'message': 'Instructor deleted successfully'})
 
 
-#class StudentView(APIView):
+# class StudentView(APIView):
 
-    # def post(self, request):
-    #     user_data = request.data.pop('user', {})
-    #     new_student = Student.objects.create(user=User.objects.create(**user_data), **request.data)
-    #     return JsonResponse({'message': 'Student created successfully', 'student_id': new_student.id})
-    #
-    # def get(self, request, student_id):
-    #     student = get_object_or_404(Student, id=student_id)
-    #     student_dict = {'id': student.id, 'user_id': student.user.id,
-    #                     'created_at': student.user.date_joined if student.user else None}
-    #     return JsonResponse({'student': student_dict})
-    #
-    # def put(self, request, student_id):
-    #     student = get_object_or_404(Student, id=student_id)
-    #     student.__dict__.update(request.data.get('student', {}))
-    #     student.save()
-    #     user = get_object_or_404(User, id=student.user_id)
-    #     user.__dict__.update(request.data.get('user', {}))
-    #     user.save()
-    #     return JsonResponse({'message': 'Student updated successfully'})
-    #
-    # def delete(self, request, student_id):
-    #     student = get_object_or_404(Student, id=student_id)
-    #     student.user.delete()
-    #     student.delete()
-    #     return JsonResponse({'message': 'Student deleted successfully'})
+# def post(self, request):
+#     user_data = request.data.pop('user', {})
+#     new_student = Student.objects.create(user=User.objects.create(**user_data), **request.data)
+#     return JsonResponse({'message': 'Student created successfully', 'student_id': new_student.id})
+#
+# def get(self, request, student_id):
+#     student = get_object_or_404(Student, id=student_id)
+#     student_dict = {'id': student.id, 'user_id': student.user.id,
+#                     'created_at': student.user.date_joined if student.user else None}
+#     return JsonResponse({'student': student_dict})
+#
+# def put(self, request, student_id):
+#     student = get_object_or_404(Student, id=student_id)
+#     student.__dict__.update(request.data.get('student', {}))
+#     student.save()
+#     user = get_object_or_404(User, id=student.user_id)
+#     user.__dict__.update(request.data.get('user', {}))
+#     user.save()
+#     return JsonResponse({'message': 'Student updated successfully'})
+#
+# def delete(self, request, student_id):
+#     student = get_object_or_404(Student, id=student_id)
+#     student.user.delete()
+#     student.delete()
+#     return JsonResponse({'message': 'Student deleted successfully'})
 
 
 class UserResponseView(APIView):
@@ -461,13 +462,14 @@ class QuizSessionsByInstructorView(APIView):
         } for session in quiz_sessions]
 
         return JsonResponse({'quiz_sessions': quiz_sessions_data})
+
+
 class SettingsView(APIView):
     def get(self, request, quiz_id):
         quiz = get_object_or_404(Quiz, id=quiz_id)
         if not hasattr(quiz, 'settings'):
             return JsonResponse({'error': 'Quiz has no settings'}, status=404)
         return JsonResponse({'settings': quiz.settings.to_json()})
-
 
     def post(self, request, quiz_id):
         print(request.data)
