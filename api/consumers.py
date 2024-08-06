@@ -318,14 +318,15 @@ class StudentConsumer(AsyncWebsocketConsumer):
                             'skip_count': grant_response.get('skip_count')
                         }))
             elif session_settings.get('skip_question_logic') == 'random':
-                if student.skip_count < session_settings.get('skip_count_per_student') and random.choice(
-                        [True, False]):
+                skip_percentage = session_settings.get('skip_question_percentage', 0.5)  # Default to 50% if not set
+                if student.skip_count < session_settings.get('skip_count_per_student') and \
+                        random.random() < skip_percentage:
                     grant_response = await self.grant_skip_power_up(student_id)
                     if grant_response.get('status') == 'success':
                         await self.send(text_data=json.dumps({
                             'type': 'skip_power_up_granted',
-                            'skip_count': grant_response.get('skip_count')})
-                        )
+                            'skip_count': grant_response.get('skip_count')
+                        }))
 
     @database_sync_to_async
     def grant_skip_power_up(self, student_id):
