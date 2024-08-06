@@ -23,6 +23,7 @@ class Settings(models.Model):
     skip_count_per_student = models.IntegerField(default=1)
     skip_question_logic = models.TextField(default='random')
     skip_question_streak_count = models.IntegerField(default=1)
+    skip_question_percentage = models.FloatField(default=0.0)
 
     def to_json(self):
         return {
