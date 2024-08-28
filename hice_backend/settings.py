@@ -11,16 +11,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('SECRET_KEY')
 
-# SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
 ALLOWED_HOSTS = ["127.0.0.1", "hice-backend.us-west-2.elasticbeanstalk.com", "api.edukona.com", "localhost"]
-
-
-# Application definition
 
 INSTALLED_APPS = [
     'channels_redis',
@@ -70,7 +65,6 @@ TEMPLATES = [
 WSGI_APPLICATION = 'hice_backend.wsgi.application'
 ASGI_APPLICATION = 'hice_backend.asgi.application'
 
-
 # CHANNEL_LAYERS = {
 #     "default": {
 #         "BACKEND": "channels_redis.core.RedisChannelLayer",
@@ -90,7 +84,6 @@ CHANNEL_LAYERS = {
         },
     },
 }
-
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
@@ -162,7 +155,6 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 CORS_ALLOW_CREDENTIALS = True
-
 
 CORS_ALLOW_METHODS = [
     'DELETE',
