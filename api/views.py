@@ -1,15 +1,23 @@
+from django.conf import settings
+from django.db import transaction
+
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from django.http import JsonResponse
+from rest_framework.parsers import MultiPartParser, FormParser
 from api.models import *
 from django.shortcuts import get_object_or_404
 from rest_framework.authtoken.models import Token
 from django.contrib.auth.models import User
 from rest_framework.permissions import AllowAny
 from rest_framework import status
-from api.serializers import QuizSessionStudentSerializer, QuestionMultipleChoiceSerializer
+from api.serializers import QuizSessionStudentSerializer, QuestionMultipleChoiceSerializer, InstructorRecordingsSerializer
 from rest_framework import serializers
 from .permissions import AllowInstructor
+from drf_spectacular.utils import extend_schema
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.openapi import OpenApiParameter
+
+import boto3
 
 
 class SignUpInstructor(APIView):
@@ -495,3 +503,66 @@ class SettingsView(APIView):
 
         settings.save()
         return JsonResponse({'message': 'Settings updated successfully'})
+
+
+class UploadAudioView(APIView):
+    parser_classes = [MultiPartParser, FormParser]
+
+    @extend_schema(
+        operation_id="upload_audio",
+        summary="Upload an audio file",
+        description="Uploads an audio file and saves it to the server.",
+        request={
+            'multipart/form-data': {
+                'type': 'object',
+                'properties': {
+                    'file': {'type': 'string', 'format': 'binary'}
+                },
+                'required': ['file']
+            }
+        },
+        responses={
+            201: InstructorRecordingsSerializer,
+            400: OpenApiTypes.OBJECT,  # Typically, a 400 would return an error object
+        },
+    )
+    @transaction.atomic
+    def post(self, request, *args, **kwargs):
+        instructor = get_object_or_404(Instructor, user=request.user)
+
+        # Create the recording instance first to get the ID
+        new_recording = InstructorRecordings.objects.create(instructor=instructor)
+
+        # Sanitize and get the file details
+        file = request.data['file']
+        file_name = self._sanitize_filename(file.name)
+        bucket_name = settings.AWS_STORAGE_BUCKET_NAME
+
+        # Generate the S3 key (path)
+        key = f'{str(instructor.id).zfill(5)}/{str(new_recording.id)}/{file_name}'
+
+        try:
+            # Upload to S3
+            boto3_client = boto3.client(
+                's3',
+                aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+                aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY
+            )
+            boto3_client.upload_fileobj(file, bucket_name, key)
+
+            # Save the S3 path to the model instance
+            new_recording.s3_path = key
+            new_recording.save()
+
+            return JsonResponse(InstructorRecordingsSerializer(new_recording).data, status=201)
+
+        except Exception as e:
+            transaction.set_rollback(True)
+            return JsonResponse({"error": str(e)}, status=500)
+
+    @staticmethod
+    def _sanitize_filename(filename):
+        """
+        Sanitize the filename by removing special characters that may not be safe in S3 keys.
+        """
+        return ''.join(char for char in filename if char.isalnum() or char in (' ', '.', '_')).strip()
