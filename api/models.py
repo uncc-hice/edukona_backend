@@ -1,5 +1,6 @@
 import random
 import string
+import uuid
 
 from django.db import models
 from django.contrib.auth.models import User
@@ -115,7 +116,7 @@ class QuizSessionStudent(models.Model):
     quiz_session = models.ForeignKey(QuizSession, on_delete=models.CASCADE, related_name='students')
     score = models.IntegerField(default=0)
     skip_count = models.IntegerField(default=0)
-    #student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='quiz_session_students', null=True, default=None)
+    # student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='quiz_session_students', null=True, default=None)
 
     class Meta:
         db_table = "api_quiz_session_student"
@@ -128,5 +129,16 @@ class UserResponse(models.Model):
     is_correct = models.BooleanField(null=True, blank=True)
     quiz_session = models.ForeignKey('QuizSession', on_delete=models.CASCADE, related_name='responses', null=True)
     skipped_question = models.BooleanField(default=False)
+
     class Meta:
         db_table = "api_user_response"
+
+
+class InstructorRecordings(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)  # UUID as the primary key
+    s3_path = models.CharField(max_length=200, default='')
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    instructor = models.ForeignKey(Instructor, on_delete=models.CASCADE)
+
+    class Meta:
+        db_table = "api_instructor_recordings"
