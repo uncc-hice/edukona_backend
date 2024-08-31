@@ -42,4 +42,5 @@ urlpatterns = [
     path('schema/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
     path('check-developer/', CheckDeveloperStatus.as_view(), name='check-developer'),
 
+    path('upload-audio/', UploadAudioView.as_view(), name='upload-audio'),
 ]
