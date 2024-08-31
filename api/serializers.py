@@ -1,6 +1,14 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import Student, Instructor, Quiz, QuestionMultipleChoice, UserResponse, QuizSessionStudent, InstructorRecordings
+from .models import (
+    Student,
+    Instructor,
+    Quiz,
+    QuestionMultipleChoice,
+    UserResponse,
+    QuizSessionStudent,
+    InstructorRecordings,
+)
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -48,4 +56,4 @@ class QuizSessionStudentSerializer(serializers.ModelSerializer):
 class InstructorRecordingsSerializer(serializers.ModelSerializer):
     class Meta:
         model = InstructorRecordings
-        fields = ['s3_path', 'uploaded_at', 'instructor']
+        fields = ["s3_path", "uploaded_at", "instructor"]
