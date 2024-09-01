@@ -15,8 +15,12 @@ def main():
     with open("diff.txt", "r") as file:
         diff_content = file.read()
 
-    content = f"""Provide a PR description (be elaborate and have bullet points or an itemized list for the changes made) as JSON 
-    with keys 'title' (value is string markdown) and 'description' (value is string in markdown), given this diff:\n{diff_content}."""
+    content = (
+        f"Provide a PR description (be elaborate and have bullet points or an itemized "
+        f"list for the changes made) as JSON with keys 'title' (value is string markdown) "
+        f"and 'description' (value is string in markdown), given this diff:\n"
+        f"{diff_content}."
+    )
 
     # Generate the completion
     completion = client.chat.completions.create(
