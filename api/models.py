@@ -154,6 +154,7 @@ class InstructorRecordings(models.Model):
     s3_path = models.CharField(max_length=200, default="")
     uploaded_at = models.DateTimeField(auto_now_add=True)
     instructor = models.ForeignKey(Instructor, on_delete=models.CASCADE)
+    transcript = models.TextField(default="")
 
     class Meta:
         db_table = "api_instructor_recordings"
