@@ -14,6 +14,7 @@ from api.serializers import (
     QuizSessionStudentSerializer,
     QuestionMultipleChoiceSerializer,
     InstructorRecordingsSerializer,
+    UpdateTranscriptSerializer,
 )
 from rest_framework import serializers
 from drf_spectacular.utils import extend_schema
@@ -608,3 +609,33 @@ class UploadAudioView(APIView):
         return "".join(
             char for char in filename if char.isalnum() or char in (" ", ".", "_")
         ).strip()
+
+
+class UpdateTranscriptView(APIView):
+
+    @extend_schema(
+        operation_id="update_transcript",
+        summary="Update the transcript of a recording",
+        description="Updates the transcript of a recording with the given ID.",
+        request=UpdateTranscriptSerializer,
+        responses={
+            200: OpenApiTypes.OBJECT,
+            404: OpenApiTypes.OBJECT,
+        },
+    )
+    def patch(self, request, recording_id):
+        # Retrieve the InstructorRecordings instance by its ID
+        recording = get_object_or_404(InstructorRecordings, id=recording_id)
+
+        # Extract the transcript from the request data
+        transcript = request.data.get("transcript", "")
+
+        # Update the transcript field of the recording
+        recording.transcript = transcript
+        recording.save()
+
+        # Return a success response with the updated data
+        return JsonResponse(
+            {"message": "Transcript updated successfully", "recording_id": recording.id},
+            status=status.HTTP_200_OK,
+        )
