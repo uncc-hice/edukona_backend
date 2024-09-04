@@ -608,7 +608,9 @@ class UploadAudioView(APIView):
             lambda_client.invoke(
                 FunctionName="TranscribeAudio",
                 InvocationType="Event",
-                Payload=json.dumps({"s3_key": key, "token": token, "recording_id": str(new_recording.id)}),
+                Payload=json.dumps(
+                    {"s3_key": key, "token": token, "recording_id": str(new_recording.id)}
+                ),
             )
 
             return JsonResponse(InstructorRecordingsSerializer(new_recording).data, status=201)
