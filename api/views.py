@@ -22,6 +22,7 @@ from drf_spectacular.types import OpenApiTypes
 from django.http import JsonResponse
 
 import boto3
+import json
 
 
 class SignUpInstructor(APIView):
@@ -594,6 +595,23 @@ class UploadAudioView(APIView):
             # Save the S3 path to the model instance
             new_recording.s3_path = key
             new_recording.save()
+
+            # invoke a Lambda function and send the key as a parameter, make the invokation asynchronous
+            lambda_client = boto3.client(
+                "lambda",
+                aws_access_key_id=settings.AWS_LAMBDA_INVOKER_ACCESS_KEY_ID,
+                aws_secret_access_key=settings.AWS_LAMBDA_INVOKER_SECRET_ACCESS_KEY,
+                region_name=settings.AWS_LAMBDA_INVOKER_REGION_NAME,
+            )
+
+            token = request.META.get("HTTP_AUTHORIZATION").split(" ")[1]
+            lambda_client.invoke(
+                FunctionName="TranscribeAudio",
+                InvocationType="Event",
+                Payload=json.dumps(
+                    {"s3_key": key, "token": token, "recording_id": str(new_recording.id)}
+                ),
+            )
 
             return JsonResponse(InstructorRecordingsSerializer(new_recording).data, status=201)
 
