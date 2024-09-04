@@ -601,13 +601,14 @@ class UploadAudioView(APIView):
                 "lambda",
                 aws_access_key_id=settings.AWS_LAMBDA_INVOKER_ACCESS_KEY_ID,
                 aws_secret_access_key=settings.AWS_LAMBDA_INVOKER_SECRET_ACCESS_KEY,
+                region_name=settings.AWS_LAMBDA_INVOKER_REGION_NAME,
             )
 
             token = request.META.get("HTTP_AUTHORIZATION").split(" ")[1]
             lambda_client.invoke(
                 FunctionName="TranscribeAudio",
                 InvocationType="Event",
-                Payload=json.dumps({"key": key, "token": token, "recording_id": new_recording.id}),
+                Payload=json.dumps({"s3_key": key, "token": token, "recording_id": str(new_recording.id)}),
             )
 
             return JsonResponse(InstructorRecordingsSerializer(new_recording).data, status=201)
