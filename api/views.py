@@ -657,3 +657,35 @@ class UpdateTranscriptView(APIView):
             {"message": "Transcript updated successfully", "recording_id": recording.id},
             status=status.HTTP_200_OK,
         )
+
+
+class RecordingsView(APIView):
+
+    @extend_schema(
+        operation_id="get_recordings",
+        summary="Get all recordings",
+        description="Returns all recordings uploaded by the instructor.",
+        responses={
+            200: OpenApiTypes.OBJECT,
+            404: OpenApiTypes.OBJECT,
+            400: OpenApiTypes.OBJECT,
+            401: OpenApiTypes.OBJECT,
+        },
+    )
+    def get(self, request):
+        instructor = request.user.instructor
+        recordings = InstructorRecordings.objects.filter(instructor=instructor).order_by("-uploaded_at")
+
+        # Filter so that the serializer only returns the s3_path, uploaded_at, id
+
+        serializer = InstructorRecordingsSerializer(recordings, many=True, fields=["id", "s3_path", "uploaded_at", "transcript"])
+
+        data = serializer.data
+
+        for recording in data:
+            if not recording.get("transcript"):
+                recording["transcript"] = "pending"
+            else:
+                recording["transcript"] = "completed"
+
+        return JsonResponse({"recordings": serializer.data})
