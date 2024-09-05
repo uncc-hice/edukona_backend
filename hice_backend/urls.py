@@ -83,8 +83,13 @@ urlpatterns = [
     path("check-developer/", CheckDeveloperStatus.as_view(), name="check-developer"),
     path("upload-audio/", UploadAudioView.as_view(), name="upload-audio"),
     path(
-        "api/instructor-recordings/<uuid:recording_id>/update-transcript/",
+        "instructor-recordings/<uuid:recording_id>/update-transcript/",
         UpdateTranscriptView.as_view(),
         name="update-transcript",
+    ),
+    path(
+        "instructor-recordings/",
+        RecordingsView.as_view(),
+        name="instructor-recording",
     ),
 ]
