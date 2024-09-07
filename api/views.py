@@ -30,12 +30,16 @@ class SignUpInstructor(APIView):
 
     def post(self, request):
         new_user = request.data.pop("user", {})
-        instructor = Instructor.objects.create(user=User.objects.create(**new_user), **request.data)
+        instructor = Instructor.objects.create(
+            user=User.objects.create(**new_user), **request.data
+        )
         user = get_object_or_404(User, id=instructor.user_id)
         user.set_password(new_user["password"])
         user.save()
         token = Token.objects.create(user=user)
-        return JsonResponse({"token": token.key, "user": user.id, "instructor": instructor.id})
+        return JsonResponse(
+            {"token": token.key, "user": user.id, "instructor": instructor.id}
+        )
 
 
 # class SignUpStudent(APIView):
@@ -76,14 +80,22 @@ class Login(APIView):
         try:
             user = User.objects.get(username=request.data["username"])
         except User.DoesNotExist:
-            return JsonResponse({"detail": "User Not Found!"}, status=status.HTTP_401_UNAUTHORIZED)
+            return JsonResponse(
+                {"detail": "User Not Found!"}, status=status.HTTP_401_UNAUTHORIZED
+            )
 
         if not user.check_password(request.data["password"]):
-            return JsonResponse({"detail": "User Not Found!"}, status=status.HTTP_400_BAD_REQUEST)
+            return JsonResponse(
+                {"detail": "User Not Found!"}, status=status.HTTP_400_BAD_REQUEST
+            )
         token = Token.objects.get_or_create(user=user)
         if hasattr(user, "instructor"):
             return JsonResponse(
-                {"token": token[0].key, "user": user.id, "instructor": user.instructor.id}
+                {
+                    "token": token[0].key,
+                    "user": user.id,
+                    "instructor": user.instructor.id,
+                }
             )
         # else:
         #     return JsonResponse({"token": token[0].key, "user": user.id, "student": user.student.id})
@@ -104,7 +116,9 @@ class QuizView(APIView):
         new_quiz = Quiz.objects.create(instructor=instructor, **request.data)
         new_quiz.settings = Settings.objects.create(**settings)
         new_quiz.save()
-        return JsonResponse({"message": "Quiz created successfully", "quiz_id": new_quiz.id})
+        return JsonResponse(
+            {"message": "Quiz created successfully", "quiz_id": new_quiz.id}
+        )
 
     def get(self, request, quiz_id=None):
         if quiz_id:
@@ -133,7 +147,8 @@ class QuestionView(APIView):
         # Expecting request.data to be a list of questions
         if not isinstance(request.data, list):
             return JsonResponse(
-                {"error": "Expected a list of questions"}, status=status.HTTP_400_BAD_REQUEST
+                {"error": "Expected a list of questions"},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         created_questions = []
@@ -142,11 +157,18 @@ class QuestionView(APIView):
         with transaction.atomic():  # Use a transaction to ensure all or nothing is created
             for question_data in request.data:
                 try:
-                    new_question = QuestionMultipleChoice.objects.create(**question_data)
-                    created_questions.append(
-                        {"question_id": new_question.id, "message": "Question created successfully"}
+                    new_question = QuestionMultipleChoice.objects.create(
+                        **question_data
                     )
-                except Exception as e:  # Catch exceptions from invalid data or database errors
+                    created_questions.append(
+                        {
+                            "question_id": new_question.id,
+                            "message": "Question created successfully",
+                        }
+                    )
+                except (
+                    Exception
+                ) as e:  # Catch exceptions from invalid data or database errors
                     errors.append({"question_data": question_data, "error": str(e)})
 
         if errors:
@@ -205,7 +227,10 @@ class InstructorView(APIView):
             user=User.objects.create(**user_data), **request.data
         )
         return JsonResponse(
-            {"message": "Instructor created successfully", "instructor_id": new_instructor.id}
+            {
+                "message": "Instructor created successfully",
+                "instructor_id": new_instructor.id,
+            }
         )
 
     def get(self, request, instructor_id):
@@ -268,9 +293,13 @@ class UserResponseView(APIView):
     def post(self, request):
         student_data = request.data.pop("student", {})
         student = get_object_or_404(QuizSessionStudent, id=student_data["id"])
-        question = get_object_or_404(QuestionMultipleChoice, id=request.data["question_id"])
+        question = get_object_or_404(
+            QuestionMultipleChoice, id=request.data["question_id"]
+        )
         selected_answer = request.data["selected_answer"]
-        quiz_session = get_object_or_404(QuizSession, code=request.data["quiz_session_code"])
+        quiz_session = get_object_or_404(
+            QuizSession, code=request.data["quiz_session_code"]
+        )
 
         is_correct = selected_answer == question.correct_answer
         new_user_response = UserResponse.objects.create(
@@ -302,7 +331,9 @@ class UserResponseView(APIView):
             UserResponse, id=response_id, student_id=request.data["student_id"]
         )
 
-        is_correct = request.data.get("selected_answer") == user_response.question.correct_answer
+        is_correct = (
+            request.data.get("selected_answer") == user_response.question.correct_answer
+        )
         user_response.__dict__.update({"is_correct": is_correct, **request.data})
         user_response.save()
 
@@ -335,7 +366,9 @@ class QuizSessionView(APIView):
                 status=status.HTTP_201_CREATED,
             )
         except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response(
+                {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 class QuizSessionStudentView(APIView):
@@ -396,12 +429,16 @@ class QuizSessionInstructorView(APIView):
 class StudentResponseCountView(APIView):
     def get(self, request, code):
         quiz_session = get_object_or_404(QuizSession, code=code)
-        responses = quiz_session.responses.filter(question_id=quiz_session.current_question)
+        responses = quiz_session.responses.filter(
+            question_id=quiz_session.current_question
+        )
 
         counts = {}
         for response in responses:
             # Increment the count for the selected answer or initialize it to 0 if not found
-            counts[response.selected_answer] = counts.get(response.selected_answer, 0) + 1
+            counts[response.selected_answer] = (
+                counts.get(response.selected_answer, 0) + 1
+            )
 
         return Response(counts, status=200)
 
@@ -410,7 +447,9 @@ class NextQuestionAPIView(APIView):
     def get(self, request, session_code):
         try:
             session = QuizSession.objects.get(code=session_code)
-            served_questions_ids = session.served_questions.all().values_list("id", flat=True)
+            served_questions_ids = session.served_questions.all().values_list(
+                "id", flat=True
+            )
             next_question = (
                 QuestionMultipleChoice.objects.exclude(id__in=served_questions_ids)
                 .filter(quiz=session.quiz)
@@ -478,7 +517,9 @@ class QuizSessionResults(APIView):
         results = []
         for student in students:
             total_questions = UserResponse.objects.filter(student=student).count()
-            correct_answers = UserResponse.objects.filter(student=student, is_correct=True).count()
+            correct_answers = UserResponse.objects.filter(
+                student=student, is_correct=True
+            ).count()
 
             results.append(
                 {
@@ -495,16 +536,18 @@ class QuizSessionsByInstructorView(APIView):
     def get(self, request):
         instructor = request.user.instructor
 
-        quiz_sessions = QuizSession.objects.filter(quiz__instructor=instructor).order_by(
-            "quiz_id", "start_time"
-        )
+        quiz_sessions = QuizSession.objects.filter(
+            quiz__instructor=instructor
+        ).order_by("quiz_id", "start_time")
 
         quiz_sessions_data = [
             {
                 "quiz_session_id": session.id,
                 "quiz_id": session.quiz.id,
                 "quiz_name": session.quiz.title,
-                "start_time": session.start_time.isoformat() if session.start_time else None,
+                "start_time": (
+                    session.start_time.isoformat() if session.start_time else None
+                ),
                 "end_time": session.end_time.isoformat() if session.end_time else None,
                 "code": session.code,
             }
@@ -609,11 +652,17 @@ class UploadAudioView(APIView):
                 FunctionName="TranscribeAudio",
                 InvocationType="Event",
                 Payload=json.dumps(
-                    {"s3_key": key, "token": token, "recording_id": str(new_recording.id)}
+                    {
+                        "s3_key": key,
+                        "token": token,
+                        "recording_id": str(new_recording.id),
+                    }
                 ),
             )
 
-            return JsonResponse(InstructorRecordingsSerializer(new_recording).data, status=201)
+            return JsonResponse(
+                InstructorRecordingsSerializer(new_recording).data, status=201
+            )
 
         except Exception as e:
             transaction.set_rollback(True)
@@ -654,7 +703,10 @@ class UpdateTranscriptView(APIView):
 
         # Return a success response with the updated data
         return JsonResponse(
-            {"message": "Transcript updated successfully", "recording_id": recording.id},
+            {
+                "message": "Transcript updated successfully",
+                "recording_id": recording.id,
+            },
             status=status.HTTP_200_OK,
         )
 
@@ -674,11 +726,15 @@ class RecordingsView(APIView):
     )
     def get(self, request):
         instructor = request.user.instructor
-        recordings = InstructorRecordings.objects.filter(instructor=instructor).order_by("-uploaded_at")
+        recordings = InstructorRecordings.objects.filter(
+            instructor=instructor
+        ).order_by("-uploaded_at")
 
         # Filter so that the serializer only returns the s3_path, uploaded_at, id
 
-        serializer = InstructorRecordingsSerializer(recordings, many=True, fields=["id", "s3_path", "uploaded_at", "transcript"])
+        serializer = InstructorRecordingsSerializer(
+            recordings, many=True, fields=["id", "s3_path", "uploaded_at", "transcript"]
+        )
 
         data = serializer.data
 
