@@ -698,9 +698,7 @@ class RecordingsView(APIView):
 
         # Filter so that the serializer only returns the s3_path, uploaded_at, id
 
-        serializer = InstructorRecordingsSerializer(
-            recordings, many=True, fields=["id", "s3_path", "uploaded_at", "transcript"]
-        )
+        serializer = InstructorRecordingsSerializer(recordings, many=True)
 
         data = serializer.data
 
