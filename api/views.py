@@ -83,7 +83,11 @@ class Login(APIView):
         token = Token.objects.get_or_create(user=user)
         if hasattr(user, "instructor"):
             return JsonResponse(
-                {"token": token[0].key, "user": user.id, "instructor": user.instructor.id}
+                {
+                    "token": token[0].key,
+                    "user": user.id,
+                    "instructor": user.instructor.id,
+                }
             )
         # else:
         #     return JsonResponse({"token": token[0].key, "user": user.id, "student": user.student.id})
@@ -133,7 +137,8 @@ class QuestionView(APIView):
         # Expecting request.data to be a list of questions
         if not isinstance(request.data, list):
             return JsonResponse(
-                {"error": "Expected a list of questions"}, status=status.HTTP_400_BAD_REQUEST
+                {"error": "Expected a list of questions"},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         created_questions = []
@@ -144,7 +149,10 @@ class QuestionView(APIView):
                 try:
                     new_question = QuestionMultipleChoice.objects.create(**question_data)
                     created_questions.append(
-                        {"question_id": new_question.id, "message": "Question created successfully"}
+                        {
+                            "question_id": new_question.id,
+                            "message": "Question created successfully",
+                        }
                     )
                 except Exception as e:  # Catch exceptions from invalid data or database errors
                     errors.append({"question_data": question_data, "error": str(e)})
@@ -205,7 +213,10 @@ class InstructorView(APIView):
             user=User.objects.create(**user_data), **request.data
         )
         return JsonResponse(
-            {"message": "Instructor created successfully", "instructor_id": new_instructor.id}
+            {
+                "message": "Instructor created successfully",
+                "instructor_id": new_instructor.id,
+            }
         )
 
     def get(self, request, instructor_id):
@@ -504,7 +515,7 @@ class QuizSessionsByInstructorView(APIView):
                 "quiz_session_id": session.id,
                 "quiz_id": session.quiz.id,
                 "quiz_name": session.quiz.title,
-                "start_time": session.start_time.isoformat() if session.start_time else None,
+                "start_time": (session.start_time.isoformat() if session.start_time else None),
                 "end_time": session.end_time.isoformat() if session.end_time else None,
                 "code": session.code,
             }
@@ -609,7 +620,11 @@ class UploadAudioView(APIView):
                 FunctionName="TranscribeAudio",
                 InvocationType="Event",
                 Payload=json.dumps(
-                    {"s3_key": key, "token": token, "recording_id": str(new_recording.id)}
+                    {
+                        "s3_key": key,
+                        "token": token,
+                        "recording_id": str(new_recording.id),
+                    }
                 ),
             )
 
@@ -654,6 +669,43 @@ class UpdateTranscriptView(APIView):
 
         # Return a success response with the updated data
         return JsonResponse(
-            {"message": "Transcript updated successfully", "recording_id": recording.id},
+            {
+                "message": "Transcript updated successfully",
+                "recording_id": recording.id,
+            },
             status=status.HTTP_200_OK,
         )
+
+
+class RecordingsView(APIView):
+
+    @extend_schema(
+        operation_id="get_recordings",
+        summary="Get all recordings",
+        description="Returns all recordings uploaded by the instructor.",
+        responses={
+            200: OpenApiTypes.OBJECT,
+            404: OpenApiTypes.OBJECT,
+            400: OpenApiTypes.OBJECT,
+            401: OpenApiTypes.OBJECT,
+        },
+    )
+    def get(self, request):
+        instructor = request.user.instructor
+        recordings = InstructorRecordings.objects.filter(instructor=instructor).order_by(
+            "-uploaded_at"
+        )
+
+        # Filter so that the serializer only returns the s3_path, uploaded_at, id
+
+        serializer = InstructorRecordingsSerializer(recordings, many=True)
+
+        data = serializer.data
+
+        for recording in data:
+            if not recording.get("transcript"):
+                recording["transcript"] = "pending"
+            else:
+                recording["transcript"] = "completed"
+
+        return JsonResponse({"recordings": serializer.data})

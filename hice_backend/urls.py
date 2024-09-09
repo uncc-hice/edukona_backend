@@ -11,23 +11,39 @@ urlpatterns = [
     path("quiz/<int:quiz_id>/", QuizView.as_view(), name="quiz-detail"),
     path("question/", QuestionView.as_view(), name="question-list"),
     path("question/<int:question_id>/", QuestionView.as_view(), name="question-detail"),
-    path("all-questions/<int:quiz_id>/", AllQuizQuestionsView.as_view(), name="all-questions"),
+    path(
+        "all-questions/<int:quiz_id>/",
+        AllQuizQuestionsView.as_view(),
+        name="all-questions",
+    ),
     path("instructor/", InstructorView.as_view(), name="instructor-detail"),
-    path("instructor/<int:instructor_id>/", InstructorView.as_view(), name="instructor-detail"),
+    path(
+        "instructor/<int:instructor_id>/",
+        InstructorView.as_view(),
+        name="instructor-detail",
+    ),
     # path('student/', StudentView.as_view(), name='student-list'),
     # path('student/<int:student_id>/', StudentView.as_view(), name='student-detail'),
     path("user-response/", UserResponseView.as_view(), name="user-response-list"),
     path(
-        "user-response/<int:response_id>/", UserResponseView.as_view(), name="user-response-detail"
+        "user-response/<int:response_id>/",
+        UserResponseView.as_view(),
+        name="user-response-detail",
     ),
     path("sign-up-instructor/", SignUpInstructor.as_view()),
     # path('sign-up-student/', SignUpStudent.as_view()),
     path("login/", Login.as_view(), name="login"),
     path("logout/", Logout.as_view()),
     path("quiz-session/", QuizSessionView.as_view(), name="quiz-session-list"),
-    path("quiz-session/<str:code>/", QuizSessionStudentView.as_view(), name="quiz-session-detail"),
     path(
-        "quiz-session-student/", QuizSessionStudentView.as_view(), name="quiz-session-student-list"
+        "quiz-session/<str:code>/",
+        QuizSessionStudentView.as_view(),
+        name="quiz-session-detail",
+    ),
+    path(
+        "quiz-session-student/",
+        QuizSessionStudentView.as_view(),
+        name="quiz-session-student-list",
     ),
     path(
         "quiz-session-student/<str:code>/",
@@ -69,7 +85,11 @@ urlpatterns = [
         QuizSessionResults.as_view(),
         name="quiz-session-results",
     ),
-    path("quiz-sessions-list/", QuizSessionsByInstructorView.as_view(), name="quiz-sessions-list"),
+    path(
+        "quiz-sessions-list/",
+        QuizSessionsByInstructorView.as_view(),
+        name="quiz-sessions-list",
+    ),
     path("schema/", SpectacularAPIView.as_view(), name="schema"),
     path(
         "quiz-session-responses-count/<str:code>/",
@@ -78,13 +98,20 @@ urlpatterns = [
     ),
     path("quiz/<int:quiz_id>/settings", SettingsView.as_view(), name="quiz-settings"),
     path(
-        "schema/swagger-ui/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"
+        "schema/swagger-ui/",
+        SpectacularSwaggerView.as_view(url_name="schema"),
+        name="swagger-ui",
     ),
     path("check-developer/", CheckDeveloperStatus.as_view(), name="check-developer"),
     path("upload-audio/", UploadAudioView.as_view(), name="upload-audio"),
     path(
-        "api/instructor-recordings/<uuid:recording_id>/update-transcript/",
+        "instructor-recordings/<uuid:recording_id>/update-transcript/",
         UpdateTranscriptView.as_view(),
         name="update-transcript",
+    ),
+    path(
+        "instructor-recordings/",
+        RecordingsView.as_view(),
+        name="instructor-recording",
     ),
 ]
