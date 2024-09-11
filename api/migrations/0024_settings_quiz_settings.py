@@ -7,22 +7,35 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('api', '0023_alter_quizsession_current_question_and_more'),
+        ("api", "0023_alter_quizsession_current_question_and_more"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Settings',
+            name="Settings",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('timer', models.BooleanField(default=False)),
-                ('timer_duration', models.IntegerField(default=60)),
-                ('live_bar_chart', models.BooleanField(default=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("timer", models.BooleanField(default=False)),
+                ("timer_duration", models.IntegerField(default=60)),
+                ("live_bar_chart", models.BooleanField(default=True)),
             ],
         ),
         migrations.AddField(
-            model_name='quiz',
-            name='settings',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, related_name='quiz', to='api.settings'),
+            model_name="quiz",
+            name="settings",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="quiz",
+                to="api.settings",
+            ),
         ),
     ]

@@ -6,13 +6,17 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('api', '0017_alter_quizsessionstudent_quiz_session'),
+        ("api", "0017_alter_quizsessionstudent_quiz_session"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='quizsession',
-            name='served_questions',
-            field=models.ManyToManyField(null=True, related_name='served_in_sessions', to='api.questionmultiplechoice'),
+            model_name="quizsession",
+            name="served_questions",
+            field=models.ManyToManyField(
+                null=True,
+                related_name="served_in_sessions",
+                to="api.questionmultiplechoice",
+            ),
         ),
     ]

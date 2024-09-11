@@ -6,16 +6,16 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('api', '0007_instructor_questionmultiplechoice_and_more'),
+        ("api", "0007_instructor_questionmultiplechoice_and_more"),
     ]
 
     operations = [
         migrations.AlterModelTable(
-            name='questionmultiplechoice',
-            table='question_multiple_choice',
+            name="questionmultiplechoice",
+            table="question_multiple_choice",
         ),
         migrations.AlterModelTable(
-            name='userresponse',
-            table='user_response',
+            name="userresponse",
+            table="user_response",
         ),
     ]

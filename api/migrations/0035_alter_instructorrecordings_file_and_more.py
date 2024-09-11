@@ -6,17 +6,17 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('api', '0034_instructorrecordings'),
+        ("api", "0034_instructorrecordings"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='instructorrecordings',
-            name='file',
-            field=models.FileField(upload_to='get_audio_upload_path'),
+            model_name="instructorrecordings",
+            name="file",
+            field=models.FileField(upload_to="get_audio_upload_path"),
         ),
         migrations.AlterModelTable(
-            name='instructorrecordings',
+            name="instructorrecordings",
             table=None,
         ),
     ]

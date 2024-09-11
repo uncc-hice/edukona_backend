@@ -7,32 +7,45 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('api', '0014_quizsession_quizsessionstudent_and_more'),
+        ("api", "0014_quizsession_quizsessionstudent_and_more"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='quizsession',
-            name='quiz',
+            model_name="quizsession",
+            name="quiz",
         ),
         migrations.AlterField(
-            model_name='userresponse',
-            name='question',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='responses', to='api.questionmultiplechoice'),
+            model_name="userresponse",
+            name="question",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="responses",
+                to="api.questionmultiplechoice",
+            ),
         ),
         migrations.AlterField(
-            model_name='userresponse',
-            name='quiz_session',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='responses', to='api.quizsession'),
+            model_name="userresponse",
+            name="quiz_session",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="responses",
+                to="api.quizsession",
+            ),
         ),
         migrations.AlterField(
-            model_name='userresponse',
-            name='student',
+            model_name="userresponse",
+            name="student",
             field=models.CharField(max_length=200),
         ),
         migrations.AddField(
-            model_name='quizsession',
-            name='quiz',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, related_name='sessions', to='api.quiz'),
+            model_name="quizsession",
+            name="quiz",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="sessions",
+                to="api.quiz",
+            ),
         ),
     ]

@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('api', '0027_remove_quizsessionstudent_student'),
+        ("api", "0027_remove_quizsessionstudent_student"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='settings',
-            name='skip_question_percentage',
+            model_name="settings",
+            name="skip_question_percentage",
             field=models.IntegerField(default=0),
         ),
     ]

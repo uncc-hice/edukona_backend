@@ -14,6 +14,6 @@ dotenv.load_dotenv()
 
 from django.core.wsgi import get_wsgi_application
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'hice_backend.settings')
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "hice_backend.settings")
 
 application = get_wsgi_application()

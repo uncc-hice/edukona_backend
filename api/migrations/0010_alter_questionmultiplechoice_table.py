@@ -6,12 +6,12 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('api', '0009_alter_questionmultiplechoice_table_and_more'),
+        ("api", "0009_alter_questionmultiplechoice_table_and_more"),
     ]
 
     operations = [
         migrations.AlterModelTable(
-            name='questionmultiplechoice',
-            table='api_question_multiple_choice',
+            name="questionmultiplechoice",
+            table="api_question_multiple_choice",
         ),
     ]

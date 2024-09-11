@@ -6,21 +6,21 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('api', '0035_alter_instructorrecordings_file_and_more'),
+        ("api", "0035_alter_instructorrecordings_file_and_more"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='instructorrecordings',
-            name='file',
+            model_name="instructorrecordings",
+            name="file",
         ),
         migrations.AddField(
-            model_name='instructorrecordings',
-            name='s3_path',
-            field=models.CharField(default='', max_length=200),
+            model_name="instructorrecordings",
+            name="s3_path",
+            field=models.CharField(default="", max_length=200),
         ),
         migrations.AlterModelTable(
-            name='instructorrecordings',
-            table='api_instructor_recordings',
+            name="instructorrecordings",
+            table="api_instructor_recordings",
         ),
     ]

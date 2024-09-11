@@ -6,43 +6,43 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('api', '0024_settings_quiz_settings'),
+        ("api", "0024_settings_quiz_settings"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='quizsessionstudent',
-            name='score',
+            model_name="quizsessionstudent",
+            name="score",
             field=models.IntegerField(default=0),
         ),
         migrations.AddField(
-            model_name='quizsessionstudent',
-            name='skip_count',
+            model_name="quizsessionstudent",
+            name="skip_count",
             field=models.IntegerField(default=0),
         ),
         migrations.AddField(
-            model_name='settings',
-            name='skip_count_per_student',
+            model_name="settings",
+            name="skip_count_per_student",
             field=models.IntegerField(default=1),
         ),
         migrations.AddField(
-            model_name='settings',
-            name='skip_question',
+            model_name="settings",
+            name="skip_question",
             field=models.BooleanField(default=False),
         ),
         migrations.AddField(
-            model_name='settings',
-            name='skip_question_logic',
-            field=models.TextField(default='random'),
+            model_name="settings",
+            name="skip_question_logic",
+            field=models.TextField(default="random"),
         ),
         migrations.AddField(
-            model_name='settings',
-            name='skip_question_streak_count',
+            model_name="settings",
+            name="skip_question_streak_count",
             field=models.IntegerField(default=1),
         ),
         migrations.AddField(
-            model_name='userresponse',
-            name='skipped_question',
+            model_name="userresponse",
+            name="skipped_question",
             field=models.BooleanField(default=False),
         ),
     ]

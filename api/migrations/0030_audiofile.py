@@ -7,17 +7,30 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('api', '0029_alter_settings_skip_question_percentage'),
+        ("api", "0029_alter_settings_skip_question_percentage"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='AudioFile',
+            name="AudioFile",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('file', models.FileField(upload_to='audio_files/')),
-                ('uploaded_at', models.DateTimeField(auto_now_add=True)),
-                ('instructor', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='api.instructor')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("file", models.FileField(upload_to="audio_files/")),
+                ("uploaded_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "instructor",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to="api.instructor"
+                    ),
+                ),
             ],
         ),
     ]

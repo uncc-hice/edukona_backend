@@ -6,9 +6,8 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('api', '0019_quizsession_question_colors'),
-        ('api', '0021_merge_20240307_2036'),
+        ("api", "0019_quizsession_question_colors"),
+        ("api", "0021_merge_20240307_2036"),
     ]
 
-    operations = [
-    ]
+    operations = []

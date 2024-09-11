@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('api', '0028_settings_skip_question_percentage'),
+        ("api", "0028_settings_skip_question_percentage"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='settings',
-            name='skip_question_percentage',
+            model_name="settings",
+            name="skip_question_percentage",
             field=models.FloatField(default=0.0),
         ),
     ]

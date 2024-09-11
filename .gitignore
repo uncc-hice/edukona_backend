@@ -1,11 +1,7 @@
-api/migrations/__pycache__/
-hice_backend/__pycache__/
-hice_backend/__pycache__/**
-api/__pycache__/
-api/__pycache__/**
+__pycache__
 debug.log
 .idea
-
 .DS_Store
 .env
-
+venv
+.vscode

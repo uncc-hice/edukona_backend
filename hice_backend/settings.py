@@ -11,7 +11,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
-SECRET_KEY = os.getenv("SECRET_KEY")
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
 
 DEBUG = False
 
@@ -243,4 +243,6 @@ AWS_S3_REGION_NAME = os.getenv("AWS_S3_REGION_NAME", default="us-east-1")
 
 AWS_LAMBDA_INVOKER_ACCESS_KEY_ID = os.getenv("AWS_LAMBDA_INVOKER_ACCESS_KEY_ID")
 AWS_LAMBDA_INVOKER_SECRET_ACCESS_KEY = os.getenv("AWS_LAMBDA_INVOKER_SECRET_ACCESS_KEY")
-AWS_LAMBDA_INVOKER_REGION_NAME = os.getenv("AWS_LAMBDA_INVOKER_REGION_NAME", default="us-east-1")
+AWS_LAMBDA_INVOKER_REGION_NAME = os.getenv(
+    "AWS_LAMBDA_INVOKER_REGION_NAME", default="us-east-1"
+)

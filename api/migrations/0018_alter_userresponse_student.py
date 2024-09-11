@@ -7,13 +7,17 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('api', '0017_alter_quizsessionstudent_quiz_session'),
+        ("api", "0017_alter_quizsessionstudent_quiz_session"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='userresponse',
-            name='student',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='responses', to='api.quizsessionstudent'),
+            model_name="userresponse",
+            name="student",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="responses",
+                to="api.quizsessionstudent",
+            ),
         ),
     ]
