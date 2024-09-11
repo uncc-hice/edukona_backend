@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('api', '0018_alter_userresponse_student'),
+        ("api", "0018_alter_userresponse_student"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='quizsession',
-            name='question_colors',
+            model_name="quizsession",
+            name="question_colors",
             field=models.JSONField(blank=True, null=True),
         ),
     ]

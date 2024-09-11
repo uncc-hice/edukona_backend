@@ -9,13 +9,18 @@ class Migration(migrations.Migration):
 
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('api', '0012_alter_student_user'),
+        ("api", "0012_alter_student_user"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='instructor',
-            name='user',
-            field=models.OneToOneField(null=True, on_delete=django.db.models.deletion.CASCADE, related_name='instructor', to=settings.AUTH_USER_MODEL),
+            model_name="instructor",
+            name="user",
+            field=models.OneToOneField(
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="instructor",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
     ]

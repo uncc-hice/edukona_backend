@@ -8,38 +8,67 @@ import django.utils.timezone
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('api', '0013_alter_instructor_user'),
+        ("api", "0013_alter_instructor_user"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='QuizSession',
+            name="QuizSession",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('code', models.CharField(max_length=6, unique=True)),
-                ('start_time', models.DateTimeField(default=django.utils.timezone.now)),
-                ('end_time', models.DateTimeField(blank=True, null=True)),
-                ('quiz', models.ManyToManyField(related_name='quiz_sessions', to='api.quiz')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("code", models.CharField(max_length=6, unique=True)),
+                ("start_time", models.DateTimeField(default=django.utils.timezone.now)),
+                ("end_time", models.DateTimeField(blank=True, null=True)),
+                (
+                    "quiz",
+                    models.ManyToManyField(related_name="quiz_sessions", to="api.quiz"),
+                ),
             ],
             options={
-                'db_table': 'api_quiz_session',
+                "db_table": "api_quiz_session",
             },
         ),
         migrations.CreateModel(
-            name='QuizSessionStudent',
+            name="QuizSessionStudent",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('username', models.CharField(max_length=200)),
-                ('joined_at', models.DateTimeField(default=django.utils.timezone.now)),
-                ('quiz_session', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='api.quizsession')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("username", models.CharField(max_length=200)),
+                ("joined_at", models.DateTimeField(default=django.utils.timezone.now)),
+                (
+                    "quiz_session",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="api.quizsession",
+                    ),
+                ),
             ],
             options={
-                'db_table': 'api_quiz_session_student',
+                "db_table": "api_quiz_session_student",
             },
         ),
         migrations.AddField(
-            model_name='userresponse',
-            name='quiz_session',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, to='api.quizsession'),
+            model_name="userresponse",
+            name="quiz_session",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                to="api.quizsession",
+            ),
         ),
     ]

@@ -7,18 +7,24 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('api', '0022_merge_20240522_2132'),
+        ("api", "0022_merge_20240522_2132"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='quizsession',
-            name='current_question',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='current_in_sessions', to='api.questionmultiplechoice'),
+            model_name="quizsession",
+            name="current_question",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="current_in_sessions",
+                to="api.questionmultiplechoice",
+            ),
         ),
         migrations.AlterField(
-            model_name='quizsession',
-            name='question_colors',
+            model_name="quizsession",
+            name="question_colors",
             field=models.JSONField(blank=True, default=dict, null=True),
         ),
     ]

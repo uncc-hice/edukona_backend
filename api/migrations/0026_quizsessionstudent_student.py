@@ -7,13 +7,19 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('api', '0025_quizsessionstudent_score_and_more'),
+        ("api", "0025_quizsessionstudent_score_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='quizsessionstudent',
-            name='student',
-            field=models.ForeignKey(default=None, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='quiz_session_students', to='api.student'),
+            model_name="quizsessionstudent",
+            name="student",
+            field=models.ForeignKey(
+                default=None,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="quiz_session_students",
+                to="api.student",
+            ),
         ),
     ]

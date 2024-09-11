@@ -7,13 +7,18 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('api', '0019_alter_quizsession_served_questions'),
+        ("api", "0019_alter_quizsession_served_questions"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='quizsession',
-            name='current_question',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='api.questionmultiplechoice'),
+            model_name="quizsession",
+            name="current_question",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                to="api.questionmultiplechoice",
+            ),
         ),
     ]

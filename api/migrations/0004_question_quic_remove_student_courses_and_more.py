@@ -6,41 +6,57 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('api', '0003_remove_course_university'),
+        ("api", "0003_remove_course_university"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Question',
+            name="Question",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('question_text', models.CharField(max_length=200)),
-                ('choice_correct', models.CharField(max_length=100)),
-                ('choice_1', models.CharField(max_length=100)),
-                ('choice_2', models.CharField(max_length=100)),
-                ('choice_3', models.CharField(max_length=100)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("question_text", models.CharField(max_length=200)),
+                ("choice_correct", models.CharField(max_length=100)),
+                ("choice_1", models.CharField(max_length=100)),
+                ("choice_2", models.CharField(max_length=100)),
+                ("choice_3", models.CharField(max_length=100)),
             ],
         ),
         migrations.CreateModel(
-            name='Quic',
+            name="Quic",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('quiz_title', models.CharField(max_length=200)),
-                ('quiz_duration_minutes', models.IntegerField()),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("quiz_title", models.CharField(max_length=200)),
+                ("quiz_duration_minutes", models.IntegerField()),
             ],
         ),
         migrations.RemoveField(
-            model_name='student',
-            name='courses',
+            model_name="student",
+            name="courses",
         ),
         migrations.RemoveField(
-            model_name='student',
-            name='user',
+            model_name="student",
+            name="user",
         ),
         migrations.DeleteModel(
-            name='Course',
+            name="Course",
         ),
         migrations.DeleteModel(
-            name='Student',
+            name="Student",
         ),
     ]

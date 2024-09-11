@@ -6,16 +6,16 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('api', '0030_audiofile'),
+        ("api", "0030_audiofile"),
     ]
 
     operations = [
         migrations.RenameModel(
-            old_name='AudioFile',
-            new_name='InstructorRecordings',
+            old_name="AudioFile",
+            new_name="InstructorRecordings",
         ),
         migrations.AlterModelTable(
-            name='instructorrecordings',
-            table='api_instructor_recordings',
+            name="instructorrecordings",
+            table="api_instructor_recordings",
         ),
     ]
