@@ -1,6 +1,3 @@
-branch-defaults:
-  "*":
-    environment: hice-backend
 global:
   application_name: hice_backend
   branch: null
