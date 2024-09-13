@@ -455,7 +455,7 @@ def get_user_from_token(token_key):
         return AnonymousUser()
 
 
-class TranscriptConsumer(AsyncWebsocketConsumer):
+class RecordingConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         query_string = self.scope["query_string"].decode()
         params = parse_qs(query_string)
