@@ -11,9 +11,7 @@ class QuizView(APIView):
         new_quiz = Quiz.objects.create(instructor=instructor, **request.data)
         new_quiz.settings = Settings.objects.create(**settings)
         new_quiz.save()
-        return JsonResponse(
-            {"message": "Quiz created successfully", "quiz_id": new_quiz.id}
-        )
+        return JsonResponse({"message": "Quiz created successfully", "quiz_id": new_quiz.id})
 
     def get(self, request, quiz_id=None):
         if quiz_id:
