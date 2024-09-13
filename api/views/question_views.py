@@ -1,19 +1,11 @@
-from django.conf import settings
 from django.db import transaction
-
-from rest_framework.response import Response
 from rest_framework.views import APIView
 from api.models import *
 from django.shortcuts import get_object_or_404
-from django.contrib.auth.models import User
-from rest_framework.permissions import AllowAny
 from rest_framework import status
 from api.serializers import (
     QuestionMultipleChoiceSerializer,
 )
-from rest_framework import serializers
-from drf_spectacular.utils import extend_schema
-from drf_spectacular.types import OpenApiTypes
 from django.http import JsonResponse
 
 
@@ -32,18 +24,14 @@ class QuestionView(APIView):
         with transaction.atomic():  # Use a transaction to ensure all or nothing is created
             for question_data in request.data:
                 try:
-                    new_question = QuestionMultipleChoice.objects.create(
-                        **question_data
-                    )
+                    new_question = QuestionMultipleChoice.objects.create(**question_data)
                     created_questions.append(
                         {
                             "question_id": new_question.id,
                             "message": "Question created successfully",
                         }
                     )
-                except (
-                    Exception
-                ) as e:  # Catch exceptions from invalid data or database errors
+                except Exception as e:  # Catch exceptions from invalid data or database errors
                     errors.append({"question_data": question_data, "error": str(e)})
 
         if errors:
