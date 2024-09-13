@@ -25,18 +25,14 @@ class QuestionView(APIView):
         with transaction.atomic():  # Use a transaction to ensure all or nothing is created
             for question_data in request.data:
                 try:
-                    new_question = QuestionMultipleChoice.objects.create(
-                        **question_data
-                    )
+                    new_question = QuestionMultipleChoice.objects.create(**question_data)
                     created_questions.append(
                         {
                             "question_id": new_question.id,
                             "message": "Question created successfully",
                         }
                     )
-                except (
-                    Exception
-                ) as e:  # Catch exceptions from invalid data or database errors
+                except Exception as e:  # Catch exceptions from invalid data or database errors
                     errors.append({"question_data": question_data, "error": str(e)})
 
         if errors:
