@@ -1,5 +1,4 @@
 from django.db import transaction
-
 from rest_framework.views import APIView
 from api.models import *
 from django.shortcuts import get_object_or_404
