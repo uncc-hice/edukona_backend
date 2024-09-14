@@ -36,16 +36,12 @@ class SignUpInstructor(APIView):
 
     def post(self, request):
         new_user = request.data.pop("user", {})
-        instructor = Instructor.objects.create(
-            user=User.objects.create(**new_user), **request.data
-        )
+        instructor = Instructor.objects.create(user=User.objects.create(**new_user), **request.data)
         user = get_object_or_404(User, id=instructor.user_id)
         user.set_password(new_user["password"])
         user.save()
         token = Token.objects.create(user=user)
-        return JsonResponse(
-            {"token": token.key, "user": user.id, "instructor": instructor.id}
-        )
+        return JsonResponse({"token": token.key, "user": user.id, "instructor": instructor.id})
 
 
 class LoginSerializer(serializers.Serializer):
@@ -73,14 +69,10 @@ class Login(APIView):
         try:
             user = User.objects.get(username=request.data["username"])
         except User.DoesNotExist:
-            return JsonResponse(
-                {"detail": "User Not Found!"}, status=status.HTTP_401_UNAUTHORIZED
-            )
+            return JsonResponse({"detail": "User Not Found!"}, status=status.HTTP_401_UNAUTHORIZED)
 
         if not user.check_password(request.data["password"]):
-            return JsonResponse(
-                {"detail": "User Not Found!"}, status=status.HTTP_400_BAD_REQUEST
-            )
+            return JsonResponse({"detail": "User Not Found!"}, status=status.HTTP_400_BAD_REQUEST)
         token = Token.objects.get_or_create(user=user)
         if hasattr(user, "instructor"):
             return JsonResponse(
@@ -176,13 +168,9 @@ class UserResponseView(APIView):
     def post(self, request):
         student_data = request.data.pop("student", {})
         student = get_object_or_404(QuizSessionStudent, id=student_data["id"])
-        question = get_object_or_404(
-            QuestionMultipleChoice, id=request.data["question_id"]
-        )
+        question = get_object_or_404(QuestionMultipleChoice, id=request.data["question_id"])
         selected_answer = request.data["selected_answer"]
-        quiz_session = get_object_or_404(
-            QuizSession, code=request.data["quiz_session_code"]
-        )
+        quiz_session = get_object_or_404(QuizSession, code=request.data["quiz_session_code"])
 
         is_correct = selected_answer == question.correct_answer
         new_user_response = UserResponse.objects.create(
@@ -214,9 +202,7 @@ class UserResponseView(APIView):
             UserResponse, id=response_id, student_id=request.data["student_id"]
         )
 
-        is_correct = (
-            request.data.get("selected_answer") == user_response.question.correct_answer
-        )
+        is_correct = request.data.get("selected_answer") == user_response.question.correct_answer
         user_response.__dict__.update({"is_correct": is_correct, **request.data})
         user_response.save()
 
@@ -299,9 +285,7 @@ class UploadAudioView(APIView):
                 ),
             )
 
-            return JsonResponse(
-                InstructorRecordingsSerializer(new_recording).data, status=201
-            )
+            return JsonResponse(InstructorRecordingsSerializer(new_recording).data, status=201)
 
         except Exception as e:
             transaction.set_rollback(True)
@@ -364,9 +348,9 @@ class RecordingsView(APIView):
     )
     def get(self, request):
         instructor = request.user.instructor
-        recordings = InstructorRecordings.objects.filter(
-            instructor=instructor
-        ).order_by("-uploaded_at")
+        recordings = InstructorRecordings.objects.filter(instructor=instructor).order_by(
+            "-uploaded_at"
+        )
 
         # Filter so that the serializer only returns the s3_path, uploaded_at, id
 
