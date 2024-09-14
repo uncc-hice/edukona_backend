@@ -7,4 +7,5 @@ websocket_urlpatterns = [
         consumers.QuizSessionInstructorConsumer.as_asgi(),
     ),
     re_path(r"ws/student/join/(?P<code>\w+)/", consumers.StudentConsumer.as_asgi()),
+    re_path(r"ws/recordings/$", consumers.RecordingConsumer.as_asgi()),
 ]
