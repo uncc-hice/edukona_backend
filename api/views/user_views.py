@@ -351,7 +351,6 @@ class UpdateTranscriptView(APIView):
 
 
 class RecordingsView(APIView):
-
     @extend_schema(
         operation_id="get_recordings",
         summary="Get all recordings",
@@ -382,3 +381,41 @@ class RecordingsView(APIView):
                 recording["transcript"] = "completed"
 
         return JsonResponse({"recordings": serializer.data})
+
+
+class DeleteRecordingView(APIView):
+    @extend_schema(
+        operation_id="delete_recording",
+        summary="Delete recording",
+        description="Deletes the recording with the specified id",
+        responses={
+            200: OpenApiTypes.OBJECT,
+            404: OpenApiTypes.OBJECT,
+            403: OpenApiTypes.OBJECT,
+            500: OpenApiTypes.OBJECT,
+        },
+    )
+    def delete(self, request, recording_id=None):
+        instructor = request.user.instructor
+        recording = get_object_or_404(InstructorRecordings, id=recording_id)
+        if recording.instructor != instructor:
+            return JsonResponse(
+                {"message": "You do not have permission to delete this recording"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        try:
+            bucket_name = settings.AWS_STORAGE_BUCKET_NAME
+            boto3_client = boto3.client(
+                "s3",
+                aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+                aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+            )
+            boto3_client.delete_object(Bucket=bucket_name, Key=recording.s3_path)
+            recording.delete()
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)
+
+        return JsonResponse(
+            {"message": "Successfully deleted recording"},
+            status=status.HTTP_200_OK,
+        )
