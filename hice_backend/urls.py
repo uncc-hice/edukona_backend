@@ -113,6 +113,11 @@ urlpatterns = [
         name="update-transcript",
     ),
     path(
+        "instructor-recordings/<uuid:recording_id>/delete-recording",
+        DeleteRecordingView.as_view(),
+        name="delete-recording",
+    ),
+    path(
         "instructor-recordings/",
         RecordingsView.as_view(),
         name="instructor-recording",
