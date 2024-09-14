@@ -13,7 +13,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
 
-DEBUG = False
+if os.getenv("DJANGO_ENV") == "development":
+    DEBUG = True
+else:
+    DEBUG = False
 
 ALLOWED_HOSTS = [
     "127.0.0.1",
@@ -79,14 +82,21 @@ ASGI_APPLICATION = "hice_backend.asgi.application"
 #     },
 # }
 
-CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": [(os.getenv("REDIS"), 6379)],  # Use your Redis endpoint and port
+if DEBUG:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels.layers.InMemoryChannelLayer",
         },
-    },
-}
+    }
+else:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {
+                "hosts": [(os.getenv("REDIS"), 6379)],  # Use your Redis endpoint and port
+            },
+        },
+    }
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
@@ -243,6 +253,4 @@ AWS_S3_REGION_NAME = os.getenv("AWS_S3_REGION_NAME", default="us-east-1")
 
 AWS_LAMBDA_INVOKER_ACCESS_KEY_ID = os.getenv("AWS_LAMBDA_INVOKER_ACCESS_KEY_ID")
 AWS_LAMBDA_INVOKER_SECRET_ACCESS_KEY = os.getenv("AWS_LAMBDA_INVOKER_SECRET_ACCESS_KEY")
-AWS_LAMBDA_INVOKER_REGION_NAME = os.getenv(
-    "AWS_LAMBDA_INVOKER_REGION_NAME", default="us-east-1"
-)
+AWS_LAMBDA_INVOKER_REGION_NAME = os.getenv("AWS_LAMBDA_INVOKER_REGION_NAME", default="us-east-1")

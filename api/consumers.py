@@ -4,6 +4,10 @@ import random
 
 from channels.generic.websocket import AsyncWebsocketConsumer
 from django.utils import timezone
+from django.contrib.auth.models import AnonymousUser
+from urllib.parse import parse_qs
+from rest_framework.authtoken.models import Token
+
 
 from api.models import (
     QuizSession,
@@ -30,9 +34,7 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
         uc = await self.fetch_user_count()
 
         await self.send(
-            text_data=json.dumps(
-                {"type": "settings", "settings": settings, "user_count": uc}
-            )
+            text_data=json.dumps({"type": "settings", "settings": settings, "user_count": uc})
         )
 
     @database_sync_to_async
@@ -109,9 +111,7 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def delete_student_from_db(self, username):
         session = QuizSession.objects.get(code=self.code)
-        student = QuizSessionStudent.objects.get(
-            quiz_session=session, username=username
-        )
+        student = QuizSessionStudent.objects.get(quiz_session=session, username=username)
         student.delete()
         return {"status": "success", "username": username}
 
@@ -127,9 +127,7 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
         question_data = await self.fetch_current_question()
         if question_data:
             await self.send(
-                text_data=json.dumps(
-                    {"type": "current_question", "question": question_data}
-                )
+                text_data=json.dumps({"type": "current_question", "question": question_data})
             )
 
     @database_sync_to_async
@@ -159,9 +157,7 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
         question_data = await self.fetch_next_question()
         if question_data:
             await self.send(
-                text_data=json.dumps(
-                    {"type": "next_question", "question": question_data}
-                )
+                text_data=json.dumps({"type": "next_question", "question": question_data})
             )
         else:
             print("Ending Quiz")
@@ -186,14 +182,10 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
             print("Failed to end the quiz; session not found.")
 
     async def start_quiz(self):
-        await self.channel_layer.group_send(
-            f"quiz_session_{self.code}", {"type": "quiz_started"}
-        )
+        await self.channel_layer.group_send(f"quiz_session_{self.code}", {"type": "quiz_started"})
 
         await self.send(
-            text_data=json.dumps(
-                {"type": "quiz_started", "message": "Quiz has started!"}
-            )
+            text_data=json.dumps({"type": "quiz_started", "message": "Quiz has started!"})
         )
 
     async def student_joined(self, event):
@@ -215,9 +207,7 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
 
     async def user_response(self, event):
         await self.send(
-            text_data=json.dumps(
-                {"type": "user_response", "response": event["response"]}
-            )
+            text_data=json.dumps({"type": "user_response", "response": event["response"]})
         )
 
 
@@ -285,9 +275,7 @@ class StudentConsumer(AsyncWebsocketConsumer):
         try:
             session = QuizSession.objects.get(code=code)
             # studentUser = Student.objects.get(user_id=user_id)
-            student = QuizSessionStudent.objects.create(
-                username=username, quiz_session=session
-            )
+            student = QuizSessionStudent.objects.create(username=username, quiz_session=session)
             return {
                 "status": "success",
                 "message": "Student created successfully",
@@ -344,9 +332,7 @@ class StudentConsumer(AsyncWebsocketConsumer):
             if session_settings.get("skip_question_logic") == "streak":
                 if (
                     student.skip_count < session_settings.get("skip_count_per_student")
-                    and correct_responses
-                    % session_settings.get("skip_question_streak_count")
-                    == 0
+                    and correct_responses % session_settings.get("skip_question_streak_count") == 0
                 ):
                     grant_response = await self.grant_skip_power_up(student_id)
                     if grant_response.get("status") == "success":
@@ -458,3 +444,85 @@ class StudentConsumer(AsyncWebsocketConsumer):
         except Exception as e:
             print(e)
             return False
+
+
+@database_sync_to_async
+def get_user_from_token(token_key):
+    try:
+        token = Token.objects.get(key=token_key)
+        return token.user
+    except Token.DoesNotExist:
+        return AnonymousUser()
+
+
+class RecordingConsumer(AsyncWebsocketConsumer):
+    async def connect(self):
+        query_string = self.scope["query_string"].decode()
+        params = parse_qs(query_string)
+        token_key = params.get("token")
+
+        if token_key:
+            token_key = token_key[0]
+            self.user = await get_user_from_token(token_key)
+        else:
+            self.user = AnonymousUser()
+
+        if self.user.is_anonymous:
+            await self.close()
+            logger.warning("WebSocket connection rejected due to anonymous user.")
+        else:
+            self.group_name = f"recordings_{self.user.id}"
+            await self.channel_layer.group_add(self.group_name, self.channel_name)
+            await self.accept()
+            logger.info(
+                f"WebSocket connection accepted for user {self.user.id}: {self.channel_name}"
+            )
+
+    async def disconnect(self, close_code):
+        # Leave the transcripts group
+        await self.channel_layer.group_discard(self.group_name, self.channel_name)
+        logger.info(f"WebSocket disconnected: {self.channel_name}")
+
+    async def receive(self, text_data):
+        logger.debug(f"Received WebSocket message: {text_data}")
+        try:
+            data = json.loads(text_data)
+            message_type = data.get("type")
+
+            if message_type == "transcript_completed":
+                # Extract required fields
+                recording_id = data.get("recording_id")
+                transcript_status = data.get("transcript_status")
+
+                if recording_id and transcript_status:
+                    # Broadcast the event to all clients in the group (i.e. this will be sent to the front-end)
+                    await self.channel_layer.group_send(
+                        self.group_name, {"type": "transcript_completed_event", "message": data}
+                    )
+                else:
+                    # Send error if required fields are missing
+                    error_message = "Invalid data: recording_id and transcript_url are required."
+                    logger.error(error_message)
+                    await self.send(text_data=json.dumps({"error": error_message}))
+            else:
+                # Handle unknown message types
+                error_message = f"Unknown message type: {message_type}"
+                logger.error(error_message)
+                await self.send(text_data=json.dumps({"error": error_message}))
+
+        except json.JSONDecodeError:
+            # Handle JSON parsing errors
+            error_message = "Invalid JSON format."
+            logger.error(error_message)
+            await self.send(text_data=json.dumps({"error": error_message}))
+
+        except Exception as e:
+            # Log any other exceptions
+            logger.exception("An error occurred in receive method.")
+            await self.send(text_data=json.dumps({"error": str(e)}))
+
+    async def transcript_completed_event(self, event):
+        # Send the transcript_completed event to WebSocket clients (i.e. this will be sent to the front-end)
+        message = event["message"]
+        logger.info(f"Broadcasting transcript_completed event: {message}")
+        await self.send(text_data=json.dumps(message))
