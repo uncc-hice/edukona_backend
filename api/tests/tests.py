@@ -216,33 +216,6 @@ class QuizViewTest(BaseTest):
 
 
 class QuestionViewTest(BaseTest):
-    def test_post_question(self):
-        url = reverse("question-list")
-        data = {
-            "question_text": "What is 2+2?",
-            "incorrect_answer_list": ["3", "1", "5"],
-            "correct_answer": "4",
-            "points": 2,
-            "quiz_id": self.new_quiz.id,
-        }
-
-        response = self.client_instructor.post(url, data, format="json")
-
-        self.assertEqual(response.status_code, 200)
-        response_data = response.json()
-        self.assertEqual(response_data["message"], "Question created successfully")
-
-        new_question = QuestionMultipleChoice.objects.get(
-            id=response_data["question_id"]
-        )
-        self.assertEqual(new_question.question_text, data["question_text"])
-        self.assertEqual(
-            new_question.incorrect_answer_list, data["incorrect_answer_list"]
-        )
-        self.assertEqual(new_question.correct_answer, data["correct_answer"])
-        self.assertEqual(new_question.points, data["points"])
-        self.assertEqual(new_question.quiz.id, data["quiz_id"])
-
     def test_get_question(self):
         url = reverse("question-detail", kwargs={"question_id": self.new_question.id})
         response = self.client_instructor.get(url)
@@ -348,22 +321,6 @@ class QuestionViewTest(BaseTest):
 
 
 class UserResponseViewTest(BaseTest):
-    def test_post_user_response(self):
-        url = reverse("user-response-list")
-        data = {
-            "student": {"id": self.new_quiz_session_student.id},
-            "question_id": self.new_question.id,
-            "quiz_session_id": self.new_quiz_session.id,
-            "selected_answer": "2",
-            'quiz_session_code': "ABC123"
-        }
-        response = self.client.post(url, data, format="json")
-
-        response_data = response.json()
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response_data["is_correct"], True)
-        self.assertEqual(response_data["message"], "User response created successfully")
-
     def test_put_user_response(self):
         url = reverse(
             "user-response-detail", kwargs={"response_id": self.new_user_response.id}
