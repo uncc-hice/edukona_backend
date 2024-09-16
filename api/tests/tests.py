@@ -68,6 +68,7 @@ class BaseTest(TestCase):
             is_correct=(self.new_question.correct_answer == "2"),
         )
 
+
 class InstructorViewTest(BaseTest):
     def test_post_instructor(self):
         url = reverse("instructor-detail")
@@ -94,8 +95,7 @@ class InstructorViewTest(BaseTest):
         self.assertEqual(response.status_code, 200)
 
         response_data = response.json()
-        self.assertEqual(
-            response_data["instructor"]["id"], self.new_user_instructor.instructor.id        )
+        self.assertEqual(response_data["instructor"]["id"], self.new_user_instructor.instructor.id)
 
     def test_put_instructor(self):
         url = reverse(
@@ -114,9 +114,7 @@ class InstructorViewTest(BaseTest):
         response_data = response.json()
         self.assertEqual(response_data["message"], "Instructor updated successfully")
 
-        new_instructor = Instructor.objects.get(
-            id=self.new_user_instructor.instructor.id
-        )
+        new_instructor = Instructor.objects.get(id=self.new_user_instructor.instructor.id)
         self.assertEqual(new_instructor.user.username, data["user"]["username"])
 
     def test_delete_instructor(self):
@@ -131,6 +129,7 @@ class InstructorViewTest(BaseTest):
 
         with self.assertRaises(Instructor.DoesNotExist):
             Instructor.objects.get(id=self.new_user_instructor.instructor.id)
+
 
 class QuizViewTest(BaseTest):
     def test_post_quiz(self):
@@ -159,9 +158,7 @@ class QuizViewTest(BaseTest):
         response_data = response.json()
         self.assertEqual(response_data["quiz"]["id"], self.new_quiz.id)
         self.assertEqual(response_data["quiz"]["title"], self.new_quiz.title)
-        self.assertEqual(
-            response_data["quiz"]["instructor_id"], self.new_quiz.instructor.id
-        )
+        self.assertEqual(response_data["quiz"]["instructor_id"], self.new_quiz.instructor.id)
 
     def test_put_quiz(self):
         url = reverse("quiz-detail", kwargs={"quiz_id": self.new_quiz.id})
@@ -179,9 +176,7 @@ class QuizViewTest(BaseTest):
 
         updated_quiz = Quiz.objects.get(id=self.new_quiz.id)
         self.assertEqual(updated_quiz.title, data["title"])
-        self.assertEqual(
-            updated_quiz.start_time.isoformat(), "2023-01-03T00:00:00+00:00"
-        )
+        self.assertEqual(updated_quiz.start_time.isoformat(), "2023-01-03T00:00:00+00:00")
         self.assertEqual(updated_quiz.end_time.isoformat(), "2023-01-04T00:00:00+00:00")
 
     def test_delete_quiz(self):
@@ -216,14 +211,10 @@ class QuestionViewTest(BaseTest):
             self.new_question.correct_answer,
         )
         self.assertEqual(response_data["questions"]["points"], self.new_question.points)
-        self.assertEqual(
-            response_data["questions"]["quiz_id"], self.new_question.quiz.id
-        )
+        self.assertEqual(response_data["questions"]["quiz_id"], self.new_question.quiz.id)
 
     def test_get_all_questions(self):
-        all_questions_url = reverse(
-            "all-questions", kwargs={"quiz_id": self.new_quiz.id}
-        )
+        all_questions_url = reverse("all-questions", kwargs={"quiz_id": self.new_quiz.id})
         response = self.client_instructor.get(all_questions_url)
 
         self.assertEqual(response.status_code, 200)
@@ -282,9 +273,7 @@ class QuestionViewTest(BaseTest):
 
         updated_question = QuestionMultipleChoice.objects.get(id=self.new_question.id)
         self.assertEqual(updated_question.question_text, data["question_text"])
-        self.assertEqual(
-            updated_question.incorrect_answer_list, data["incorrect_answer_list"]
-        )
+        self.assertEqual(updated_question.incorrect_answer_list, data["incorrect_answer_list"])
         self.assertEqual(updated_question.correct_answer, data["correct_answer"])
         self.assertEqual(updated_question.points, data["points"])
         self.assertEqual(updated_question.quiz.id, data["quiz_id"])
@@ -302,9 +291,7 @@ class QuestionViewTest(BaseTest):
 
 class UserResponseViewTest(BaseTest):
     def test_put_user_response(self):
-        url = reverse(
-            "user-response-detail", kwargs={"response_id": self.new_user_response.id}
-        )
+        url = reverse("user-response-detail", kwargs={"response_id": self.new_user_response.id})
         data = {"student_id": self.new_quiz_session_student.id, "selected_answer": "1"}
         response = self.client.put(url, data, format="json")
 
@@ -329,9 +316,7 @@ class QuizSessionResultsTest(BaseTest):
         results = response.json()["results"]
 
         self.assertEqual(len(results), 1)
-        self.assertEqual(
-            results[0]["student_username"], self.new_quiz_session_student.username
-        )
+        self.assertEqual(results[0]["student_username"], self.new_quiz_session_student.username)
         self.assertEqual(results[0]["correct_answers"], 1)
         self.assertEqual(results[0]["total_questions"], 1)
 
