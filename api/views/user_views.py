@@ -407,9 +407,6 @@ class DeleteRecordingView(APIView):
         )
 
 
-# Create a new API to get the transcript of a recording, make sure that the user is the owner of the recording
-
-
 class GetTranscriptView(APIView):
     @extend_schema(
         operation_id="get_transcript",
