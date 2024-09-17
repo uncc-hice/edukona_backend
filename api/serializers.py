@@ -61,3 +61,7 @@ class InstructorRecordingsSerializer(serializers.ModelSerializer):
 
 class UpdateTranscriptSerializer(serializers.Serializer):
     transcript = serializers.CharField()
+
+
+class GetTranscriptResponseSerializer(serializers.Serializer):
+    transcript = serializers.CharField()
