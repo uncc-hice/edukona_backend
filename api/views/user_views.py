@@ -23,6 +23,7 @@ from api.models import (
 from api.serializers import (
     InstructorRecordingsSerializer,
     UpdateTranscriptSerializer,
+    GetTranscriptResponseSerializer,
 )
 from drf_spectacular.utils import extend_schema
 from drf_spectacular.types import OpenApiTypes
@@ -404,3 +405,31 @@ class DeleteRecordingView(APIView):
             {"message": "Successfully deleted recording"},
             status=status.HTTP_200_OK,
         )
+
+
+class GetTranscriptView(APIView):
+    @extend_schema(
+        operation_id="get_transcript",
+        summary="Get transcript of a recording",
+        description="Returns the transcript of a recording with the specified ID.",
+        responses={
+            200: GetTranscriptResponseSerializer,
+            404: OpenApiTypes.OBJECT,
+            403: OpenApiTypes.OBJECT,
+        },
+    )
+    def get(self, request, recording_id):
+        instructor = request.user.instructor
+        recording = get_object_or_404(InstructorRecordings, id=recording_id)
+        if recording.instructor != instructor:
+            return JsonResponse(
+                {"message": "You do not have permission to view this recording"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        if not recording.transcript:
+            return JsonResponse(
+                {"message": "Transcript is not available yet"}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        return JsonResponse({"transcript": recording.transcript}, status=status.HTTP_200_OK)

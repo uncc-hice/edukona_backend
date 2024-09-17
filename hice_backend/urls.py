@@ -122,4 +122,9 @@ urlpatterns = [
         RecordingsView.as_view(),
         name="instructor-recording",
     ),
+    path(
+        "instructor-recordings/<uuid:recording_id>/get-transcript/",
+        GetTranscriptView.as_view(),
+        name="get-transcript",
+    ),
 ]
