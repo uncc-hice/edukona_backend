@@ -543,3 +543,9 @@ class RecordingConsumer(AsyncWebsocketConsumer):
         message = event["message"]
         logger.info(f"Broadcasting transcript_completed event: {message}")
         await self.send(text_data=json.dumps(message))
+
+    async def quiz_creation_completed_event(self, event):
+        # Send the quiz_creation_completed event to WebSocket clients (i.e. this will be sent to the front-end)
+        message = event["message"]
+        logger.info(f"Broadcasting quiz_creation_completed event: {message}")
+        await self.send(text_data=json.dumps(message))
