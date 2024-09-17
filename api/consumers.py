@@ -504,6 +504,23 @@ class RecordingConsumer(AsyncWebsocketConsumer):
                     error_message = "Invalid data: recording_id and transcript_url are required."
                     logger.error(error_message)
                     await self.send(text_data=json.dumps({"error": error_message}))
+            elif message_type == "quiz_creation_completed":
+                # Extract required fields
+                recording_id = data.get("recording_id")
+                quiz_creation_status = data.get("quiz_creation_status")
+
+                if recording_id and quiz_creation_status:
+                    # Broadcast the event to all clients in the group (i.e. this will be sent to the front-end)
+                    await self.channel_layer.group_send(
+                        self.group_name, {"type": "quiz_creation_completed_event", "message": data}
+                    )
+                else:
+                    # Send error if required fields are missing
+                    error_message = (
+                        "Invalid data: recording_id and quiz_creation_status are required."
+                    )
+                    logger.error(error_message)
+                    await self.send(text_data=json.dumps({"error": error_message}))
             else:
                 # Handle unknown message types
                 error_message = f"Unknown message type: {message_type}"
