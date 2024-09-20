@@ -204,6 +204,7 @@ class StudentQuestion(APIView):
             else:
                 return Response({"message": "Bad Request"}, status=404)
 
+
 class DeleteQuizSession(APIView):
     permission_classes = [AllowAny]
 
@@ -211,6 +212,8 @@ class DeleteQuizSession(APIView):
         try:
             session = QuizSession.objects.get(code=code)
             session.delete()
-            return Response({"message": "Quiz session deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
+            return Response(
+                {"message": "Quiz session deleted successfully."}, status=status.HTTP_204_NO_CONTENT
+            )
         except Exception as e:
             return Response({"message": f"{str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
