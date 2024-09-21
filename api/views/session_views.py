@@ -206,8 +206,6 @@ class StudentQuestion(APIView):
 
 
 class DeleteQuizSession(APIView):
-    permission_classes = [AllowAny]
-
     def delete(self, request, code):
         try:
             session = QuizSession.objects.get(code=code)
