@@ -211,10 +211,16 @@ class DeleteQuizSession(APIView):
     def delete(self, request, code):
         try:
             session = QuizSession.objects.get(code=code)
-            session.delete()
-            return Response(
-                {"message": "Quiz session deleted successfully."}, status=status.HTTP_204_NO_CONTENT
-            )
+            if request.user.instructor == session.quiz.instructor:
+                session.delete()
+                return Response(
+                    {"message": "Quiz session deleted successfully."},
+                    status=status.HTTP_204_NO_CONTENT,
+                )
+            else:
+                return Response(
+                    {"message": "You cannot delete quiz sessions you did not create."}, status=403
+                )
         except QuizSession.DoesNotExist:
             return Response({"message": "Invalid session code."}, status=404)
         except Exception as e:
