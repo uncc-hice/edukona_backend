@@ -93,6 +93,11 @@ urlpatterns = [
         QuizSessionsByInstructorView.as_view(),
         name="quiz-sessions-list",
     ),
+    path(
+        "quiz/<int:quiz_id>/sessions",
+        QuizSessionsByQuizView.as_view(),
+        name="quiz-sessions",
+    ),
     path("schema/", SpectacularAPIView.as_view(), name="schema"),
     path(
         "quiz-session-responses-count/<str:code>/",
