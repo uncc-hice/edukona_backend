@@ -203,3 +203,23 @@ class StudentQuestion(APIView):
                     return Response({"message": "No more questions."}, status=204)
             else:
                 return Response({"message": "Bad Request"}, status=404)
+
+
+class DeleteQuizSession(APIView):
+    def delete(self, request, code):
+        try:
+            session = QuizSession.objects.get(code=code)
+            if request.user.instructor == session.quiz.instructor:
+                session.delete()
+                return Response(
+                    {"message": "Quiz session deleted successfully."},
+                    status=status.HTTP_204_NO_CONTENT,
+                )
+            else:
+                return Response(
+                    {"message": "You cannot delete quiz sessions you did not create."}, status=403
+                )
+        except QuizSession.DoesNotExist:
+            return Response({"message": "Invalid session code."}, status=404)
+        except Exception as e:
+            return Response({"message": f"{str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
