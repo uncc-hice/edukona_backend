@@ -94,6 +94,11 @@ urlpatterns = [
         name="quiz-sessions-list",
     ),
     path(
+        "quiz/<int:quiz_id>/sessions",
+        QuizSessionsByQuizView.as_view(),
+        name="quiz-sessions",
+    ),
+    path(
         "quiz-session-delete/<str:code>/",
         DeleteQuizSession.as_view(),
         name="delete-quiz-session",
