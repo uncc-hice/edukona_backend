@@ -10,7 +10,6 @@ from drf_spectacular.utils import extend_schema
 from drf_spectacular.types import OpenApiTypes
 
 
-
 class StudentResponseCountView(APIView):
     def get(self, request, code):
         quiz_session = get_object_or_404(QuizSession, code=code)
@@ -176,7 +175,9 @@ class QuizSessionsByQuizView(APIView):
         instructor = request.user.instructor
         quiz = get_object_or_404(Quiz, id=quiz_id)
         if instructor != quiz.instructor:
-            return JsonResponse({"message": "You do not have permission to access this resource"}, status=403)
+            return JsonResponse(
+                {"message": "You do not have permission to access this resource"}, status=403
+            )
         sessions = QuizSession.objects.filter(quiz=quiz).order_by("start_time")
         quiz_sessions_data = [
             {
@@ -189,7 +190,7 @@ class QuizSessionsByQuizView(APIView):
             }
             for session in sessions
         ]
-        
+
         return JsonResponse({"quiz_sessions": quiz_sessions_data})
 
 
