@@ -167,6 +167,7 @@ class InstructorRecordings(models.Model):
     uploaded_at = models.DateTimeField(auto_now_add=True)
     instructor = models.ForeignKey(Instructor, on_delete=models.CASCADE)
     transcript = models.TextField(default="")
+    title = models.CharField(max_length=250, default="")
 
     class Meta:
         db_table = "api_instructor_recordings"
