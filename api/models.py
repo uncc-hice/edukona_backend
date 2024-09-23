@@ -8,9 +8,7 @@ from django.utils import timezone
 
 
 class Student(models.Model):
-    user = models.OneToOneField(
-        User, on_delete=models.CASCADE, null=True, related_name="student"
-    )
+    user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, related_name="student")
 
 
 class Instructor(models.Model):
@@ -48,9 +46,7 @@ class Quiz(models.Model):
     created_at = models.DateTimeField(default=timezone.now)
     start_time = models.DateTimeField(null=True, blank=True)
     end_time = models.DateTimeField(null=True, blank=True)
-    settings = models.ForeignKey(
-        Settings, on_delete=models.CASCADE, null=True, related_name="quiz"
-    )
+    settings = models.ForeignKey(Settings, on_delete=models.CASCADE, null=True, related_name="quiz")
 
     def to_json(self):
         return {
@@ -88,9 +84,7 @@ class QuizSession(models.Model):
     code = models.CharField(max_length=6, unique=True)
     start_time = models.DateTimeField(default=timezone.now)
     end_time = models.DateTimeField(null=True, blank=True)
-    quiz = models.ForeignKey(
-        Quiz, on_delete=models.CASCADE, related_name="sessions", null=True
-    )
+    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name="sessions", null=True)
     question_colors = models.JSONField(null=True, blank=True, default=dict)
     served_questions = models.ManyToManyField(
         QuestionMultipleChoice, related_name="served_in_sessions", blank=True
@@ -106,9 +100,7 @@ class QuizSession(models.Model):
     def generate_unique_code(self):
         length = 6
         while True:
-            code = "".join(
-                random.choices(string.ascii_uppercase + string.digits, k=length)
-            )
+            code = "".join(random.choices(string.ascii_uppercase + string.digits, k=length))
             if not QuizSession.objects.filter(code=code).exists():
                 return code
 
@@ -119,9 +111,7 @@ class QuizSession(models.Model):
             "end_time": self.end_time.isoformat() if self.end_time else None,
             "quiz_id": self.quiz.id if self.quiz else None,
             "question_colors": self.question_colors,
-            "current_question": (
-                self.current_question.id if self.current_question else None
-            ),
+            "current_question": (self.current_question.id if self.current_question else None),
         }
 
     class Meta:
@@ -131,9 +121,7 @@ class QuizSession(models.Model):
 class QuizSessionStudent(models.Model):
     username = models.CharField(max_length=200)
     joined_at = models.DateTimeField(default=timezone.now)
-    quiz_session = models.ForeignKey(
-        QuizSession, on_delete=models.CASCADE, related_name="students"
-    )
+    quiz_session = models.ForeignKey(QuizSession, on_delete=models.CASCADE, related_name="students")
     score = models.IntegerField(default=0)
     skip_count = models.IntegerField(default=0)
 
@@ -167,6 +155,7 @@ class InstructorRecordings(models.Model):
     uploaded_at = models.DateTimeField(auto_now_add=True)
     instructor = models.ForeignKey(Instructor, on_delete=models.CASCADE)
     transcript = models.TextField(default="")
+    title = models.CharField(max_length=250, default="")
 
     class Meta:
         db_table = "api_instructor_recordings"
