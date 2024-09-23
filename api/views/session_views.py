@@ -6,6 +6,8 @@ from rest_framework.permissions import AllowAny
 from rest_framework import status
 from api.serializers import QuizSessionStudentSerializer
 from django.http import JsonResponse
+from drf_spectacular.utils import extend_schema
+from drf_spectacular.types import OpenApiTypes
 
 
 class StudentResponseCountView(APIView):
@@ -158,6 +160,40 @@ class QuizSessionsByInstructorView(APIView):
         return JsonResponse({"quiz_sessions": quiz_sessions_data})
 
 
+class QuizSessionsByQuizView(APIView):
+    @extend_schema(
+        operation_id="quiz-sessions",
+        description="Returns all sessions of the quiz with the specified id",
+        responses={
+            200: OpenApiTypes.OBJECT,
+            401: OpenApiTypes.OBJECT,
+            404: OpenApiTypes.OBJECT,
+            403: OpenApiTypes.OBJECT,
+        },
+    )
+    def get(self, request, quiz_id):
+        instructor = request.user.instructor
+        quiz = get_object_or_404(Quiz, id=quiz_id)
+        if instructor != quiz.instructor:
+            return JsonResponse(
+                {"message": "You do not have permission to access this resource"}, status=403
+            )
+        sessions = QuizSession.objects.filter(quiz=quiz).order_by("start_time")
+        quiz_sessions_data = [
+            {
+                "quiz_session_id": session.id,
+                "quiz_id": session.quiz.id,
+                "quiz_name": session.quiz.title,
+                "start_time": session.start_time.isoformat() if session.start_time else None,
+                "end_time": session.start_time.isoformat() if session.end_time else None,
+                "code": session.code,
+            }
+            for session in sessions
+        ]
+
+        return JsonResponse({"quiz_sessions": quiz_sessions_data})
+
+
 class NextQuestionAPIView(APIView):
     def get(self, request, session_code):
         try:
@@ -206,8 +242,6 @@ class StudentQuestion(APIView):
 
 
 class DeleteQuizSession(APIView):
-    permission_classes = [AllowAny]
-
     def delete(self, request, code):
         try:
             session = QuizSession.objects.get(code=code)
