@@ -73,7 +73,7 @@ class Login(APIView):
             return JsonResponse({"detail": "User Not Found!"}, status=status.HTTP_401_UNAUTHORIZED)
 
         if not user.check_password(request.data["password"]):
-            return JsonResponse({"detail": "User Not Found!"}, status=status.HTTP_401_UNAUTHORIZED)
+            return JsonResponse({"detail": "User Not Found!"}, status=status.HTTP_400_BAD_REQUEST)
         token = Token.objects.get_or_create(user=user)
         if hasattr(user, "instructor"):
             return JsonResponse(
