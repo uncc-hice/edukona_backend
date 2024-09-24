@@ -350,3 +350,13 @@ class QuizSessionsByInstructorViewTest(TestCase):
         self.assertIn(self.quiz_session1.code, str(response.content))
         self.assertIn(self.quiz_session2.code, str(response.content))
         self.assertIn(self.quiz.title, str(response.content))
+
+
+class LoginViewTest(BaseTest):
+    def test_post_login(self):
+        url = reverse("login")
+        data = {"username": "bad_username", "password": "bad_password!"}
+        response = self.client_student.post(url, data, format="json")
+        self.assertEqual(response.status_code, 401)
+        response_data = response.json()
+        self.assertEqual(response_data["detail"], "Invalid username or password!")
