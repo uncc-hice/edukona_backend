@@ -488,4 +488,6 @@ class GoogleLogin(APIView):
             return Response(result, status=status.HTTP_200_OK)
 
         except ValueError as e:
-            return Response({"message": "Invalid token"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"message": f"Invalid token: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST
+            )
