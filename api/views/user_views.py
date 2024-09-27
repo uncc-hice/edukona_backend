@@ -12,6 +12,9 @@ from rest_framework.permissions import AllowAny
 from rest_framework import status
 from rest_framework import serializers
 
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
+
 from api.models import (
     Instructor,
     UserResponse,
@@ -24,6 +27,8 @@ from api.serializers import (
     InstructorRecordingsSerializer,
     UpdateTranscriptSerializer,
     GetTranscriptResponseSerializer,
+    GoogleLoginResponseSerializer,
+    GoogleLoginRequestSerializer,
 )
 from drf_spectacular.utils import extend_schema
 from drf_spectacular.types import OpenApiTypes
@@ -437,3 +442,55 @@ class GetTranscriptView(APIView):
             )
 
         return JsonResponse({"transcript": recording.transcript}, status=status.HTTP_200_OK)
+
+
+class GoogleLogin(APIView):
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        request=GoogleLoginRequestSerializer,
+        responses={
+            200: GoogleLoginResponseSerializer,
+            400: OpenApiTypes.OBJECT,
+        },
+    )
+    def post(self, request):
+        token = request.data.get("token")
+
+        if not token:
+            return Response({"message": "Token not provided"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # Verify the Google token
+            id_info = id_token.verify_oauth2_token(
+                token, google_requests.Request(), settings.GOOGLE_CLIENT_ID
+            )
+
+            # Get the user info from the token
+            email = id_info.get("email")
+
+            # Try to get the user based on the email
+            try:
+                user = User.objects.get(email=email)
+            except User.DoesNotExist:
+                return Response(
+                    {"message": "Account does not exist. Please sign up first."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            # Generate a DRF token for the user
+            token, _ = Token.objects.get_or_create(user=user)
+            result = {
+                "token": token.key,
+                "user": {
+                    "email": user.email,
+                    "first_name": user.first_name,
+                },
+            }
+
+            return Response(result, status=status.HTTP_200_OK)
+
+        except ValueError as e:
+            return Response(
+                {"message": f"Invalid token: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST
+            )

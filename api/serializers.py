@@ -65,3 +65,11 @@ class UpdateTranscriptSerializer(serializers.Serializer):
 
 class GetTranscriptResponseSerializer(serializers.Serializer):
     transcript = serializers.CharField()
+
+
+class GoogleLoginResponseSerializer(serializers.Serializer):
+    token = serializers.CharField()
+
+
+class GoogleLoginRequestSerializer(serializers.Serializer):
+    token = serializers.CharField()

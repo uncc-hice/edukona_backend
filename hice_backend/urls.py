@@ -137,4 +137,5 @@ urlpatterns = [
         GetTranscriptView.as_view(),
         name="get-transcript",
     ),
+    path("auth/google/", GoogleLogin.as_view()),  # Route for Google login
 ]
