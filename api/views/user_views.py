@@ -468,12 +468,15 @@ class GoogleLogin(APIView):
 
             # Get the user info from the token
             email = id_info.get("email")
-            name = id_info.get("name")
 
-            # Create or get the user based on the email
-            user, created = User.objects.get_or_create(
-                email=email, defaults={"username": email, "first_name": name}
-            )
+            # Try to get the user based on the email
+            try:
+                user = User.objects.get(email=email)
+            except User.DoesNotExist:
+                return Response(
+                    {"message": "Account does not exist. Please sign up first."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
             # Generate a DRF token for the user
             token, _ = Token.objects.get_or_create(user=user)
