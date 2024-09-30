@@ -19,7 +19,7 @@ class QuizView(APIView):
             return JsonResponse({"quiz": quiz.to_json()})
         else:
             instructor = get_object_or_404(Instructor, user=request.user)
-            all_quizzes = Quiz.objects.filter(instructor=instructor)
+            all_quizzes = Quiz.objects.filter(instructor=instructor).order_by("-created_at")
             quiz_response = [quiz.to_json() for quiz in all_quizzes]
             return JsonResponse({"quizzes": quiz_response})
 
