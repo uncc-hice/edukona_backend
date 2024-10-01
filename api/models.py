@@ -98,9 +98,17 @@ class QuizSession(models.Model):
     )
 
     def generate_unique_code(self):
-        length = 6
+        length = 5
+        allowed_characters = "".join(
+            [
+                c
+                for c in string.ascii_uppercase + string.digits
+                if c not in {"I", "o", "O", "l", "0"}
+            ]
+        )
+
         while True:
-            code = "".join(random.choices(string.ascii_uppercase + string.digits, k=length))
+            code = "".join(random.choices(allowed_characters, k=length))
             if not QuizSession.objects.filter(code=code).exists():
                 return code
 
