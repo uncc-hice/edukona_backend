@@ -7,7 +7,7 @@ from api.serializers import QuizSerializer
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
 
-from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiExample
+from drf_spectacular.utils import extend_schema, OpenApiResponse
 
 
 class QuizView(APIView):
