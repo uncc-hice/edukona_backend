@@ -30,12 +30,6 @@ class InstructorSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-class QuizSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Quiz
-        fields = "__all__"
-
-
 class QuestionMultipleChoiceSerializer(serializers.ModelSerializer):
     class Meta:
         model = QuestionMultipleChoice
