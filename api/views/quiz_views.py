@@ -1,10 +1,25 @@
 from rest_framework.views import APIView
 from api.models import *
+from api.serializers import QuizSerializer
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
 
+from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiExample
+
 
 class QuizView(APIView):
+    @extend_schema(
+        request=QuizSerializer,
+        responses={
+            201: OpenApiResponse(
+                description="Quiz created successfully",
+            ),
+            400: OpenApiResponse(description="Bad Request"),
+            404: OpenApiResponse(description="Instructor not found"),
+        },
+        summary="Create a new Quiz",
+        description="Creates a new Quiz associated with the authenticated Instructor.",
+    )
     def post(self, request):
         settings = request.data.pop("settings", {})
         instructor = get_object_or_404(Instructor, user=request.user)
