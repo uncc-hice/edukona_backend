@@ -77,7 +77,7 @@ class SettingsSerializer(serializers.ModelSerializer):
 
 
 class QuizSerializer(serializers.ModelSerializer):
-    settings = SettingsSerializer()
+    settings = SettingsSerializer(required=False, allow_null=True)
     instructor_recording = serializers.PrimaryKeyRelatedField(
         queryset=InstructorRecordings.objects.all(), required=False, allow_null=True
     )
