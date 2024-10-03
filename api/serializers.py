@@ -51,7 +51,7 @@ class QuizSessionStudentSerializer(serializers.ModelSerializer):
 class InstructorRecordingsSerializer(serializers.ModelSerializer):
     class Meta:
         model = InstructorRecordings
-        fields = ["id", "s3_path", "uploaded_at", "instructor", "transcript"]
+        fields = ["id", "s3_path", "uploaded_at", "instructor", "transcript", "title"]
 
 
 class UpdateTranscriptSerializer(serializers.Serializer):
