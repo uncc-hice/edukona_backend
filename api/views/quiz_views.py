@@ -1,17 +1,40 @@
 from rest_framework.views import APIView
+from rest_framework import status
+from rest_framework.response import Response
+
 from api.models import *
+from api.serializers import QuizSerializer
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
 
+from drf_spectacular.utils import extend_schema, OpenApiResponse
+
 
 class QuizView(APIView):
+    @extend_schema(
+        request=QuizSerializer,
+        responses={
+            201: OpenApiResponse(
+                description="Quiz created successfully",
+            ),
+            400: OpenApiResponse(description="Bad Request"),
+            404: OpenApiResponse(description="Instructor not found"),
+        },
+        summary="Create a new Quiz",
+        description="Creates a new Quiz associated with the authenticated Instructor.",
+    )
     def post(self, request):
-        settings = request.data.pop("settings", {})
-        instructor = get_object_or_404(Instructor, user=request.user)
-        new_quiz = Quiz.objects.create(instructor=instructor, **request.data)
-        new_quiz.settings = Settings.objects.create(**settings)
-        new_quiz.save()
-        return JsonResponse({"message": "Quiz created successfully", "quiz_id": new_quiz.id})
+        """
+        Create a new Quiz.
+        """
+        serializer = QuizSerializer(data=request.data, context={"request": request})
+        if serializer.is_valid():
+            quiz = serializer.save()
+            return Response(
+                {"message": "Quiz created successfully", "quiz_id": quiz.id},
+                status=status.HTTP_201_CREATED,
+            )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def get(self, request, quiz_id=None):
         if quiz_id:

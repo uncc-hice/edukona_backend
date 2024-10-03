@@ -143,7 +143,7 @@ class QuizViewTest(BaseTest):
 
         response = self.client_instructor.post(url, data, format="json")
 
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 201)
         response_data = response.json()
         self.assertEqual(response_data["message"], "Quiz created successfully")
         new_quiz = Quiz.objects.get(id=response_data["quiz_id"])

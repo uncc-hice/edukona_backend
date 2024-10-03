@@ -8,6 +8,7 @@ from .models import (
     UserResponse,
     QuizSessionStudent,
     InstructorRecordings,
+    Settings,
 )
 
 
@@ -26,12 +27,6 @@ class StudentSerializer(serializers.ModelSerializer):
 class InstructorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Instructor
-        fields = "__all__"
-
-
-class QuizSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Quiz
         fields = "__all__"
 
 
@@ -73,3 +68,42 @@ class GoogleLoginResponseSerializer(serializers.Serializer):
 
 class GoogleLoginRequestSerializer(serializers.Serializer):
     token = serializers.CharField()
+
+
+class SettingsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Settings
+        fields = "__all__"
+
+
+class QuizSerializer(serializers.ModelSerializer):
+    settings = SettingsSerializer(required=False, allow_null=True)
+    instructor_recording = serializers.PrimaryKeyRelatedField(
+        queryset=InstructorRecordings.objects.all(), required=False, allow_null=True
+    )
+
+    class Meta:
+        model = Quiz
+        fields = [
+            "id",
+            "title",
+            "start_time",
+            "end_time",
+            "settings",
+            "instructor_recording",
+            "created_at",
+        ]
+        read_only_fields = ["id", "created_at"]
+
+    def create(self, validated_data):
+        settings_data = validated_data.pop("settings", {})
+        settings = Settings.objects.create(**settings_data)
+        instructor = self.context["request"].user.instructor
+        quiz = Quiz.objects.create(instructor=instructor, settings=settings, **validated_data)
+        return quiz
+
+    def update(self, instance, validated_data):
+        settings_data = validated_data.pop("settings", None)
+        if settings_data:
+            SettingsSerializer().update(instance.settings, settings_data)
+        return super().update(instance, validated_data)

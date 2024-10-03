@@ -40,6 +40,20 @@ class Settings(models.Model):
         }
 
 
+class InstructorRecordings(models.Model):
+    id = models.UUIDField(
+        primary_key=True, default=uuid.uuid4, editable=False
+    )  # UUID as the primary key
+    s3_path = models.CharField(max_length=200, default="")
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    instructor = models.ForeignKey(Instructor, on_delete=models.CASCADE)
+    transcript = models.TextField(default="")
+    title = models.CharField(max_length=250, default="")
+
+    class Meta:
+        db_table = "api_instructor_recordings"
+
+
 class Quiz(models.Model):
     title = models.CharField(max_length=200)
     instructor = models.ForeignKey(Instructor, on_delete=models.CASCADE, null=True)
@@ -47,6 +61,10 @@ class Quiz(models.Model):
     start_time = models.DateTimeField(null=True, blank=True)
     end_time = models.DateTimeField(null=True, blank=True)
     settings = models.ForeignKey(Settings, on_delete=models.CASCADE, null=True, related_name="quiz")
+
+    instructor_recording = models.ForeignKey(
+        InstructorRecordings, on_delete=models.CASCADE, null=True
+    )
 
     def to_json(self):
         return {
@@ -56,6 +74,9 @@ class Quiz(models.Model):
             "created_at": self.created_at,
             "start_time": self.start_time,
             "end_time": self.end_time,
+            "instructor_recording_id": (
+                self.instructor_recording.id if self.instructor_recording else None
+            ),
         }
 
 
@@ -153,17 +174,3 @@ class UserResponse(models.Model):
 
     class Meta:
         db_table = "api_user_response"
-
-
-class InstructorRecordings(models.Model):
-    id = models.UUIDField(
-        primary_key=True, default=uuid.uuid4, editable=False
-    )  # UUID as the primary key
-    s3_path = models.CharField(max_length=200, default="")
-    uploaded_at = models.DateTimeField(auto_now_add=True)
-    instructor = models.ForeignKey(Instructor, on_delete=models.CASCADE)
-    transcript = models.TextField(default="")
-    title = models.CharField(max_length=250, default="")
-
-    class Meta:
-        db_table = "api_instructor_recordings"
