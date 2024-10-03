@@ -74,7 +74,9 @@ class Quiz(models.Model):
             "created_at": self.created_at,
             "start_time": self.start_time,
             "end_time": self.end_time,
-            "instructor_recording_id": self.instructor_recording.id,
+            "instructor_recording_id": (
+                self.instructor_recording.id if self.instructor_recording else None
+            ),
         }
 
 
