@@ -249,7 +249,9 @@ class UploadAudioView(APIView):
     @transaction.atomic
     def post(self, request, *args, **kwargs):
         instructor = get_object_or_404(Instructor, user=request.user)
-        title = request.data["title"]
+        title = ""
+        if "title" in request.data:
+            title = request.data["title"]
         # Create the recording instance first to get the ID
         new_recording = InstructorRecordings.objects.create(instructor=instructor, title=title)
 
