@@ -77,6 +77,8 @@ class Quiz(models.Model):
             "instructor_recording_id": (
                 self.instructor_recording.id if self.instructor_recording else None
             ),
+            "num_sessions": self.sessions.count(),
+            "num_questions": self.questions.count(),
         }
 
 
@@ -85,7 +87,7 @@ class QuestionMultipleChoice(models.Model):
     incorrect_answer_list = models.JSONField()
     correct_answer = models.CharField(max_length=500)
     points = models.IntegerField(default=1)
-    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE)
+    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name="questions")
 
     class Meta:
         db_table = "api_question_multiple_choice"
