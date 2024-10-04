@@ -112,7 +112,7 @@ class QuizSession(models.Model):
     )
     current_question = models.ForeignKey(
         QuestionMultipleChoice,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         null=True,
         blank=True,
         related_name="current_in_sessions",
