@@ -31,6 +31,8 @@ class InstructorSerializer(serializers.ModelSerializer):
 
 
 class QuestionMultipleChoiceSerializer(serializers.ModelSerializer):
+    quiz = serializers.PrimaryKeyRelatedField(queryset=Quiz.objects.all())
+
     class Meta:
         model = QuestionMultipleChoice
         fields = "__all__"
