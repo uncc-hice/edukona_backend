@@ -6,10 +6,19 @@ from rest_framework import status
 from api.serializers import (
     QuestionMultipleChoiceSerializer,
 )
+from rest_framework import serializers
 from django.http import JsonResponse
+from drf_spectacular.utils import extend_schema, OpenApiResponse
 
 
 class QuestionView(APIView):
+    @extend_schema(
+        request=QuestionMultipleChoiceSerializer(many=True),
+        responses={
+            201: OpenApiResponse(description="Questions created successfully"),
+            400: OpenApiResponse(description="Bad Request"),
+        },
+    )
     def post(self, request):
         # Expecting request.data to be a list of questions
         if not isinstance(request.data, list):
@@ -21,17 +30,16 @@ class QuestionView(APIView):
         created_questions = []
         errors = []
 
-        with transaction.atomic():  # Use a transaction to ensure all or nothing is created
+        with transaction.atomic():
             for question_data in request.data:
                 try:
-                    new_question = QuestionMultipleChoice.objects.create(**question_data)
-                    created_questions.append(
-                        {
-                            "question_id": new_question.id,
-                            "message": "Question created successfully",
-                        }
-                    )
-                except Exception as e:  # Catch exceptions from invalid data or database errors
+                    serializer = QuestionMultipleChoiceSerializer(data=question_data)
+                    serializer.is_valid(raise_exception=True)
+                    serializer.save()
+                    created_questions.append(serializer.data)
+                except serializers.ValidationError as e:
+                    errors.append({"question_data": question_data, "error": e.detail})
+                except Exception as e:
                     errors.append({"question_data": question_data, "error": str(e)})
 
         if errors:
@@ -41,11 +49,8 @@ class QuestionView(APIView):
             )
 
         return JsonResponse(
-            {
-                "created_questions": created_questions,
-                "message": "All questions created successfully",
-            },
-            status=status.HTTP_201_CREATED,
+            {"created_questions": created_questions, "errors": errors},
+            status=status.HTTP_400_BAD_REQUEST,
         )
 
     # Get method to question by id
