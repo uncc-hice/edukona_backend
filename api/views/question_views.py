@@ -57,7 +57,7 @@ class QuestionView(APIView):
     def get(self, request, question_id):
         question = get_object_or_404(QuestionMultipleChoice, id=question_id)
         serializer = QuestionMultipleChoiceSerializer(question)
-        return JsonResponse({"question": serializer.data})
+        return JsonResponse(serializer.data)
 
     # Put method to update text of a question by taking in an id
     def put(self, request, question_id):
