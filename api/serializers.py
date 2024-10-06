@@ -31,9 +31,18 @@ class InstructorSerializer(serializers.ModelSerializer):
 
 
 class QuestionMultipleChoiceSerializer(serializers.ModelSerializer):
+    quiz_id = serializers.PrimaryKeyRelatedField(queryset=Quiz.objects.all(), source="quiz")
+
     class Meta:
         model = QuestionMultipleChoice
-        fields = "__all__"
+        fields = [
+            "id",
+            "question_text",
+            "incorrect_answer_list",
+            "correct_answer",
+            "points",
+            "quiz_id",
+        ]
 
 
 class UserResponseSerializer(serializers.ModelSerializer):
