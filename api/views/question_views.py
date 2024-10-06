@@ -50,7 +50,7 @@ class QuestionView(APIView):
 
         return JsonResponse(
             {"created_questions": created_questions, "errors": errors},
-            status=status.HTTP_400_BAD_REQUEST,
+            status=status.HTTP_201_CREATED,
         )
 
     # Get method to question by id
