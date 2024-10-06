@@ -230,14 +230,14 @@ class QuestionViewTest(BaseTest):
                 "incorrect_answer_list": self.new_question.incorrect_answer_list,
                 "correct_answer": self.new_question.correct_answer,
                 "points": self.new_question.points,
-                "quiz": self.new_question.quiz.id,
+                "quiz_id": self.new_question.quiz.id,
             },
             self.second_new_question.id: {
                 "question_text": self.second_new_question.question_text,
                 "incorrect_answer_list": self.second_new_question.incorrect_answer_list,
                 "correct_answer": self.second_new_question.correct_answer,
                 "points": self.second_new_question.points,
-                "quiz": self.second_new_question.quiz.id,
+                "quiz_id": self.second_new_question.quiz.id,
             },
         }
 
@@ -253,7 +253,7 @@ class QuestionViewTest(BaseTest):
                 )
                 self.assertEqual(question["correct_answer"], expected["correct_answer"])
                 self.assertEqual(question["points"], expected["points"])
-                self.assertEqual(question["quiz"], expected["quiz"])
+                self.assertEqual(question["quiz_id"], expected["quiz_id"])
 
     def test_put_question(self):
         url = reverse("question-detail", kwargs={"question_id": self.new_question.id})
