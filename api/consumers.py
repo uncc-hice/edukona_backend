@@ -249,24 +249,25 @@ class StudentConsumer(AsyncWebsocketConsumer):
         data = data["data"]
         student_data = data.get("student", {})
         student_id = student_data.get("id")
-        print(student_id)
         student = QuizSessionStudent.objects.get(id=student_id)
         question = QuestionMultipleChoice.objects.get(id=data["question_id"])
         selected_answer = data.get("selected_answer")
         quiz_session = QuizSession.objects.get(code=data["quiz_session_code"])
 
         is_correct = selected_answer == question.correct_answer
-        new_user_response = UserResponse.objects.create(
+        user_response, created = UserResponse.objects.get_or_create(
             student=student,
-            is_correct=is_correct,
             quiz_session=quiz_session,
             question=question,
-            selected_answer=selected_answer,
         )
+        user_response.selected_answer = selected_answer
+        user_response.is_correct = is_correct
+
+        user_response.save()
 
         return {
             "message": "User response created successfully",
-            "response_id": new_user_response.id,
+            "response_id": user_response.id,
             "is_correct": is_correct,
         }
 
