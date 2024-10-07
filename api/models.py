@@ -88,6 +88,7 @@ class QuestionMultipleChoice(models.Model):
     correct_answer = models.CharField(max_length=500)
     points = models.IntegerField(default=1)
     quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name="questions")
+    duration = models.IntegerField(default=20)
 
     class Meta:
         db_table = "api_question_multiple_choice"
@@ -100,6 +101,7 @@ class QuestionMultipleChoice(models.Model):
             "correct_answer": self.correct_answer,
             "points": self.points,
             "quiz_id": self.quiz.id,
+            "duration": self.duration,
         }
 
 
