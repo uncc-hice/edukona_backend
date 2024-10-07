@@ -50,21 +50,14 @@ class QuestionView(APIView):
 
         return JsonResponse(
             {"created_questions": created_questions, "errors": errors},
-            status=status.HTTP_400_BAD_REQUEST,
+            status=status.HTTP_201_CREATED,
         )
 
     # Get method to question by id
     def get(self, request, question_id):
         question = get_object_or_404(QuestionMultipleChoice, id=question_id)
-        question_dict = {
-            "id": question.id,
-            "question_text": question.question_text,
-            "incorrect_answer_list": question.incorrect_answer_list,
-            "correct_answer": question.correct_answer,
-            "points": question.points,
-            "quiz_id": question.quiz.id,
-        }
-        return JsonResponse({"questions": question_dict})
+        serializer = QuestionMultipleChoiceSerializer(question)
+        return JsonResponse(serializer.data)
 
     # Put method to update text of a question by taking in an id
     def put(self, request, question_id):

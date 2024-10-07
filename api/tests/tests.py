@@ -198,20 +198,18 @@ class QuestionViewTest(BaseTest):
         self.assertEqual(response.status_code, 200)
 
         response_data = response.json()
-        self.assertEqual(response_data["questions"]["id"], self.new_question.id)
+        self.assertEqual(response_data["id"], self.new_question.id)
+        self.assertEqual(response_data["question_text"], self.new_question.question_text)
         self.assertEqual(
-            response_data["questions"]["question_text"], self.new_question.question_text
-        )
-        self.assertEqual(
-            response_data["questions"]["incorrect_answer_list"],
+            response_data["incorrect_answer_list"],
             self.new_question.incorrect_answer_list,
         )
         self.assertEqual(
-            response_data["questions"]["correct_answer"],
+            response_data["correct_answer"],
             self.new_question.correct_answer,
         )
-        self.assertEqual(response_data["questions"]["points"], self.new_question.points)
-        self.assertEqual(response_data["questions"]["quiz_id"], self.new_question.quiz.id)
+        self.assertEqual(response_data["points"], self.new_question.points)
+        self.assertEqual(response_data["quiz_id"], self.new_question.quiz.id)
 
     def test_get_all_questions(self):
         all_questions_url = reverse("all-questions", kwargs={"quiz_id": self.new_quiz.id})
