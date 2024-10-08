@@ -210,6 +210,26 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
             text_data=json.dumps({"type": "user_response", "response": event["response"]})
         )
 
+    @database_sync_to_async
+    def fetch_question_results(self, question_id):
+        responses = UserResponse.objects.all().filter(
+            quiz_session__code=self.code, question_id=question_id
+        )
+        answers = responses.distinct("selected_answer")
+        answer_counts = {}
+
+        for response in answers:
+            answer_counts[response.selected_answer] = responses.filter(
+                selected_answer=response.selected_answer
+            ).count()
+
+        return {"total_responses": responses.count(), "answers": answer_counts}
+
+    async def update_answers(self, event):
+        print("question_id")
+        results = await self.fetch_question_results(event["question_id"])
+        await self.send(text_data=json.dumps({"type": "update_answers", "data": results}))
+
 
 class StudentConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -232,6 +252,14 @@ class StudentConsumer(AsyncWebsocketConsumer):
 
     async def submit_response(self, data):
         response = await self.create_user_response(data)
+
+        await self.channel_layer.group_send(
+            f"quiz_session_instructor_{self.code}",
+            {
+                "type": "update_answers",
+                "question_id": response["question_id"],
+            },
+        )
         await self.channel_layer.group_send(
             f"quiz_session_instructor_{self.code}",
             {
@@ -268,6 +296,7 @@ class StudentConsumer(AsyncWebsocketConsumer):
         return {
             "message": "User response created successfully",
             "response_id": user_response.id,
+            "question_id": data["question_id"],
             "is_correct": is_correct,
         }
 
@@ -498,7 +527,8 @@ class RecordingConsumer(AsyncWebsocketConsumer):
                 if recording_id and transcript_status:
                     # Broadcast the event to all clients in the group (i.e. this will be sent to the front-end)
                     await self.channel_layer.group_send(
-                        self.group_name, {"type": "transcript_completed_event", "message": data}
+                        self.group_name,
+                        {"type": "transcript_completed_event", "message": data},
                     )
                 else:
                     # Send error if required fields are missing
@@ -513,7 +543,8 @@ class RecordingConsumer(AsyncWebsocketConsumer):
                 if recording_id and quiz_creation_status:
                     # Broadcast the event to all clients in the group (i.e. this will be sent to the front-end)
                     await self.channel_layer.group_send(
-                        self.group_name, {"type": "quiz_creation_completed_event", "message": data}
+                        self.group_name,
+                        {"type": "quiz_creation_completed_event", "message": data},
                     )
                 else:
                     # Send error if required fields are missing
