@@ -210,7 +210,22 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
             text_data=json.dumps({"type": "user_response", "response": event["response"]})
         )
 
+    @database_sync_to_async
+    def fetch_question_results(self, question_id):
+        session = QuizSession.objects.get(code=self.code)
+        question = QuestionMultipleChoice.objects.get(question_id)
+        responses = UserResponse.objects.all().filter(quiz_session=session, question=question)
+        answers = responses.distinct("selected_answer")
+        answer_counts = {}
+
+        for response in answers:
+            answer_counts[response.selected_answer] = responses.filter(selected_answer=response.selected_answer).count()
+
+        return {"total_responses": responses.count(), "answers": answer_counts}
+
+
     async def update_answers(self, event):
+        await self.fetch_question_results(event["quesion_id"])
         await self.send(
             text_data=json.dumps({"type": "update_answers", "data": event["data"]})
         )
@@ -242,10 +257,7 @@ class StudentConsumer(AsyncWebsocketConsumer):
             f"quiz_session_instructor_{self.code}",
             {
                 "type": "update_answers",
-                "data": {
-                    "total_responses": response["total_responses"],
-                    "answers": response["answers"],
-                },
+                "data": data.question_id,
             },
         )
         await self.channel_layer.group_send(
@@ -281,19 +293,11 @@ class StudentConsumer(AsyncWebsocketConsumer):
 
         user_response.save()
 
-        responses = UserResponse.objects.filter(question=question, quiz_session=quiz_session)
-        answers = responses.distinct("selected_answer")
-        answer_counts = {}
-
-        for response in answers:
-            answer_counts[response.selected_answer] = responses.filter(selected_answer=response.selected_answer).count()
-
         return {
             "message": "User response created successfully",
             "response_id": user_response.id,
+            "question_id": data["question_id"],
             "is_correct": is_correct,
-            "total_responses": responses.count(),
-            "answers": answer_counts,
         }
 
     @database_sync_to_async
