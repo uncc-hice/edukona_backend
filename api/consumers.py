@@ -213,7 +213,7 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def fetch_question_results(self, question_id):
         session = QuizSession.objects.get(code=self.code)
-        question = QuestionMultipleChoice.objects.get(question_id)
+        question = QuestionMultipleChoice.objects.get(id=question_id)
         responses = UserResponse.objects.all().filter(quiz_session=session, question=question)
         answers = responses.distinct("selected_answer")
         answer_counts = {}
@@ -225,9 +225,10 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
 
 
     async def update_answers(self, event):
-        await self.fetch_question_results(event["quesion_id"])
+        print("question_id")
+        results = await self.fetch_question_results(event["question_id"])
         await self.send(
-            text_data=json.dumps({"type": "update_answers", "data": event["data"]})
+            text_data=json.dumps({"type": "update_answers", "data": results})
         )
 
 
@@ -257,7 +258,7 @@ class StudentConsumer(AsyncWebsocketConsumer):
             f"quiz_session_instructor_{self.code}",
             {
                 "type": "update_answers",
-                "data": data.question_id,
+                "question_id": response["question_id"],
             },
         )
         await self.channel_layer.group_send(
