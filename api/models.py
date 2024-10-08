@@ -111,9 +111,14 @@ class QuizSession(models.Model):
     end_time = models.DateTimeField(null=True, blank=True)
     quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name="sessions", null=True)
     question_colors = models.JSONField(null=True, blank=True, default=dict)
+
     served_questions = models.ManyToManyField(
-        QuestionMultipleChoice, related_name="served_in_sessions", blank=True
+        QuestionMultipleChoice,
+        related_name="served_in_sessions",
+        blank=True,
+        through="QuizSessionQuestion",
     )
+
     current_question = models.ForeignKey(
         QuestionMultipleChoice,
         on_delete=models.SET_NULL,
@@ -178,3 +183,17 @@ class UserResponse(models.Model):
 
     class Meta:
         db_table = "api_user_response"
+
+
+class QuizSessionQuestion(models.Model):
+    quiz_session = models.ForeignKey(
+        QuizSession, on_delete=models.CASCADE, related_name="quiz_session_questions"
+    )
+    question = models.ForeignKey(
+        QuestionMultipleChoice, on_delete=models.CASCADE, related_name="quiz_session_questions"
+    )
+    skipped = models.BooleanField(default=False)
+
+    class Meta:
+        db_table = "api_quiz_session_question"
+        unique_together = ("quiz_session", "question")
