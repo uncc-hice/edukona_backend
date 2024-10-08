@@ -227,7 +227,7 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def fetch_question_results(self, question_id):
         responses = UserResponse.objects.all().filter(
-            quiz_session_code=self.code, question_id=question_id
+            quiz_session__code=self.code, question_id=question_id
         )
         answers = responses.distinct("selected_answer")
         answer_counts = {}
