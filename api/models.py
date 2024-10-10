@@ -193,6 +193,7 @@ class QuizSessionQuestion(models.Model):
         QuestionMultipleChoice, on_delete=models.CASCADE, related_name="quiz_session_questions"
     )
     skipped = models.BooleanField(default=False)
+    unlocked = models.BooleanField(default=False)
 
     class Meta:
         db_table = "api_quiz_session_question"
