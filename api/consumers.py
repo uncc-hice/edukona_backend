@@ -262,7 +262,7 @@ class StudentConsumer(AsyncWebsocketConsumer):
     async def submit_response(self, data):
         response = await self.create_user_response(data)
 
-        if not "type" in response:
+        if "type" not in response:
             await self.channel_layer.group_send(
                 f"quiz_session_instructor_{self.code}",
                 {
