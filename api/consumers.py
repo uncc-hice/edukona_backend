@@ -139,13 +139,6 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
             return session.current_question.to_json()
         return None
 
-    def set_question_open(self, question: QuestionMultipleChoice):
-        quiz_session_question, created = QuizSessionQuestion.objects.get_or_create(
-            question=question, quiz_session__code=self.code
-        )
-        quiz_session_question.opened_at = timezone.now()
-        quiz_session_question.save()
-
     @database_sync_to_async
     def fetch_next_question(self):
         session = QuizSession.objects.get(code=self.code)
@@ -159,7 +152,6 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
             session.served_questions.add(next_question)
             session.current_question = next_question
             session.save()
-            self.set_question_open(session.current_question)
             return next_question.to_json()
         return None
 
@@ -262,7 +254,7 @@ class StudentConsumer(AsyncWebsocketConsumer):
     async def submit_response(self, data):
         response = await self.create_user_response(data)
 
-        if "type" not in response:
+        if response["status"] == "success":
             await self.channel_layer.group_send(
                 f"quiz_session_instructor_{self.code}",
                 {
@@ -314,6 +306,7 @@ class StudentConsumer(AsyncWebsocketConsumer):
 
         if not self.is_question_open(question):
             return {
+                "status": "failed",
                 "type": "question_locked",
                 "question_id": question.id,
             }
@@ -330,6 +323,7 @@ class StudentConsumer(AsyncWebsocketConsumer):
         user_response.save()
 
         return {
+            "status": "success",
             "message": "User response created successfully",
             "response_id": user_response.id,
             "question_id": data["question_id"],
