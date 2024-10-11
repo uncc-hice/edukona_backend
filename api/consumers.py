@@ -295,6 +295,7 @@ class StudentConsumer(AsyncWebsocketConsumer):
             logger.error(
                 f"Multiple QuizSessionQuestion objects returned for unique combination. question_id={question.id} session_code={self.code}"
             )
+            return False
 
         extension = datetime.timedelta(seconds=quiz_session_question.extension)
         adjusted_open_time = quiz_session_question.opened_at + extension
