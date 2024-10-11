@@ -293,7 +293,8 @@ class StudentConsumer(AsyncWebsocketConsumer):
             return False
         except QuizSessionQuestion.MultipleObjectsReturned:
             logger.error(
-                f"Multiple QuizSessionQuestion objects returned for unique combination. question_id={question.id} session_code={self.code}"
+                f"Multiple QuizSessionQuestion objects returned for unique combination. \
+                question_id={question.id} session_code={self.code}"
             )
             return False
 
