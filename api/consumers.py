@@ -1,6 +1,7 @@
 import json
 import logging
 import random
+import datetime
 
 from channels.generic.websocket import AsyncWebsocketConsumer
 from django.utils import timezone
@@ -14,6 +15,7 @@ from api.models import (
     QuizSessionStudent,
     UserResponse,
     QuestionMultipleChoice,
+    QuizSessionQuestion,
 )
 
 logger = logging.getLogger(__name__)
@@ -226,7 +228,6 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
         return {"total_responses": responses.count(), "answers": answer_counts}
 
     async def update_answers(self, event):
-        print("question_id")
         results = await self.fetch_question_results(event["question_id"])
         await self.send(text_data=json.dumps({"type": "update_answers", "data": results}))
 
@@ -253,24 +254,45 @@ class StudentConsumer(AsyncWebsocketConsumer):
     async def submit_response(self, data):
         response = await self.create_user_response(data)
 
-        await self.channel_layer.group_send(
-            f"quiz_session_instructor_{self.code}",
-            {
-                "type": "update_answers",
-                "question_id": response["question_id"],
-            },
-        )
-        await self.channel_layer.group_send(
-            f"quiz_session_instructor_{self.code}",
-            {
-                "type": "user_response",
-                "response": data.get("data").get("selected_answer"),
-            },
-        )
+        if response["status"] == "success":
+            await self.channel_layer.group_send(
+                f"quiz_session_instructor_{self.code}",
+                {
+                    "type": "update_answers",
+                    "question_id": response["question_id"],
+                },
+            )
+            await self.channel_layer.group_send(
+                f"quiz_session_instructor_{self.code}",
+                {
+                    "type": "user_response",
+                    "response": data.get("data").get("selected_answer"),
+                },
+            )
+
+            await self.check_and_grant_skip_power_up(data["data"]["student"]["id"])
         await self.send(text_data=json.dumps(response))
 
-        print(data)
-        await self.check_and_grant_skip_power_up(data["data"]["student"]["id"])
+    def is_question_open(self, question: QuestionMultipleChoice):
+        try:
+            quiz_session_question = QuizSessionQuestion.objects.get(
+                question=question, quiz_session__code=self.code
+            )
+        except QuizSessionQuestion.DoesNotExist:
+            logger.warn(
+                f"Attempt to check if non existant question is open. question_id={question.id} session_code={self.code}"
+            )
+            return False
+        except QuizSessionQuestion.MultipleObjectsReturned:
+            logger.error(
+                f"Multiple QuizSessionQuestion objects returned for unique combination. \
+                question_id={question.id} session_code={self.code}"
+            )
+            return False
+
+        extension = datetime.timedelta(seconds=quiz_session_question.extension)
+        adjusted_open_time = quiz_session_question.opened_at + extension
+        return (timezone.now() - adjusted_open_time).seconds < question.duration
 
     @database_sync_to_async
     def create_user_response(self, data):
@@ -281,6 +303,13 @@ class StudentConsumer(AsyncWebsocketConsumer):
         question = QuestionMultipleChoice.objects.get(id=data["question_id"])
         selected_answer = data.get("selected_answer")
         quiz_session = QuizSession.objects.get(code=data["quiz_session_code"])
+
+        if not self.is_question_open(question):
+            return {
+                "status": "failed",
+                "type": "question_locked",
+                "question_id": question.id,
+            }
 
         is_correct = selected_answer == question.correct_answer
         user_response, created = UserResponse.objects.get_or_create(
@@ -294,6 +323,7 @@ class StudentConsumer(AsyncWebsocketConsumer):
         user_response.save()
 
         return {
+            "status": "success",
             "message": "User response created successfully",
             "response_id": user_response.id,
             "question_id": data["question_id"],

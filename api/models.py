@@ -194,7 +194,7 @@ class QuizSessionQuestion(models.Model):
     )
     skipped = models.BooleanField(default=False)
     unlocked = models.BooleanField(default=True)
-    opened_at = models.DateTimeField(null=True)
+    opened_at = models.DateTimeField(null=True, auto_now_add=True)
     extension = models.IntegerField(default=0)
 
     class Meta:
