@@ -187,6 +187,9 @@ class QuizSessionsByQuizView(APIView):
                 "start_time": session.start_time.isoformat() if session.start_time else None,
                 "end_time": session.start_time.isoformat() if session.end_time else None,
                 "code": session.code,
+                "num_of_participants": QuizSessionStudent.objects.filter(
+                    quiz_session__code=session.code
+                ).count(),
             }
             for session in sessions
         ]
