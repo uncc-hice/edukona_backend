@@ -244,15 +244,13 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
 
     async def add_to_duration(self, question_id, extension: int):
         quiz_session_question = await self.add_to_duration_db(question_id, extension)
-        await self.send(
-            text_data=json.dumps(
-                {
-                    "type": "added_time",
-                    "question_opened_at": quiz_session_question.opened_at.isoformat(),
-                    "extension": quiz_session_question.extension,
-                }
-            )
-        )
+        response = {
+            "type": "time_extended",
+            "question_opened_at": quiz_session_question.opened_at.isoformat(),
+            "extension": quiz_session_question.extension,
+        }
+        await self.channel_layer.group_send(f"quiz_session_{self.code}", response)
+        await self.send(text_data=json.dumps(response))
 
 
 class StudentConsumer(AsyncWebsocketConsumer):
@@ -402,6 +400,9 @@ class StudentConsumer(AsyncWebsocketConsumer):
 
     async def quiz_started(self, event):
         await self.send(text_data=json.dumps({"type": "quiz_started"}))
+
+    async def time_extended(self, event):
+        await self.send(text_data=json.dumps(event))
 
     @database_sync_to_async
     def get_student(self, student_id):
