@@ -62,6 +62,8 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
                 await self.send_current_question()
             elif data["type"] == "delete_student":
                 await self.delete_student(data["username"])
+            elif data["type"] == "increase_duration":
+                await self.add_to_duration(data["question_id"], data["extension"])
 
     async def send_student_question_and_order(self, data):
         order = data.get("order")
@@ -230,6 +232,27 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
     async def update_answers(self, event):
         results = await self.fetch_question_results(event["question_id"])
         await self.send(text_data=json.dumps({"type": "update_answers", "data": results}))
+
+    @database_sync_to_async
+    def add_to_duration_db(self, question_id, extension: int):
+        quiz_session_question = QuizSessionQuestion.objects.get(
+            quiz_session__code=self.code, question__id=question_id
+        )
+        quiz_session_question.extension += extension
+        quiz_session_question.save()
+        return quiz_session_question
+
+    async def add_to_duration(self, question_id, extension: int):
+        quiz_session_question = await self.add_to_duration_db(question_id, extension)
+        await self.send(
+            text_data=json.dumps(
+                {
+                    "type": "added_time",
+                    "question_opened_at": quiz_session_question.opened_at.isoformat(),
+                    "extension": quiz_session_question.extension,
+                }
+            )
+        )
 
 
 class StudentConsumer(AsyncWebsocketConsumer):
