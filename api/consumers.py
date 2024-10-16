@@ -344,6 +344,8 @@ class StudentConsumer(AsyncWebsocketConsumer):
             )
             return False
 
+        if not quiz_session_question.unlocked:
+            return False
         extension = datetime.timedelta(seconds=quiz_session_question.extension)
         adjusted_open_time = quiz_session_question.opened_at + extension
         return (timezone.now() - adjusted_open_time).seconds < question.duration
