@@ -62,8 +62,6 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
                 await self.send_current_question()
             elif data["type"] == "delete_student":
                 await self.delete_student(data["username"])
-            elif data["type"] == "skip_question":
-                await self.skip_question(data["question_id"])
 
     async def send_student_question_and_order(self, data):
         order = data.get("order")
@@ -232,58 +230,6 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
     async def update_answers(self, event):
         results = await self.fetch_question_results(event["question_id"])
         await self.send(text_data=json.dumps({"type": "update_answers", "data": results}))
-
-    @database_sync_to_async
-    def skip_question_db(self, question_id):
-        quiz_session_question = QuizSessionQuestion.objects.get(
-            question__id=question_id, quiz_session__code=self.code
-        )
-        quiz_session_question.skipped = True
-        quiz_session_question.unlocked = False
-        quiz_session_question.save()
-
-        question = QuestionMultipleChoice.objects.get(id=question_id)
-
-        # Collect existing responses for question
-        responses = UserResponse.objects.filter(question=question, quiz_session__code=self.code)
-
-        # set existing responses to skipped
-        for response in responses:
-            response.skipped_question = True
-
-        # collect the usernames of all students who answered
-        answered_students = responses.values_list("student__username", flat=True)
-
-        # get all students who haven't answered
-        unanswered_students = QuizSessionStudent.objects.filter(
-            quiz_session__code=self.code
-        ).exclude(username__in=list(answered_students))
-
-        # create new skipped responses for students who haven't answered
-        response_list = list(responses)
-        for student in unanswered_students:
-            response = UserResponse()
-            response.student = student
-            response.skipped_question = True
-            response.question = question
-            response_list.append(response)
-
-        # update existing user responses and create new ones
-        num_updated = UserResponse.objects.bulk_create(
-            response_list,
-            update_conflicts=True,
-            update_fields=["question", "skipped_question"],
-            unique_fields=["id"],
-        )
-        return len(num_updated)
-
-    async def skip_question(self, question_id):
-        num_updated = await self.skip_question_db(question_id)
-        await self.send(
-            text_data=json.dumps(
-                {"type": "skipped_question", "status": "success", "responses_updated": num_updated}
-            )
-        )
 
 
 class StudentConsumer(AsyncWebsocketConsumer):
