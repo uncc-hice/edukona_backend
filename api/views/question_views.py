@@ -66,6 +66,7 @@ class QuestionView(APIView):
     # Get method to question by id
     def get(self, request, question_id):
         question = get_object_or_404(QuestionMultipleChoice, id=question_id)
+        self.check_object_permissions(request, question)
         serializer = QuestionMultipleChoiceSerializer(question)
         return JsonResponse(serializer.data)
 
