@@ -9,8 +9,12 @@ from django.http import JsonResponse
 
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 
+from ..permissions import IsQuizOwner
+
 
 class QuizView(APIView):
+    permission_classes = [IsQuizOwner]
+
     @extend_schema(
         request=QuizSerializer,
         responses={
@@ -48,19 +52,24 @@ class QuizView(APIView):
 
     def put(self, request, quiz_id):
         quiz = get_object_or_404(Quiz, id=quiz_id)
+        self.check_object_permissions(request, quiz)
         quiz.__dict__.update(request.data)
         quiz.save()
         return JsonResponse({"message": "Quiz updated successfully"})
 
     def delete(self, request, quiz_id):
         quiz = get_object_or_404(Quiz, id=quiz_id)
+        self.check_object_permissions(request, quiz)
         quiz.delete()
         return JsonResponse({"message": "Quiz deleted successfully"})
 
 
 class SettingsView(APIView):
+    permission_classes = [IsQuizOwner]
+
     def get(self, request, quiz_id):
         quiz = get_object_or_404(Quiz, id=quiz_id)
+        self.check_object_permissions(request, quiz)
         if not hasattr(quiz, "settings"):
             return JsonResponse({"error": "Quiz has no settings"}, status=404)
         return JsonResponse({"settings": quiz.settings.to_json()})
@@ -80,6 +89,7 @@ class SettingsView(APIView):
         print(request.data)
         settings_data = request.data.get("settings", {})
         quiz = get_object_or_404(Quiz, id=quiz_id)
+        self.check_object_permissions(request, quiz)
 
         if not hasattr(quiz, "settings"):
             return JsonResponse({"error": "Quiz has no settings to update"}, status=400)
