@@ -43,6 +43,7 @@ class QuizView(APIView):
     def get(self, request, quiz_id=None):
         if quiz_id:
             quiz = get_object_or_404(Quiz, id=quiz_id)
+            self.check_object_permissions(request, quiz)
             return JsonResponse({"quiz": quiz.to_json()})
         else:
             instructor = get_object_or_404(Instructor, user=request.user)
