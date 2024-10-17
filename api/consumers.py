@@ -249,7 +249,6 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
             "question_opened_at": quiz_session_question.opened_at.isoformat(),
             "extension": quiz_session_question.extension,
         }
-        await self.channel_layer.group_send(f"quiz_session_{self.code}", response)
         await self.send(text_data=json.dumps(response))
 
 
