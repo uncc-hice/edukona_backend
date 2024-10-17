@@ -1,5 +1,5 @@
 from rest_framework import permissions
-from .models import Instructor
+from .models import Instructor, Quiz
 
 
 class AllowInstructor(permissions.BasePermission):
@@ -8,3 +8,15 @@ class AllowInstructor(permissions.BasePermission):
             return False
 
         return Instructor.objects.filter(user=request.user).exists()
+
+
+class IsQuizOwner(AllowInstructor):
+    def has_object_permission(self, request, view, obj):
+        return request.user.id == obj.instructor.user.id
+
+
+class IsQuestionOwner(AllowInstructor):
+    def has_object_permission(sel, request, view, obj):
+        if isinstance(obj, Quiz):
+            return request.user.id == obj.instructor.user.id
+        return request.user.id == obj.quiz.instructor.user.id
