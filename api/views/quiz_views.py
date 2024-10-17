@@ -79,6 +79,7 @@ class SettingsView(APIView):
         settings = request.data.pop("settings", {})
         new_settings = Settings.objects.create(**settings)
         quiz = get_object_or_404(Quiz, id=quiz_id)
+        self.check_object_permissions(request, quiz)
         quiz.settings = new_settings
         quiz.save()
         return JsonResponse(
