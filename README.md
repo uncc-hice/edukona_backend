@@ -53,7 +53,7 @@ python manage.py runserver
 
 ## Contributing
 
-Visit our [Frontend Repository](https://github.com/amhajja/hice_frontend) to view the frontend code!
+Visit our [front-end repo](https://github.com/uncc-hice/edukona_frontend) to view the frontend code!
 
 We welcome contributions from the community, whether it's adding new features, fixing bugs, or improving documentation.
 
@@ -67,6 +67,4 @@ Please ensure your commits are small and focused; this makes it easier to review
 
 ## Contact
 
-Ayman Hajja - Ahajja@UNCC.edu
-
-Project Link: [https://github.com/amhajja/hice_backend](https://github.com/amhajja/hice_backend)
+Ayman Hajja - ahajja@charlotte.edu
