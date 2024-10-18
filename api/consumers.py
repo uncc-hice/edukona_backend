@@ -262,48 +262,9 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
         quiz_session_question.unlocked = False
         quiz_session_question.save()
 
-        question = QuestionMultipleChoice.objects.get(id=question_id)
-
-        # Collect existing responses for question
-        responses = UserResponse.objects.filter(question=question, quiz_session__code=self.code)
-
-        # set existing responses to skipped
-        for response in responses:
-            response.skipped_question = True
-
-        # collect the usernames of all students who answered
-        answered_students = responses.values_list("student__username", flat=True)
-
-        # get all students who haven't answered
-        unanswered_students = QuizSessionStudent.objects.filter(
-            quiz_session__code=self.code
-        ).exclude(username__in=list(answered_students))
-
-        # create new skipped responses for students who haven't answered
-        response_list = list(responses)
-        for student in unanswered_students:
-            response = UserResponse()
-            response.student = student
-            response.skipped_question = True
-            response.question = question
-            response_list.append(response)
-
-        # update existing user responses and create new ones
-        num_updated = UserResponse.objects.bulk_create(
-            response_list,
-            update_conflicts=True,
-            update_fields=["question", "skipped_question"],
-            unique_fields=["id"],
-        )
-        return len(num_updated)
-
     async def skip_question(self, question_id):
-        num_updated = await self.skip_question_db(question_id)
-        await self.send(
-            text_data=json.dumps(
-                {"type": "skipped_question", "status": "success", "responses_updated": num_updated}
-            )
-        )
+        await self.skip_question_db(question_id)
+        await self.send(text_data=json.dumps({"type": "skipped_question", "status": "success"}))
 
 
 class StudentConsumer(AsyncWebsocketConsumer):
