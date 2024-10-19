@@ -151,9 +151,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="questionmultiplechoice",
             name="quiz",
-            field=models.ForeignKey(
-                on_delete=django.db.models.deletion.CASCADE, to="api.quiz"
-            ),
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to="api.quiz"),
         ),
         migrations.AddField(
             model_name="quiz",
