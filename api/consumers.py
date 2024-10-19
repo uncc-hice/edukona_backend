@@ -181,9 +181,62 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
 
     async def end_quiz(self):
         if await self.update_quiz_end_time():
-            await self.send(text_data=json.dumps({"type": "quiz_ended"}))
+            grades = await self.fetch_grades()
+            await self.send(text_data=json.dumps(
+                {
+                    "type": "quiz_ended",
+                    "grades": grades,
+                }
+            ))
         else:
             print("Failed to end the quiz; session not found.")
+
+    @database_sync_to_async
+    def fetch_grades(self):
+        try:
+            session = QuizSession.objects.get(code=self.code)
+        except QuizSession.DoesNotExist:
+            return {}
+
+        students = session.students.all()
+        grade_buckets = {
+            "100": [],
+            "80": [],
+            "60": [],
+            "40": [],
+            "20": [],
+            "0": []
+        }
+
+        for student in students:
+            responses = student.responses.all()
+            total_responses = responses.count()
+            correct_responses = responses.filter(is_correct=True).count()
+
+            # Calculate percentage
+            if total_responses > 0:
+                percentage = (correct_responses / total_responses) * 100
+            else:
+                percentage = 0
+
+            # Determine grade bucket
+            if percentage >= 90:
+                grade = "100"
+            elif percentage >= 70:
+                grade = "80"
+            elif percentage >= 50:
+                grade = "60"
+            elif percentage >= 30:
+                grade = "40"
+            elif percentage >= 10:
+                grade = "20"
+            else:
+                grade = "0"
+
+            # Append student name to the appropriate bucket
+            grade_buckets[grade].append(student.username)
+
+        return grade_buckets
 
     async def start_quiz(self):
         await self.channel_layer.group_send(f"quiz_session_{self.code}", {"type": "quiz_started"})
