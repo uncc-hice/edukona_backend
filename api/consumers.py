@@ -2,6 +2,7 @@ import json
 import logging
 import random
 import datetime
+from collections import defaultdict
 
 from channels.generic.websocket import AsyncWebsocketConsumer
 from django.utils import timezone
@@ -201,7 +202,7 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
             return {}
 
         students = session.students.all()
-        grade_buckets = {"100": [], "80": [], "60": [], "40": [], "20": [], "0": []}
+        grade_buckets = defaultdict(list)
 
         for student in students:
             responses = student.responses.all()
@@ -212,24 +213,16 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
             if total_responses > 0:
                 percentage = (correct_responses / total_responses) * 100
             else:
-                percentage = 0
+                percentage = 0.0
 
-            # Determine grade bucket
-            if percentage >= 90:
-                grade = "100"
-            elif percentage >= 70:
-                grade = "80"
-            elif percentage >= 50:
-                grade = "60"
-            elif percentage >= 30:
-                grade = "40"
-            elif percentage >= 10:
-                grade = "20"
-            else:
-                grade = "0"
+            # Round to two decimal places
+            percentage = round(percentage, 2)
+            percentage_key = f"{percentage}"
 
-            # Append student name to the appropriate bucket
-            grade_buckets[grade].append(student.username)
+
+
+            # Append the student's username to the appropriate bucket
+            grade_buckets[percentage_key].append(student.username)
 
         return grade_buckets
 
