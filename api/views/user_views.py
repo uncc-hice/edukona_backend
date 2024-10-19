@@ -38,12 +38,13 @@ from drf_spectacular.types import OpenApiTypes
 import boto3
 import json
 
-def mailInstructor(email, name, subject, message):
+def mailInstructor(email):
     message = Mail(
         from_email='edukona.team@gmail.com',
-        to_emails=email,
-        subject=subject,
-        html_content=f'<strong>Hi {name},</strong><br>{message} <a href="mailto:edukona.team@gmail.com">')
+        to_emails=email
+    )
+
+    message.template_id = os.getenv('WELCOME_TEMPLATE_ID')
     try:
         sg = SendGridAPIClient(os.environ.get('SENDGRID_API_KEY'))
         response = sg.send(message)
@@ -63,7 +64,7 @@ class SignUpInstructor(APIView):
         user.set_password(new_user["password"])
         user.save()
         token = Token.objects.create(user=user)
-        mailInstructor(user.email, user.first_name, "Welcome to Edukona", "Welcome to Edukona! We are excited to have you on board. You can now start creating quizzes and uploading recordings. If you have any questions, feel free to reach out to us at")
+        mailInstructor(user.email)
         return JsonResponse({"token": token.key, "user": user.id, "instructor": instructor.id})
 
 
