@@ -8,7 +8,9 @@ from django.utils import timezone
 
 
 class Student(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, related_name="student")
+    user = models.OneToOneField(
+        User, on_delete=models.CASCADE, null=True, related_name="student"
+    )
 
 
 class Instructor(models.Model):
@@ -60,7 +62,9 @@ class Quiz(models.Model):
     created_at = models.DateTimeField(default=timezone.now)
     start_time = models.DateTimeField(null=True, blank=True)
     end_time = models.DateTimeField(null=True, blank=True)
-    settings = models.ForeignKey(Settings, on_delete=models.CASCADE, null=True, related_name="quiz")
+    settings = models.ForeignKey(
+        Settings, on_delete=models.CASCADE, null=True, related_name="quiz"
+    )
 
     instructor_recording = models.ForeignKey(
         InstructorRecordings, on_delete=models.CASCADE, null=True
@@ -109,7 +113,9 @@ class QuizSession(models.Model):
     code = models.CharField(max_length=6, unique=True)
     start_time = models.DateTimeField(default=timezone.now)
     end_time = models.DateTimeField(null=True, blank=True)
-    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name="sessions", null=True)
+    quiz = models.ForeignKey(
+        Quiz, on_delete=models.CASCADE, related_name="sessions", null=True
+    )
     question_colors = models.JSONField(null=True, blank=True, default=dict)
 
     served_questions = models.ManyToManyField(
@@ -149,7 +155,9 @@ class QuizSession(models.Model):
             "end_time": self.end_time.isoformat() if self.end_time else None,
             "quiz_id": self.quiz.id if self.quiz else None,
             "question_colors": self.question_colors,
-            "current_question": (self.current_question.id if self.current_question else None),
+            "current_question": (
+                self.current_question.id if self.current_question else None
+            ),
         }
 
     class Meta:
@@ -159,7 +167,9 @@ class QuizSession(models.Model):
 class QuizSessionStudent(models.Model):
     username = models.CharField(max_length=200)
     joined_at = models.DateTimeField(default=timezone.now)
-    quiz_session = models.ForeignKey(QuizSession, on_delete=models.CASCADE, related_name="students")
+    quiz_session = models.ForeignKey(
+        QuizSession, on_delete=models.CASCADE, related_name="students"
+    )
     score = models.IntegerField(default=0)
     skip_count = models.IntegerField(default=0)
 
@@ -190,7 +200,9 @@ class QuizSessionQuestion(models.Model):
         QuizSession, on_delete=models.CASCADE, related_name="quiz_session_questions"
     )
     question = models.ForeignKey(
-        QuestionMultipleChoice, on_delete=models.CASCADE, related_name="quiz_session_questions"
+        QuestionMultipleChoice,
+        on_delete=models.CASCADE,
+        related_name="quiz_session_questions",
     )
     skipped = models.BooleanField(default=False)
     unlocked = models.BooleanField(default=True)

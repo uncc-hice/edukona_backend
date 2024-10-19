@@ -13,12 +13,16 @@ from drf_spectacular.types import OpenApiTypes
 class StudentResponseCountView(APIView):
     def get(self, request, code):
         quiz_session = get_object_or_404(QuizSession, code=code)
-        responses = quiz_session.responses.filter(question_id=quiz_session.current_question)
+        responses = quiz_session.responses.filter(
+            question_id=quiz_session.current_question
+        )
 
         counts = {}
         for response in responses:
             # Increment the count for the selected answer or initialize it to 0 if not found
-            counts[response.selected_answer] = counts.get(response.selected_answer, 0) + 1
+            counts[response.selected_answer] = (
+                counts.get(response.selected_answer, 0) + 1
+            )
 
         return Response(counts, status=200)
 
@@ -58,7 +62,9 @@ class QuizSessionView(APIView):
                 status=status.HTTP_201_CREATED,
             )
         except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response(
+                {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 class QuizSessionStudentView(APIView):
@@ -124,7 +130,9 @@ class QuizSessionResults(APIView):
         results = []
         for student in students:
             total_questions = UserResponse.objects.filter(student=student).count()
-            correct_answers = UserResponse.objects.filter(student=student, is_correct=True).count()
+            correct_answers = UserResponse.objects.filter(
+                student=student, is_correct=True
+            ).count()
 
             results.append(
                 {
@@ -141,16 +149,18 @@ class QuizSessionsByInstructorView(APIView):
     def get(self, request):
         instructor = request.user.instructor
 
-        quiz_sessions = QuizSession.objects.filter(quiz__instructor=instructor).order_by(
-            "quiz_id", "start_time"
-        )
+        quiz_sessions = QuizSession.objects.filter(
+            quiz__instructor=instructor
+        ).order_by("quiz_id", "start_time")
 
         quiz_sessions_data = [
             {
                 "quiz_session_id": session.id,
                 "quiz_id": session.quiz.id,
                 "quiz_name": session.quiz.title,
-                "start_time": (session.start_time.isoformat() if session.start_time else None),
+                "start_time": (
+                    session.start_time.isoformat() if session.start_time else None
+                ),
                 "end_time": session.end_time.isoformat() if session.end_time else None,
                 "code": session.code,
             }
@@ -176,7 +186,8 @@ class QuizSessionsByQuizView(APIView):
         quiz = get_object_or_404(Quiz, id=quiz_id)
         if instructor != quiz.instructor:
             return JsonResponse(
-                {"message": "You do not have permission to access this resource"}, status=403
+                {"message": "You do not have permission to access this resource"},
+                status=403,
             )
         sessions = QuizSession.objects.filter(quiz=quiz).order_by("start_time")
         quiz_sessions_data = [
@@ -184,8 +195,12 @@ class QuizSessionsByQuizView(APIView):
                 "quiz_session_id": session.id,
                 "quiz_id": session.quiz.id,
                 "quiz_name": session.quiz.title,
-                "start_time": session.start_time.isoformat() if session.start_time else None,
-                "end_time": session.start_time.isoformat() if session.end_time else None,
+                "start_time": (
+                    session.start_time.isoformat() if session.start_time else None
+                ),
+                "end_time": (
+                    session.start_time.isoformat() if session.end_time else None
+                ),
                 "code": session.code,
                 "num_of_participants": session.students.count(),
             }
@@ -199,7 +214,9 @@ class NextQuestionAPIView(APIView):
     def get(self, request, session_code):
         try:
             session = QuizSession.objects.get(code=session_code)
-            served_questions_ids = session.served_questions.all().values_list("id", flat=True)
+            served_questions_ids = session.served_questions.all().values_list(
+                "id", flat=True
+            )
             next_question = (
                 QuestionMultipleChoice.objects.exclude(id__in=served_questions_ids)
                 .filter(quiz=session.quiz)
@@ -254,9 +271,12 @@ class DeleteQuizSession(APIView):
                 )
             else:
                 return Response(
-                    {"message": "You cannot delete quiz sessions you did not create."}, status=403
+                    {"message": "You cannot delete quiz sessions you did not create."},
+                    status=403,
                 )
         except QuizSession.DoesNotExist:
             return Response({"message": "Invalid session code."}, status=404)
         except Exception as e:
-            return Response({"message": f"{str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response(
+                {"message": f"{str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
