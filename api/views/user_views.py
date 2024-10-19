@@ -2,7 +2,9 @@ from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
 from django.db import transaction
-
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
+import os
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.contrib.auth.models import User
@@ -37,6 +39,20 @@ import boto3
 import json
 
 
+def mailInstructor(email):
+    message = Mail(from_email="edukona.team@gmail.com", to_emails=email)
+
+    message.template_id = os.getenv("WELCOME_TEMPLATE_ID")
+    try:
+        sg = SendGridAPIClient(os.environ.get("SENDGRID_API_KEY"))
+        response = sg.send(message)
+        print(response.status_code)
+        print(response.body)
+        print(response.headers)
+    except Exception as e:
+        print(e.message)
+
+
 class SignUpInstructor(APIView):
     permission_classes = [AllowAny]
 
@@ -47,6 +63,7 @@ class SignUpInstructor(APIView):
         user.set_password(new_user["password"])
         user.save()
         token = Token.objects.create(user=user)
+        mailInstructor(user.email)
         return JsonResponse({"token": token.key, "user": user.id, "instructor": instructor.id})
 
 
