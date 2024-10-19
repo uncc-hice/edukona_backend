@@ -42,17 +42,30 @@ class SignUpInstructor(APIView):
 
     def post(self, request):
         new_user = request.data.pop("user", {})
-        instructor = Instructor.objects.create(user=User.objects.create(**new_user), **request.data)
+        instructor = Instructor.objects.create(
+            user=User.objects.create(**new_user), **request.data
+        )
         user = get_object_or_404(User, id=instructor.user_id)
         user.set_password(new_user["password"])
         user.save()
         token = Token.objects.create(user=user)
-        return JsonResponse({"token": token.key, "user": user.id, "instructor": instructor.id})
+        return JsonResponse(
+            {"token": token.key, "user": user.id, "instructor": instructor.id}
+        )
 
-class Profile(APIView):
+
+class ProfileView(APIView):
     def get(self, request):
         user = request.user
-        return Response({"user": user.id, "username": user.username, "email": user.email, "first_name": user.first_name, "last_name": user.last_name})
+        return Response(
+            {
+                "user": user.id,
+                "username": user.username,
+                "email": user.email,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+            }
+        )
 
 
 class LoginSerializer(serializers.Serializer):
@@ -81,12 +94,14 @@ class Login(APIView):
             user = User.objects.get(username=request.data["username"])
         except User.DoesNotExist:
             return JsonResponse(
-                {"detail": "Invalid username or password!"}, status=status.HTTP_401_UNAUTHORIZED
+                {"detail": "Invalid username or password!"},
+                status=status.HTTP_401_UNAUTHORIZED,
             )
 
         if not user.check_password(request.data["password"]):
             return JsonResponse(
-                {"detail": "Invalid username or password!"}, status=status.HTTP_401_UNAUTHORIZED
+                {"detail": "Invalid username or password!"},
+                status=status.HTTP_401_UNAUTHORIZED,
             )
         token = Token.objects.get_or_create(user=user)
         if hasattr(user, "instructor"):
@@ -183,9 +198,13 @@ class UserResponseView(APIView):
     def post(self, request):
         student_data = request.data.pop("student", {})
         student = get_object_or_404(QuizSessionStudent, id=student_data["id"])
-        question = get_object_or_404(QuestionMultipleChoice, id=request.data["question_id"])
+        question = get_object_or_404(
+            QuestionMultipleChoice, id=request.data["question_id"]
+        )
         selected_answer = request.data["selected_answer"]
-        quiz_session = get_object_or_404(QuizSession, code=request.data["quiz_session_code"])
+        quiz_session = get_object_or_404(
+            QuizSession, code=request.data["quiz_session_code"]
+        )
 
         is_correct = selected_answer == question.correct_answer
         new_user_response = UserResponse.objects.create(
@@ -217,7 +236,9 @@ class UserResponseView(APIView):
             UserResponse, id=response_id, student_id=request.data["student_id"]
         )
 
-        is_correct = request.data.get("selected_answer") == user_response.question.correct_answer
+        is_correct = (
+            request.data.get("selected_answer") == user_response.question.correct_answer
+        )
         user_response.__dict__.update({"is_correct": is_correct, **request.data})
         user_response.save()
 
@@ -256,7 +277,9 @@ class UploadAudioView(APIView):
         instructor = get_object_or_404(Instructor, user=request.user)
         title = request.data.get("title", "")
         # Create the recording instance first to get the ID
-        new_recording = InstructorRecordings.objects.create(instructor=instructor, title=title)
+        new_recording = InstructorRecordings.objects.create(
+            instructor=instructor, title=title
+        )
 
         # Sanitize and get the file details
         file = request.data["file"]
@@ -300,7 +323,9 @@ class UploadAudioView(APIView):
                 ),
             )
 
-            return JsonResponse(InstructorRecordingsSerializer(new_recording).data, status=201)
+            return JsonResponse(
+                InstructorRecordingsSerializer(new_recording).data, status=201
+            )
 
         except Exception as e:
             transaction.set_rollback(True)
@@ -363,9 +388,9 @@ class RecordingsView(APIView):
     )
     def get(self, request):
         instructor = request.user.instructor
-        recordings = InstructorRecordings.objects.filter(instructor=instructor).order_by(
-            "-uploaded_at"
-        )
+        recordings = InstructorRecordings.objects.filter(
+            instructor=instructor
+        ).order_by("-uploaded_at")
 
         # Filter so that the serializer only returns the s3_path, uploaded_at, id
 
@@ -443,10 +468,13 @@ class GetTranscriptView(APIView):
 
         if not recording.transcript:
             return JsonResponse(
-                {"message": "Transcript is not available yet"}, status=status.HTTP_404_NOT_FOUND
+                {"message": "Transcript is not available yet"},
+                status=status.HTTP_404_NOT_FOUND,
             )
 
-        return JsonResponse({"transcript": recording.transcript}, status=status.HTTP_200_OK)
+        return JsonResponse(
+            {"transcript": recording.transcript}, status=status.HTTP_200_OK
+        )
 
 
 class GoogleLogin(APIView):
@@ -463,7 +491,9 @@ class GoogleLogin(APIView):
         token = request.data.get("token")
 
         if not token:
-            return Response({"message": "Token not provided"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"message": "Token not provided"}, status=status.HTTP_400_BAD_REQUEST
+            )
 
         try:
             # Verify the Google token
@@ -497,5 +527,6 @@ class GoogleLogin(APIView):
 
         except ValueError as e:
             return Response(
-                {"message": f"Invalid token: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST
+                {"message": f"Invalid token: {str(e)}"},
+                status=status.HTTP_400_BAD_REQUEST,
             )
