@@ -219,8 +219,6 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
             percentage = round(percentage, 2)
             percentage_key = f"{percentage}"
 
-
-
             # Append the student's username to the appropriate bucket
             grade_buckets[percentage_key].append(student.username)
 
