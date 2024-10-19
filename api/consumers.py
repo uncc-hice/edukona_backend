@@ -264,7 +264,7 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
 
     async def skip_question(self, question_id):
         await self.skip_question_db(question_id)
-        await self.send(text_data=json.dumps({"type": "skipped_question", "status": "success"}))
+        await self.send_next_question()
 
 
 class StudentConsumer(AsyncWebsocketConsumer):
