@@ -67,6 +67,20 @@ class SignUpInstructor(APIView):
         return JsonResponse({"token": token.key, "user": user.id, "instructor": instructor.id})
 
 
+class ProfileView(APIView):
+    def get(self, request):
+        user = request.user
+        return Response(
+            {
+                "user": user.id,
+                "username": user.username,
+                "email": user.email,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+            }
+        )
+
+
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=150)
     password = serializers.CharField(max_length=128, style={"input_type": "password"})
@@ -93,12 +107,14 @@ class Login(APIView):
             user = User.objects.get(username=request.data["username"])
         except User.DoesNotExist:
             return JsonResponse(
-                {"detail": "Invalid username or password!"}, status=status.HTTP_401_UNAUTHORIZED
+                {"detail": "Invalid username or password!"},
+                status=status.HTTP_401_UNAUTHORIZED,
             )
 
         if not user.check_password(request.data["password"]):
             return JsonResponse(
-                {"detail": "Invalid username or password!"}, status=status.HTTP_401_UNAUTHORIZED
+                {"detail": "Invalid username or password!"},
+                status=status.HTTP_401_UNAUTHORIZED,
             )
         token = Token.objects.get_or_create(user=user)
         if hasattr(user, "instructor"):
@@ -455,7 +471,8 @@ class GetTranscriptView(APIView):
 
         if not recording.transcript:
             return JsonResponse(
-                {"message": "Transcript is not available yet"}, status=status.HTTP_404_NOT_FOUND
+                {"message": "Transcript is not available yet"},
+                status=status.HTTP_404_NOT_FOUND,
             )
 
         return JsonResponse({"transcript": recording.transcript}, status=status.HTTP_200_OK)
@@ -509,5 +526,6 @@ class GoogleLogin(APIView):
 
         except ValueError as e:
             return Response(
-                {"message": f"Invalid token: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST
+                {"message": f"Invalid token: {str(e)}"},
+                status=status.HTTP_400_BAD_REQUEST,
             )
