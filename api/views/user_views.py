@@ -38,21 +38,20 @@ from drf_spectacular.types import OpenApiTypes
 import boto3
 import json
 
-def mailInstructor(email):
-    message = Mail(
-        from_email='edukona.team@gmail.com',
-        to_emails=email
-    )
 
-    message.template_id = os.getenv('WELCOME_TEMPLATE_ID')
+def mailInstructor(email):
+    message = Mail(from_email="edukona.team@gmail.com", to_emails=email)
+
+    message.template_id = os.getenv("WELCOME_TEMPLATE_ID")
     try:
-        sg = SendGridAPIClient(os.environ.get('SENDGRID_API_KEY'))
+        sg = SendGridAPIClient(os.environ.get("SENDGRID_API_KEY"))
         response = sg.send(message)
         print(response.status_code)
         print(response.body)
         print(response.headers)
     except Exception as e:
         print(e.message)
+
 
 class SignUpInstructor(APIView):
     permission_classes = [AllowAny]
@@ -136,7 +135,6 @@ class Logout(APIView):
         token.delete()
         token.save()
         return JsonResponse({"message": "User logged out successfully"})
-
 
 
 class InstructorView(APIView):
