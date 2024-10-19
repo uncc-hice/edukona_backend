@@ -113,9 +113,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "selected_answer",
-                    models.ForeignKey(
-                        on_delete=django.db.models.deletion.CASCADE, to="api.answer"
-                    ),
+                    models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to="api.answer"),
                 ),
                 (
                     "user_profile",
@@ -155,16 +153,12 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="quizinstance",
             name="quiz",
-            field=models.ForeignKey(
-                on_delete=django.db.models.deletion.CASCADE, to="api.quiz"
-            ),
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to="api.quiz"),
         ),
         migrations.AddField(
             model_name="quizinstance",
             name="student",
-            field=models.ForeignKey(
-                on_delete=django.db.models.deletion.CASCADE, to="api.student"
-            ),
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to="api.student"),
         ),
         migrations.CreateModel(
             name="Leaderboard",
@@ -191,9 +185,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="answer",
             name="question",
-            field=models.ForeignKey(
-                on_delete=django.db.models.deletion.CASCADE, to="api.question"
-            ),
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to="api.question"),
         ),
         migrations.AddField(
             model_name="quiz",
