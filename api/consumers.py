@@ -36,9 +36,7 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
         uc = await self.fetch_user_count()
 
         await self.send(
-            text_data=json.dumps(
-                {"type": "settings", "settings": settings, "user_count": uc}
-            )
+            text_data=json.dumps({"type": "settings", "settings": settings, "user_count": uc})
         )
 
     @database_sync_to_async
@@ -117,9 +115,7 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def delete_student_from_db(self, username):
         session = QuizSession.objects.get(code=self.code)
-        student = QuizSessionStudent.objects.get(
-            quiz_session=session, username=username
-        )
+        student = QuizSessionStudent.objects.get(quiz_session=session, username=username)
         student.delete()
         return {"status": "success", "username": username}
 
@@ -135,9 +131,7 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
         question_data = await self.fetch_current_question()
         if question_data:
             await self.send(
-                text_data=json.dumps(
-                    {"type": "current_question", "question": question_data}
-                )
+                text_data=json.dumps({"type": "current_question", "question": question_data})
             )
 
     @database_sync_to_async
@@ -167,9 +161,7 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
         question_data = await self.fetch_next_question()
         if question_data:
             await self.send(
-                text_data=json.dumps(
-                    {"type": "next_question", "question": question_data}
-                )
+                text_data=json.dumps({"type": "next_question", "question": question_data})
             )
         else:
             print("Ending Quiz")
@@ -242,14 +234,10 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
         return grade_buckets
 
     async def start_quiz(self):
-        await self.channel_layer.group_send(
-            f"quiz_session_{self.code}", {"type": "quiz_started"}
-        )
+        await self.channel_layer.group_send(f"quiz_session_{self.code}", {"type": "quiz_started"})
 
         await self.send(
-            text_data=json.dumps(
-                {"type": "quiz_started", "message": "Quiz has started!"}
-            )
+            text_data=json.dumps({"type": "quiz_started", "message": "Quiz has started!"})
         )
 
     async def student_joined(self, event):
@@ -271,9 +259,7 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
 
     async def user_response(self, event):
         await self.send(
-            text_data=json.dumps(
-                {"type": "user_response", "response": event["response"]}
-            )
+            text_data=json.dumps({"type": "user_response", "response": event["response"]})
         )
 
     @database_sync_to_async
@@ -293,9 +279,7 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
 
     async def update_answers(self, event):
         results = await self.fetch_question_results(event["question_id"])
-        await self.send(
-            text_data=json.dumps({"type": "update_answers", "data": results})
-        )
+        await self.send(text_data=json.dumps({"type": "update_answers", "data": results}))
 
     @database_sync_to_async
     def add_to_duration_db(self, question_id, extension: int):
@@ -419,9 +403,7 @@ class StudentConsumer(AsyncWebsocketConsumer):
         try:
             session = QuizSession.objects.get(code=code)
             # studentUser = Student.objects.get(user_id=user_id)
-            student = QuizSessionStudent.objects.create(
-                username=username, quiz_session=session
-            )
+            student = QuizSessionStudent.objects.create(username=username, quiz_session=session)
             return {
                 "status": "success",
                 "message": "Student created successfully",
@@ -481,9 +463,7 @@ class StudentConsumer(AsyncWebsocketConsumer):
             if session_settings.get("skip_question_logic") == "streak":
                 if (
                     student.skip_count < session_settings.get("skip_count_per_student")
-                    and correct_responses
-                    % session_settings.get("skip_question_streak_count")
-                    == 0
+                    and correct_responses % session_settings.get("skip_question_streak_count") == 0
                 ):
                     grant_response = await self.grant_skip_power_up(student_id)
                     if grant_response.get("status") == "success":
@@ -653,9 +633,7 @@ class RecordingConsumer(AsyncWebsocketConsumer):
                     )
                 else:
                     # Send error if required fields are missing
-                    error_message = (
-                        "Invalid data: recording_id and transcript_url are required."
-                    )
+                    error_message = "Invalid data: recording_id and transcript_url are required."
                     logger.error(error_message)
                     await self.send(text_data=json.dumps({"error": error_message}))
             elif message_type == "quiz_creation_completed":
@@ -671,7 +649,9 @@ class RecordingConsumer(AsyncWebsocketConsumer):
                     )
                 else:
                     # Send error if required fields are missing
-                    error_message = "Invalid data: recording_id and quiz_creation_status are required."
+                    error_message = (
+                        "Invalid data: recording_id and quiz_creation_status are required."
+                    )
                     logger.error(error_message)
                     await self.send(text_data=json.dumps({"error": error_message}))
             else:
