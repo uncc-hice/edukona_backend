@@ -2,7 +2,9 @@ from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
 from django.db import transaction
-
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
+import os
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.contrib.auth.models import User
@@ -36,6 +38,20 @@ from drf_spectacular.types import OpenApiTypes
 import boto3
 import json
 
+def mailInstructor(email, name, subject, message):
+    message = Mail(
+        from_email='edukona.team@gmail.com',
+        to_emails=email,
+        subject=subject,
+        html_content=f'<strong>Hi {name},</strong><br>{message} <a href="mailto:edukona.team@gmail.com">')
+    try:
+        sg = SendGridAPIClient(os.environ.get('SENDGRID_API_KEY'))
+        response = sg.send(message)
+        print(response.status_code)
+        print(response.body)
+        print(response.headers)
+    except Exception as e:
+        print(e.message)
 
 class SignUpInstructor(APIView):
     permission_classes = [AllowAny]
@@ -47,6 +63,7 @@ class SignUpInstructor(APIView):
         user.set_password(new_user["password"])
         user.save()
         token = Token.objects.create(user=user)
+        mailInstructor(user.email, user.first_name, "Welcome to Edukona", "Welcome to Edukona! We are excited to have you on board. You can now start creating quizzes and uploading recordings. If you have any questions, feel free to reach out to us at")
         return JsonResponse({"token": token.key, "user": user.id, "instructor": instructor.id})
 
 
@@ -102,6 +119,7 @@ class Logout(APIView):
         token.delete()
         token.save()
         return JsonResponse({"message": "User logged out successfully"})
+
 
 
 class InstructorView(APIView):
