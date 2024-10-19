@@ -42,7 +42,6 @@ class QuestionView(APIView):
                     serializer = QuestionMultipleChoiceSerializer(data=question_data)
                     serializer.is_valid(raise_exception=True)
                     quiz = Quiz.objects.get(id=question_data["quiz_id"])
-                    self.check_object_permissions(request, quiz)
                     serializer.save()
                     created_questions.append(serializer.data)
                 except PermissionDenied as e:

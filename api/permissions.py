@@ -1,5 +1,6 @@
 from rest_framework import permissions
 from .models import Instructor, Quiz, QuestionMultipleChoice
+from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned, FieldError
 
 
 class AllowInstructor(permissions.BasePermission):
@@ -19,7 +20,14 @@ class IsQuizOwner(permissions.BasePermission):
         if not quiz_id:
             quiz_id = request.data.get("quiz_id")
 
-        quiz = Quiz.objects.get(id=quiz_id)
+        try:
+            quiz = Quiz.objects.get(id=quiz_id)
+        except ObjectDoesNotExist:
+            return False
+        except MultipleObjectsReturned:
+            return False
+        except FieldError:
+            return False
         return request.user == quiz.instructor.user
 
 
@@ -32,5 +40,12 @@ class IsQuestionOwner(AllowInstructor):
         if not question_id:
             question_id = request.data.get("question_id")
 
-        question = QuestionMultipleChoice.objects.get(id=question_id)
+        try:
+            question = QuestionMultipleChoice.objects.get(id=question_id)
+        except ObjectDoesNotExist:
+            return False
+        except MultipleObjectsReturned:
+            return False
+        except FieldError:
+            return False
         return request.user.id == question.quiz.instructor.user.id
