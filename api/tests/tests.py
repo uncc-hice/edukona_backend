@@ -171,6 +171,7 @@ class QuizViewTest(BaseTest):
         with self.assertRaises(Quiz.DoesNotExist):
             Quiz.objects.get(id=self.new_quiz.id)
 
+
 class CreateQuizViewTest(BaseTest):
     def test_post_quiz(self):
         url = reverse("create-quiz")
@@ -189,8 +190,6 @@ class CreateQuizViewTest(BaseTest):
         new_quiz = Quiz.objects.get(id=response_data["quiz_id"])
         self.assertEqual(new_quiz.title, data["title"])
         self.assertEqual(new_quiz.instructor.id, data["instructor_id"])
-
-
 
 
 class QuestionViewTest(BaseTest):
