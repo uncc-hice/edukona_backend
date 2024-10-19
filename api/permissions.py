@@ -22,11 +22,7 @@ class IsQuizOwner(permissions.BasePermission):
 
         try:
             quiz = Quiz.objects.get(id=quiz_id)
-        except ObjectDoesNotExist:
-            return False
-        except MultipleObjectsReturned:
-            return False
-        except FieldError:
+        except (ObjectDoesNotExist, MultipleObjectsReturned, FieldError):
             return False
         return request.user == quiz.instructor.user
 
@@ -42,10 +38,6 @@ class IsQuestionOwner(AllowInstructor):
 
         try:
             question = QuestionMultipleChoice.objects.get(id=question_id)
-        except ObjectDoesNotExist:
-            return False
-        except MultipleObjectsReturned:
-            return False
-        except FieldError:
+        except (ObjectDoesNotExist, MultipleObjectsReturned, FieldError):
             return False
         return request.user.id == question.quiz.instructor.user.id
