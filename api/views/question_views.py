@@ -66,14 +66,12 @@ class QuestionView(APIView):
     # Get method to question by id
     def get(self, request, question_id):
         question = get_object_or_404(QuestionMultipleChoice, id=question_id)
-        self.check_object_permissions(request, question)
         serializer = QuestionMultipleChoiceSerializer(question)
         return JsonResponse(serializer.data)
 
     # Put method to update text of a question by taking in an id
     def put(self, request, question_id):
         question = get_object_or_404(QuestionMultipleChoice, id=question_id)
-        self.check_object_permissions(request, question)
         question.__dict__.update(request.data)
         question.save()
         return JsonResponse({"message": "Question updated successfully"})
@@ -81,7 +79,6 @@ class QuestionView(APIView):
     # delete method to delete question by id
     def delete(self, request, question_id):
         question = get_object_or_404(QuestionMultipleChoice, id=question_id)
-        self.check_object_permissions(request, question)
         question.delete()
         return JsonResponse({"message": "Question deleted successfully"})
 
