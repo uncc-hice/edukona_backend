@@ -128,13 +128,13 @@ class SignUpInstructorSerializer(serializers.Serializer):
     email = serializers.EmailField(
         max_length=254,
         validators=[EmailValidator()],
-        help_text="This will be used as the username."
+        help_text="This will be used as the username.",
     )
     password = serializers.CharField(
         write_only=True,
         required=True,
         validators=[validate_password],
-        style={'input_type': 'password'}
+        style={"input_type": "password"},
     )
 
     def validate_email(self, value):
@@ -151,17 +151,17 @@ class SignUpInstructorSerializer(serializers.Serializer):
         """
         Create a new User and Instructor instance.
         """
-        first_name = validated_data.get('first_name')
-        last_name = validated_data.get('last_name', '')
-        email = validated_data.get('email')
-        password = validated_data.get('password')
+        first_name = validated_data.get("first_name")
+        last_name = validated_data.get("last_name", "")
+        email = validated_data.get("email")
+        password = validated_data.get("password")
 
         # Create the User
         user = User.objects.create(
             username=email,  # Using email as username
             email=email,
             first_name=first_name,
-            last_name=last_name
+            last_name=last_name,
         )
         user.set_password(password)
         user.save()
