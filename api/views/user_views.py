@@ -60,7 +60,8 @@ class SignUpInstructor(APIView):
     @extend_schema(
         operation_id="sign_up_instructor",
         summary="Sign up as an Instructor",
-        description="Allows a new user to sign up as an instructor by providing first name, last name (optional), email, and password.",
+        description="Allows a new user to sign up as an instructor by "
+        "providing first name, last name (optional), email, and password.",
         request=SignUpInstructorSerializer,
         responses={
             201: {
