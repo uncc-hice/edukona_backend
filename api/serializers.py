@@ -8,7 +8,7 @@ from .models import (
     UserResponse,
     QuizSessionStudent,
     InstructorRecordings,
-    Settings,
+    Settings, ContactMessage,
 )
 
 
@@ -118,3 +118,36 @@ class QuizSerializer(serializers.ModelSerializer):
         if settings_data:
             SettingsSerializer().update(instance.settings, settings_data)
         return super().update(instance, validated_data)
+
+class ContactMessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ContactMessage
+        fields = ['id', 'first_name', 'last_name', 'email', 'message', 'created_at']
+        read_only_fields = ['id', 'created_at']
+
+    # Make 'last_name' optional with default value ""
+    last_name = serializers.CharField(required=False, allow_blank=True, default='')
+
+    def validate_email(self, value):
+        """
+        Validate that the email has a proper format.
+        """
+        if not value:
+            raise serializers.ValidationError("Email is required.")
+        return value
+
+    def validate_first_name(self, value):
+        """
+        Ensure that 'first_name' is not just whitespace.
+        """
+        if not value.strip():
+            raise serializers.ValidationError("First name cannot be blank.")
+        return value
+
+    def validate_message(self, value):
+        """
+        Ensure that 'message' is not just whitespace.
+        """
+        if not value.strip():
+            raise serializers.ValidationError("Message cannot be blank.")
+        return value

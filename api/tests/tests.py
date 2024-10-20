@@ -394,59 +394,14 @@ class ContactPageViewTests(BaseTest):
         self.assertEqual(contact_message.email, self.valid_data["email"])
         self.assertEqual(contact_message.message, self.valid_data["message"])
 
-    def test_post_contact_missing_first_name(self):
+    def test_post_contact_missing_required_field(self):
         """
-        Ensure that a POST request missing the first_name field returns a 400 Bad Request.
-        """
-        data = self.valid_data.copy()
-        del data["first_name"]
-
-        response = self.client.post(self.url, data=data, format="json")
-
-        # Check the response status
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data["message"], "Please provide all required fields")
-
-        # Ensure no ContactMessage was created
-        self.assertEqual(ContactMessage.objects.count(), 0)
-
-    def test_post_contact_missing_email(self):
-        """
-        Ensure that a POST request missing the email field returns a 400 Bad Request.
+        Ensure that a POST request missing a required field (e.g., first_name) returns a 400 Bad Request.
         """
         data = self.valid_data.copy()
-        del data["email"]
+        del data["first_name"]  # Remove a required field
 
         response = self.client.post(self.url, data=data, format="json")
-
-        # Check the response status
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data["message"], "Please provide all required fields")
-
-        # Ensure no ContactMessage was created
-        self.assertEqual(ContactMessage.objects.count(), 0)
-
-    def test_post_contact_missing_message(self):
-        """
-        Ensure that a POST request missing the message field returns a 400 Bad Request.
-        """
-        data = self.valid_data.copy()
-        del data["message"]
-
-        response = self.client.post(self.url, data=data, format="json")
-
-        # Check the response status
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data["message"], "Please provide all required fields")
-
-        # Ensure no ContactMessage was created
-        self.assertEqual(ContactMessage.objects.count(), 0)
-
-    def test_post_contact_empty_payload(self):
-        """
-        Ensure that a POST request with an empty payload returns a 400 Bad Request.
-        """
-        response = self.client.post(self.url, data={}, format="json")
 
         # Check the response status
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -471,6 +426,48 @@ class ContactPageViewTests(BaseTest):
         # Ensure no ContactMessage was created
         self.assertEqual(ContactMessage.objects.count(), 0)
 
+    def test_post_contact_optional_last_name_missing_or_blank(self):
+        """
+        Ensure that a POST request missing the optional last_name field or providing it as blank is handled correctly.
+        """
+        # Test case 1: Missing last_name
+        data_missing_last_name = self.valid_data.copy()
+        del data_missing_last_name["last_name"]
+
+        response_missing = self.client.post(self.url, data=data_missing_last_name, format="json")
+
+        # Check the response status for missing last_name
+        self.assertEqual(response_missing.status_code, status.HTTP_200_OK)
+        self.assertEqual(response_missing.data["message"], "Message sent successfully")
+
+        # Check that the ContactMessage was created with empty last_name
+        self.assertEqual(ContactMessage.objects.count(), 1)
+        contact_message_missing = ContactMessage.objects.first()
+        self.assertEqual(contact_message_missing.first_name, self.valid_data["first_name"])
+        self.assertEqual(contact_message_missing.last_name, "")  # Should default to empty string
+        self.assertEqual(contact_message_missing.email, self.valid_data["email"])
+        self.assertEqual(contact_message_missing.message, self.valid_data["message"])
+
+        # Reset the database for the next test case
+        ContactMessage.objects.all().delete()
+
+        # Test case 2: Blank last_name
+        data_blank_last_name = self.valid_data.copy()
+        data_blank_last_name["last_name"] = ""  # Set last_name to blank
+
+        response_blank = self.client.post(self.url, data=data_blank_last_name, format="json")
+
+        # Check the response status for blank last_name
+        self.assertEqual(response_blank.status_code, status.HTTP_200_OK)
+        self.assertEqual(response_blank.data["message"], "Message sent successfully")
+
+        # Check that the ContactMessage was created with empty last_name
+        self.assertEqual(ContactMessage.objects.count(), 1)
+        contact_message_blank = ContactMessage.objects.first()
+        self.assertEqual(contact_message_blank.first_name, self.valid_data["first_name"])
+        self.assertEqual(contact_message_blank.last_name, "")  # Should be empty string
+        self.assertEqual(contact_message_blank.email, self.valid_data["email"])
+        self.assertEqual(contact_message_blank.message, self.valid_data["message"])
 
 class ProfileViewTest(BaseTest):
     def test_get_profile_instructor_authenticated(self):

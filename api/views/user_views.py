@@ -7,6 +7,8 @@ from django.core.exceptions import ValidationError
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 import os
+from rest_framework.throttling import UserRateThrottle
+
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.contrib.auth.models import User
@@ -33,7 +35,7 @@ from api.serializers import (
     UpdateTranscriptSerializer,
     GetTranscriptResponseSerializer,
     GoogleLoginResponseSerializer,
-    GoogleLoginRequestSerializer,
+    GoogleLoginRequestSerializer, ContactMessageSerializer,
 )
 from drf_spectacular.utils import extend_schema
 from drf_spectacular.types import OpenApiTypes
@@ -534,32 +536,49 @@ class GoogleLogin(APIView):
             )
 
 
+
+class ContactPageThrottle(UserRateThrottle):
+    rate = '10/hour'
+
 class ContactPageView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [ContactPageThrottle]
+    serializers = ContactMessageSerializer
 
+    @extend_schema(
+        operation_id="create_contact_message",
+        summary="Add a contact message to the DB",
+        description="Creates a contact message entry in the ContactMessage table",
+        request=ContactMessageSerializer,
+        responses={
+            200: OpenApiTypes.OBJECT,
+            400: OpenApiTypes.OBJECT,
+        },
+    )
     def post(self, request):
-        fname = request.data.get("first_name")
-        lname = request.data.get("last_name")
-        email = request.data.get("email")
-        message = request.data.get("message")
-
-        if not fname or not lname or not email or not message:
+        serializer = ContactMessageSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
             return Response(
-                {"message": "Please provide all required fields"},
-                status=status.HTTP_400_BAD_REQUEST,
+                {"message": "Message sent successfully"},
+                status=status.HTTP_200_OK
             )
-
-        # Email validation
-        try:
-            validate_email(email)
-        except ValidationError:
-            return Response(
-                {"message": "Invalid email format"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        ContactMessage.objects.create(
-            first_name=fname, last_name=lname, email=email, message=message
-        )
-
-        return Response({"message": "Message sent successfully"}, status=status.HTTP_200_OK)
+        else:
+            # Extracting error messages
+            errors = serializer.errors
+            if 'email' in errors:
+                return Response(
+                    {"message": "Invalid email format"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            elif any(field in errors for field in ['first_name', 'last_name', 'message']):
+                return Response(
+                    {"message": "Please provide all required fields"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            else:
+                # Generic error message
+                return Response(
+                    {"message": "Invalid data provided"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
