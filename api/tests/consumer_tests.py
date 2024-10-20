@@ -1,5 +1,4 @@
 # api/tests/consumer_tests.py
-
 import pytest
 import json
 import asyncio
