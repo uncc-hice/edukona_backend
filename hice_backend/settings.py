@@ -103,11 +103,16 @@ else:
 
 # run sqlite if test is in the argument
 
-if "test" in sys.argv:
+# Detect if pytest is running
+TESTING = False
+if 'pytest' in sys.modules or 'pytest' in sys.argv[0]:
+    TESTING = True
+
+if TESTING or 'test' in sys.argv:
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
-            "NAME": "hice_test",
+            "NAME": ":memory:",  # Use in-memory SQLite database for faster tests
         }
     }
 else:
