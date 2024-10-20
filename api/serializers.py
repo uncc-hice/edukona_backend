@@ -118,3 +118,7 @@ class QuizSerializer(serializers.ModelSerializer):
         if settings_data:
             SettingsSerializer().update(instance.settings, settings_data)
         return super().update(instance, validated_data)
+
+
+class QuizListSerializer(serializers.Serializer):
+    quizzes = QuizSerializer(many=True)

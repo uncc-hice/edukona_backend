@@ -10,7 +10,6 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("quiz/", QuizView.as_view(), name="quiz-list"),
     path("quiz/<int:quiz_id>/", QuizView.as_view(), name="quiz-detail"),
     path("question/", QuestionView.as_view(), name="question-list"),
     path("question/<int:question_id>/", QuestionView.as_view(), name="question-detail"),
@@ -25,6 +24,7 @@ urlpatterns = [
         InstructorView.as_view(),
         name="instructor-detail",
     ),
+    path("instructor/quizzes/", InstructorQuizzesView.as_view(), name="instructor-quizzes"),
     # path('student/', StudentView.as_view(), name='student-list'),
     # path('student/<int:student_id>/', StudentView.as_view(), name='student-detail'),
     path("user-response/", UserResponseView.as_view(), name="user-response-list"),

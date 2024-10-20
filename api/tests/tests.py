@@ -192,6 +192,14 @@ class CreateQuizViewTest(BaseTest):
         self.assertEqual(new_quiz.instructor.id, data["instructor_id"])
 
 
+class InstructorQuizzesViewTest(BaseTest):
+    def test_get_quizzes(self):
+        url = reverse("instructor-quizzes")
+        instructor_response = self.client_instructor.get(url)
+
+        self.assertEqual(instructor_response.status_code, 200)
+
+
 class QuestionViewTest(BaseTest):
     def test_get_question(self):
         url = reverse("question-detail", kwargs={"question_id": self.new_question.id})
