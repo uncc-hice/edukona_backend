@@ -2,8 +2,6 @@ from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
 from django.db import transaction
-from django.core.validators import validate_email
-from django.core.exceptions import ValidationError
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 import os
@@ -28,7 +26,6 @@ from api.models import (
     QuestionMultipleChoice,
     QuizSession,
     InstructorRecordings,
-    ContactMessage,
 )
 from api.serializers import (
     InstructorRecordingsSerializer,
