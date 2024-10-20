@@ -98,12 +98,6 @@ async def test_instructor_end_quiz():
         questions.append(question)
 
     # ----------------------------
-    # Step 8: **Remove** QuizSessionQuestion entries creation
-    # Do NOT pre-populate QuizSessionQuestion entries
-    # The consumer will handle serving questions and tracking served_questions
-    # ----------------------------
-
-    # ----------------------------
     # Step 9: Create UserResponses associated with the Students, QuizSession, and Questions
     # Introduce variance in student responses
     # ----------------------------
