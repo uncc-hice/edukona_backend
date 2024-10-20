@@ -105,10 +105,10 @@ else:
 
 # Detect if pytest is running
 TESTING = False
-if 'pytest' in sys.modules or 'pytest' in sys.argv[0]:
+if "pytest" in sys.modules or "pytest" in sys.argv[0]:
     TESTING = True
 
-if TESTING or 'test' in sys.argv:
+if TESTING or "test" in sys.argv:
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",

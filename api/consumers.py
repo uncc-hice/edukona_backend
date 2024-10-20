@@ -216,7 +216,9 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
             responses = responses.exclude(question_id__in=skipped_questions_ids)
 
             # Calculate total possible questions excluding skipped ones
-            total_possible_responses = session.quiz.questions.exclude(id__in=skipped_questions_ids).count()
+            total_possible_responses = session.quiz.questions.exclude(
+                id__in=skipped_questions_ids
+            ).count()
 
             # Count correct responses
             correct_responses = responses.filter(is_correct=True).count()

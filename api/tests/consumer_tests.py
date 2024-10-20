@@ -136,7 +136,9 @@ async def test_instructor_end_quiz():
     # Step 10: Initialize WebSocket communicator for the instructor consumer
     # Corrected WebSocket path to "/ws/quiz-session-instructor/{session.code}/"
     # ----------------------------
-    communicator = WebsocketCommunicator(application, f"/ws/quiz-session-instructor/{session.code}/")
+    communicator = WebsocketCommunicator(
+        application, f"/ws/quiz-session-instructor/{session.code}/"
+    )
     connected, subprotocol = await communicator.connect()
     assert connected, "WebSocket connection failed"
 
@@ -159,11 +161,17 @@ async def test_instructor_end_quiz():
 
     try:
         response = await communicator.receive_json_from(timeout=5)
-        assert response["type"] == "next_question", "Expected 'next_question' message for the first question"
+        assert (
+            response["type"] == "next_question"
+        ), "Expected 'next_question' message for the first question"
         assert "question" in response, "'question' not in response"
-        assert response["question"]["question_text"] == first_question.question_text, "First question text mismatch"
+        assert (
+            response["question"]["question_text"] == first_question.question_text
+        ), "First question text mismatch"
     except asyncio.TimeoutError:
-        pytest.fail(f"Did not receive 'next_question' response for question '{first_question.question_text}' in time")
+        pytest.fail(
+            f"Did not receive 'next_question' response for question '{first_question.question_text}' in time"
+        )
 
     # ----------------------------
     # Step 13: Simulate serving the second question
@@ -173,11 +181,17 @@ async def test_instructor_end_quiz():
 
     try:
         response = await communicator.receive_json_from(timeout=5)
-        assert response["type"] == "next_question", "Expected 'next_question' message for the second question"
+        assert (
+            response["type"] == "next_question"
+        ), "Expected 'next_question' message for the second question"
         assert "question" in response, "'question' not in response"
-        assert response["question"]["question_text"] == second_question.question_text, "Second question text mismatch"
+        assert (
+            response["question"]["question_text"] == second_question.question_text
+        ), "Second question text mismatch"
     except asyncio.TimeoutError:
-        pytest.fail(f"Did not receive 'next_question' response for question '{second_question.question_text}' in time")
+        pytest.fail(
+            f"Did not receive 'next_question' response for question '{second_question.question_text}' in time"
+        )
 
     # ----------------------------
     # Step 14: Send 'skip_question' to skip the second question
@@ -190,11 +204,17 @@ async def test_instructor_end_quiz():
     last_question = questions[2]
     try:
         response = await communicator.receive_json_from(timeout=5)
-        assert response["type"] == "next_question", "Expected 'next_question' message after skipping a question"
+        assert (
+            response["type"] == "next_question"
+        ), "Expected 'next_question' message after skipping a question"
         assert "question" in response, "'question' not in response"
-        assert response["question"]["question_text"] == last_question.question_text, "Last question text mismatch after skipping"
+        assert (
+            response["question"]["question_text"] == last_question.question_text
+        ), "Last question text mismatch after skipping"
     except asyncio.TimeoutError:
-        pytest.fail(f"Did not receive 'next_question' response for question '{last_question.question_text}' after skipping in time")
+        pytest.fail(
+            f"Did not receive 'next_question' response for question '{last_question.question_text}' after skipping in time"
+        )
 
     # ----------------------------
     # Step 16: Send one more 'next_question' to trigger 'quiz_ended'
@@ -220,7 +240,9 @@ async def test_instructor_end_quiz():
         }
 
         # Validate the grades
-        assert response["grades"] == expected_grades, f"Grades mismatch: Expected {expected_grades}, got {response['grades']}"
+        assert (
+            response["grades"] == expected_grades
+        ), f"Grades mismatch: Expected {expected_grades}, got {response['grades']}"
     except asyncio.TimeoutError:
         pytest.fail("Did not receive 'quiz_ended' response in time")
 
