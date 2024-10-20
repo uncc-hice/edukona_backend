@@ -3,14 +3,38 @@ from rest_framework import status
 from rest_framework.response import Response
 
 from api.models import *
-from api.serializers import QuizSerializer
+from api.serializers import QuizSerializer, QuizListSerializer
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
 
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 
+from ..permissions import IsQuizOwner, AllowInstructor
+
 
 class QuizView(APIView):
+    permission_classes = [IsQuizOwner]
+
+    def get(self, request, quiz_id):
+        if quiz_id:
+            quiz = get_object_or_404(Quiz, id=quiz_id)
+            return JsonResponse({"quiz": quiz.to_json()})
+
+    def put(self, request, quiz_id):
+        quiz = get_object_or_404(Quiz, id=quiz_id)
+        quiz.__dict__.update(request.data)
+        quiz.save()
+        return JsonResponse({"message": "Quiz updated successfully"})
+
+    def delete(self, request, quiz_id):
+        quiz = get_object_or_404(Quiz, id=quiz_id)
+        quiz.delete()
+        return JsonResponse({"message": "Quiz deleted successfully"})
+
+
+class CreateQuizView(APIView):
+    permission_classes = [AllowInstructor]
+
     @extend_schema(
         request=QuizSerializer,
         responses={
@@ -36,29 +60,19 @@ class QuizView(APIView):
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def get(self, request, quiz_id=None):
-        if quiz_id:
-            quiz = get_object_or_404(Quiz, id=quiz_id)
-            return JsonResponse({"quiz": quiz.to_json()})
-        else:
-            instructor = get_object_or_404(Instructor, user=request.user)
-            all_quizzes = Quiz.objects.filter(instructor=instructor).order_by("-created_at")
-            quiz_response = [quiz.to_json() for quiz in all_quizzes]
-            return JsonResponse({"quizzes": quiz_response})
 
-    def put(self, request, quiz_id):
-        quiz = get_object_or_404(Quiz, id=quiz_id)
-        quiz.__dict__.update(request.data)
-        quiz.save()
-        return JsonResponse({"message": "Quiz updated successfully"})
+class InstructorQuizzesView(APIView):
+    permission_class = [AllowInstructor]
 
-    def delete(self, request, quiz_id):
-        quiz = get_object_or_404(Quiz, id=quiz_id)
-        quiz.delete()
-        return JsonResponse({"message": "Quiz deleted successfully"})
+    @extend_schema(responses={200: QuizListSerializer}, summary="Get all quizzes by instructor")
+    def get(self, request):
+        quizzes = Quiz.objects.filter(instructor=request.user.instructor)
+        return Response(QuizListSerializer({"quizzes": quizzes}).data, status=status.HTTP_200_OK)
 
 
 class SettingsView(APIView):
+    permission_classes = [IsQuizOwner]
+
     def get(self, request, quiz_id):
         quiz = get_object_or_404(Quiz, id=quiz_id)
         if not hasattr(quiz, "settings"):
