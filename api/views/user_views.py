@@ -67,6 +67,20 @@ class SignUpInstructor(APIView):
         return JsonResponse({"token": token.key, "user": user.id, "instructor": instructor.id})
 
 
+class ProfileView(APIView):
+    def get(self, request):
+        user = request.user
+        return Response(
+            {
+                "user": user.id,
+                "username": user.username,
+                "email": user.email,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+            }
+        )
+
+
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=150)
     password = serializers.CharField(max_length=128, style={"input_type": "password"})

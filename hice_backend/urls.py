@@ -138,4 +138,5 @@ urlpatterns = [
         name="get-transcript",
     ),
     path("auth/google/", GoogleLogin.as_view()),  # Route for Google login
+    path("profile/", ProfileView.as_view(), name="profile"),
 ]
