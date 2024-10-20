@@ -200,3 +200,13 @@ class QuizSessionQuestion(models.Model):
     class Meta:
         db_table = "api_quiz_session_question"
         unique_together = ("quiz_session", "question")
+
+class ContactMessage(models.Model):
+    first_name = models.CharField(max_length=200)
+    last_name = models.CharField(max_length=200)
+    email = models.EmailField()
+    message = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "api_contact_message"
