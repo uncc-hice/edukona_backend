@@ -2,7 +2,8 @@ from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
 from django.db import transaction
-
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.contrib.auth.models import User
@@ -21,7 +22,7 @@ from api.models import (
     QuizSessionStudent,
     QuestionMultipleChoice,
     QuizSession,
-    InstructorRecordings,
+    InstructorRecordings, ContactMessage,
 )
 from api.serializers import (
     InstructorRecordingsSerializer,
@@ -494,3 +495,36 @@ class GoogleLogin(APIView):
             return Response(
                 {"message": f"Invalid token: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST
             )
+
+
+class ContactPageView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        fname = request.data.get("first_name")
+        lname = request.data.get("last_name")
+        email = request.data.get("email")
+        message = request.data.get("message")
+
+        if not fname or not lname or not email or not message:
+            return Response(
+                {"message": "Please provide all required fields"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Email validation
+        try:
+            validate_email(email)
+        except ValidationError:
+            return Response(
+                {"message": "Invalid email format"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        ContactMessage.objects.create(
+            first_name=fname, last_name=lname, email=email, message=message
+        )
+
+        return Response(
+            {"message": "Message sent successfully"}, status=status.HTTP_200_OK
+        )
