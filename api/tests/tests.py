@@ -469,6 +469,7 @@ class ContactPageViewTests(BaseTest):
         self.assertEqual(contact_message_blank.email, self.valid_data["email"])
         self.assertEqual(contact_message_blank.message, self.valid_data["message"])
 
+
 class ProfileViewTest(BaseTest):
     def test_get_profile_instructor_authenticated(self):
         """

@@ -8,7 +8,8 @@ from .models import (
     UserResponse,
     QuizSessionStudent,
     InstructorRecordings,
-    Settings, ContactMessage,
+    Settings,
+    ContactMessage,
 )
 
 
@@ -119,14 +120,15 @@ class QuizSerializer(serializers.ModelSerializer):
             SettingsSerializer().update(instance.settings, settings_data)
         return super().update(instance, validated_data)
 
+
 class ContactMessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ContactMessage
-        fields = ['id', 'first_name', 'last_name', 'email', 'message', 'created_at']
-        read_only_fields = ['id', 'created_at']
+        fields = ["id", "first_name", "last_name", "email", "message", "created_at"]
+        read_only_fields = ["id", "created_at"]
 
     # Make 'last_name' optional with default value ""
-    last_name = serializers.CharField(required=False, allow_blank=True, default='')
+    last_name = serializers.CharField(required=False, allow_blank=True, default="")
 
     def validate_email(self, value):
         """

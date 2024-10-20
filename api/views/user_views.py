@@ -35,7 +35,8 @@ from api.serializers import (
     UpdateTranscriptSerializer,
     GetTranscriptResponseSerializer,
     GoogleLoginResponseSerializer,
-    GoogleLoginRequestSerializer, ContactMessageSerializer,
+    GoogleLoginRequestSerializer,
+    ContactMessageSerializer,
 )
 from drf_spectacular.utils import extend_schema
 from drf_spectacular.types import OpenApiTypes
@@ -536,9 +537,9 @@ class GoogleLogin(APIView):
             )
 
 
-
 class ContactPageThrottle(UserRateThrottle):
-    rate = '10/hour'
+    rate = "10/hour"
+
 
 class ContactPageView(APIView):
     permission_classes = [AllowAny]
@@ -559,26 +560,21 @@ class ContactPageView(APIView):
         serializer = ContactMessageSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            return Response(
-                {"message": "Message sent successfully"},
-                status=status.HTTP_200_OK
-            )
+            return Response({"message": "Message sent successfully"}, status=status.HTTP_200_OK)
         else:
             # Extracting error messages
             errors = serializer.errors
-            if 'email' in errors:
+            if "email" in errors:
                 return Response(
-                    {"message": "Invalid email format"},
-                    status=status.HTTP_400_BAD_REQUEST
+                    {"message": "Invalid email format"}, status=status.HTTP_400_BAD_REQUEST
                 )
-            elif any(field in errors for field in ['first_name', 'last_name', 'message']):
+            elif any(field in errors for field in ["first_name", "last_name", "message"]):
                 return Response(
                     {"message": "Please provide all required fields"},
-                    status=status.HTTP_400_BAD_REQUEST
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
             else:
                 # Generic error message
                 return Response(
-                    {"message": "Invalid data provided"},
-                    status=status.HTTP_400_BAD_REQUEST
+                    {"message": "Invalid data provided"}, status=status.HTTP_400_BAD_REQUEST
                 )

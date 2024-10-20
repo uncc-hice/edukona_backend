@@ -203,9 +203,7 @@ class QuizSessionQuestion(models.Model):
 
 
 class ContactMessage(models.Model):
-    id = models.UUIDField(
-        primary_key=True, default=uuid.uuid4, editable=False
-    )
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     first_name = models.CharField(max_length=200)
     # Make last name optional and default it to ""
     last_name = models.CharField(max_length=200, default="", blank=True)
