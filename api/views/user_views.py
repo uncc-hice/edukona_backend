@@ -4,6 +4,9 @@ from django.http import JsonResponse
 from django.db import transaction
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
+import os
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.contrib.auth.models import User
@@ -38,6 +41,20 @@ import boto3
 import json
 
 
+def mailInstructor(email):
+    message = Mail(from_email="edukona.team@gmail.com", to_emails=email)
+
+    message.template_id = os.getenv("WELCOME_TEMPLATE_ID")
+    try:
+        sg = SendGridAPIClient(os.environ.get("SENDGRID_API_KEY"))
+        response = sg.send(message)
+        print(response.status_code)
+        print(response.body)
+        print(response.headers)
+    except Exception as e:
+        print(e.message)
+
+
 class SignUpInstructor(APIView):
     permission_classes = [AllowAny]
 
@@ -48,7 +65,22 @@ class SignUpInstructor(APIView):
         user.set_password(new_user["password"])
         user.save()
         token = Token.objects.create(user=user)
+        mailInstructor(user.email)
         return JsonResponse({"token": token.key, "user": user.id, "instructor": instructor.id})
+
+
+class ProfileView(APIView):
+    def get(self, request):
+        user = request.user
+        return Response(
+            {
+                "user": user.id,
+                "username": user.username,
+                "email": user.email,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+            }
+        )
 
 
 class LoginSerializer(serializers.Serializer):
@@ -77,12 +109,14 @@ class Login(APIView):
             user = User.objects.get(username=request.data["username"])
         except User.DoesNotExist:
             return JsonResponse(
-                {"detail": "Invalid username or password!"}, status=status.HTTP_401_UNAUTHORIZED
+                {"detail": "Invalid username or password!"},
+                status=status.HTTP_401_UNAUTHORIZED,
             )
 
         if not user.check_password(request.data["password"]):
             return JsonResponse(
-                {"detail": "Invalid username or password!"}, status=status.HTTP_401_UNAUTHORIZED
+                {"detail": "Invalid username or password!"},
+                status=status.HTTP_401_UNAUTHORIZED,
             )
         token = Token.objects.get_or_create(user=user)
         if hasattr(user, "instructor"):
@@ -439,7 +473,8 @@ class GetTranscriptView(APIView):
 
         if not recording.transcript:
             return JsonResponse(
-                {"message": "Transcript is not available yet"}, status=status.HTTP_404_NOT_FOUND
+                {"message": "Transcript is not available yet"},
+                status=status.HTTP_404_NOT_FOUND,
             )
 
         return JsonResponse({"transcript": recording.transcript}, status=status.HTTP_200_OK)
@@ -493,7 +528,8 @@ class GoogleLogin(APIView):
 
         except ValueError as e:
             return Response(
-                {"message": f"Invalid token: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST
+                {"message": f"Invalid token: {str(e)}"},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
 

@@ -472,3 +472,38 @@ class ContactPageViewTests(BaseTest):
 
         # Ensure no ContactMessage was created
         self.assertEqual(ContactMessage.objects.count(), 0)
+
+        
+class ProfileViewTest(BaseTest):
+    def test_get_profile_instructor_authenticated(self):
+        """
+        Ensure that an authenticated instructor can retrieve their profile information.
+        """
+        url = reverse("profile")
+        response = self.client_instructor.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_data = response.json()
+        instructor_user = self.new_user_instructor
+
+        self.assertEqual(response_data["user"], instructor_user.id)
+        self.assertEqual(response_data["username"], instructor_user.username)
+        self.assertEqual(response_data["email"], instructor_user.email)
+        self.assertEqual(response_data["first_name"], instructor_user.first_name)
+        self.assertEqual(response_data["last_name"], instructor_user.last_name)
+
+    def test_get_profile_unauthenticated(self):
+        """
+        Ensure that unauthenticated users cannot access the profile information.
+        """
+        # Create a new APIClient without credentials
+        unauthenticated_client = APIClient()
+        url = reverse("profile")
+        response = unauthenticated_client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        response_data = response.json()
+        self.assertIn("detail", response_data)
+        self.assertEqual(response_data["detail"], "Authentication credentials were not provided.")
+

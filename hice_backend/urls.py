@@ -139,4 +139,5 @@ urlpatterns = [
     ),
     path("auth/google/", GoogleLogin.as_view()),# Route for Google login
     path("contact-us/", ContactPageView.as_view(), name="contact-us"),
+    path("profile/", ProfileView.as_view(), name="profile"),
 ]
