@@ -207,13 +207,23 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
         grade_buckets = defaultdict(list)
 
         for student in students:
-            responses = student.responses.all()
-            total_responses = responses.count()
+            responses = UserResponse.objects.filter(student=student, quiz_session=session)
+            skipped_questions_ids = QuizSessionQuestion.objects.filter(
+                quiz_session=session, skipped=True
+            ).values_list("question", flat=True)
+
+            # Exclude responses for skipped questions
+            responses = responses.exclude(question_id__in=skipped_questions_ids)
+
+            # Calculate total possible questions excluding skipped ones
+            total_possible_responses = session.quiz.questions.exclude(id__in=skipped_questions_ids).count()
+
+            # Count correct responses
             correct_responses = responses.filter(is_correct=True).count()
 
             # Calculate percentage
-            if total_responses > 0:
-                percentage = (correct_responses / total_responses) * 100
+            if total_possible_responses > 0:
+                percentage = (correct_responses / total_possible_responses) * 100
             else:
                 percentage = 0.0
 
