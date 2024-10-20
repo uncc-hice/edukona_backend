@@ -201,6 +201,7 @@ class QuizSessionQuestion(models.Model):
         db_table = "api_quiz_session_question"
         unique_together = ("quiz_session", "question")
 
+
 class ContactMessage(models.Model):
     first_name = models.CharField(max_length=200)
     last_name = models.CharField(max_length=200)

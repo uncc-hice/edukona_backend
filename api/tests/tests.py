@@ -352,7 +352,6 @@ class QuizSessionsByInstructorViewTest(TestCase):
 
 class LoginViewTest(BaseTest):
 
-
     def test_post_login(self):
         url = reverse("login")
         data = {"username": "bad_username", "password": "bad_password!"}
@@ -362,19 +361,18 @@ class LoginViewTest(BaseTest):
         self.assertEqual(response_data["detail"], "Invalid username or password!")
 
 
-
 class ContactPageViewTests(BaseTest):
     def setUp(self):
         super().setUp()  # Inherit from BaseTest
         # Define the URL for the contact page
-        self.url = reverse('contact-us')  # Ensure that 'contact-us' is the name of your URL pattern
+        self.url = reverse("contact-us")  # Ensure that 'contact-us' is the name of your URL pattern
 
         # Sample valid data
         self.valid_data = {
             "first_name": "John",
             "last_name": "Doe",
             "email": "john.doe@example.com",
-            "message": "Hello, this is a test message."
+            "message": "Hello, this is a test message.",
         }
 
     def test_post_contact_success(self):
@@ -382,7 +380,7 @@ class ContactPageViewTests(BaseTest):
         Ensure that a POST request with all required fields creates a ContactMessage
         and returns a 200 OK response.
         """
-        response = self.client.post(self.url, data=self.valid_data, format='json')
+        response = self.client.post(self.url, data=self.valid_data, format="json")
 
         # Check the response status
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -403,7 +401,7 @@ class ContactPageViewTests(BaseTest):
         data = self.valid_data.copy()
         del data["first_name"]
 
-        response = self.client.post(self.url, data=data, format='json')
+        response = self.client.post(self.url, data=data, format="json")
 
         # Check the response status
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -419,7 +417,7 @@ class ContactPageViewTests(BaseTest):
         data = self.valid_data.copy()
         del data["email"]
 
-        response = self.client.post(self.url, data=data, format='json')
+        response = self.client.post(self.url, data=data, format="json")
 
         # Check the response status
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -435,7 +433,7 @@ class ContactPageViewTests(BaseTest):
         data = self.valid_data.copy()
         del data["message"]
 
-        response = self.client.post(self.url, data=data, format='json')
+        response = self.client.post(self.url, data=data, format="json")
 
         # Check the response status
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -448,7 +446,7 @@ class ContactPageViewTests(BaseTest):
         """
         Ensure that a POST request with an empty payload returns a 400 Bad Request.
         """
-        response = self.client.post(self.url, data={}, format='json')
+        response = self.client.post(self.url, data={}, format="json")
 
         # Check the response status
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -464,7 +462,7 @@ class ContactPageViewTests(BaseTest):
         data = self.valid_data.copy()
         data["email"] = "invalid-email"  # Set to an invalid email format
 
-        response = self.client.post(self.url, data=data, format='json')
+        response = self.client.post(self.url, data=data, format="json")
 
         # Check the response status
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -473,7 +471,7 @@ class ContactPageViewTests(BaseTest):
         # Ensure no ContactMessage was created
         self.assertEqual(ContactMessage.objects.count(), 0)
 
-        
+
 class ProfileViewTest(BaseTest):
     def test_get_profile_instructor_authenticated(self):
         """
@@ -506,4 +504,3 @@ class ProfileViewTest(BaseTest):
         response_data = response.json()
         self.assertIn("detail", response_data)
         self.assertEqual(response_data["detail"], "Authentication credentials were not provided.")
-

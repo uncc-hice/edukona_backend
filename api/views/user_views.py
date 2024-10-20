@@ -25,7 +25,8 @@ from api.models import (
     QuizSessionStudent,
     QuestionMultipleChoice,
     QuizSession,
-    InstructorRecordings, ContactMessage,
+    InstructorRecordings,
+    ContactMessage,
 )
 from api.serializers import (
     InstructorRecordingsSerializer,
@@ -561,6 +562,4 @@ class ContactPageView(APIView):
             first_name=fname, last_name=lname, email=email, message=message
         )
 
-        return Response(
-            {"message": "Message sent successfully"}, status=status.HTTP_200_OK
-        )
+        return Response({"message": "Message sent successfully"}, status=status.HTTP_200_OK)
