@@ -29,12 +29,12 @@ jobs:
           # Initialize counter
           total_lines_changed=0
           
-          # Get the list of changed files, excluding Django migration files and any tests directories
-          files=$(git diff --name-only origin/${{ github.event.pull_request.base.ref }} ${{ github.sha }} | grep -Ev "migrations/[^/]+\.py$|/tests/")
-
+          # Get the list of changed files, excluding Django migration files and any tests directories or files named tests.py
+          files=$(git diff --name-only origin/${{ github.event.pull_request.base.ref }} ${{ github.sha }} | grep -Ev "migrations/[^/]+\.py$|/tests/|(^|/)tests\.py$")
+          
           echo "Changed files after exclusion:"
           echo "$files"
-
+          
           # Loop through each changed file
           for file in $files; do
             # Count lines added and removed for each file, excluding certain patterns
@@ -42,14 +42,14 @@ jobs:
               grep '^[+-]' | \
               grep -Ev '^(--- a/|\+\+\+ b/|^\s*$|^[+-]\s*#|^[+-]\s*$)' | \
               wc -l)
-
+          
             # Add to total counter
             total_lines_changed=$((total_lines_changed + lines_changed))
           done
           
           # Print total lines changed
           echo "Total lines changed (excluding Django migration files and tests directories): $total_lines_changed"
-
+          
           if [[ "$total_lines_changed" -gt 100 ]]; then
             echo "Too many lines changed. Failing the check."
             exit 1
