@@ -1,12 +1,10 @@
 # api/tests/consumer_tests.py
 import pytest
-import json
 import asyncio
 from channels.testing import WebsocketCommunicator
 from django.utils import timezone
 from asgiref.sync import sync_to_async
 from django.contrib.auth.models import User
-from collections import defaultdict
 from api.models import (
     Quiz,
     Instructor,
@@ -15,7 +13,6 @@ from api.models import (
     QuizSessionStudent,
     UserResponse,
     QuestionMultipleChoice,
-    QuizSessionQuestion,
 )
 from hice_backend.asgi import application  # Ensure this path is correct
 
@@ -213,7 +210,8 @@ async def test_instructor_end_quiz():
         ), "Last question text mismatch after skipping"
     except asyncio.TimeoutError:
         pytest.fail(
-            f"Did not receive 'next_question' response for question '{last_question.question_text}' after skipping in time"
+            f"Did not receive 'next_question' response for question '"
+            f"{last_question.question_text}' after skipping in time"
         )
 
     # ----------------------------

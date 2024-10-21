@@ -214,16 +214,11 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
             id__in=skipped_questions_ids
         ).count()
 
-
         for student in students:
             responses = UserResponse.objects.filter(student=student, quiz_session=session)
 
-
             # Exclude responses for skipped questions
             responses = responses.exclude(question_id__in=skipped_questions_ids)
-
-            # Calculate total possible questions excluding skipped ones
-
 
             # Count correct responses
             correct_responses = responses.filter(is_correct=True).count()
