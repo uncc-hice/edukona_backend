@@ -206,19 +206,24 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
         students = session.students.all()
         grade_buckets = defaultdict(list)
 
+        skipped_questions_ids = QuizSessionQuestion.objects.filter(
+            quiz_session=session, skipped=True
+        ).values_list("question", flat=True)
+
+        total_possible_responses = session.quiz.questions.exclude(
+            id__in=skipped_questions_ids
+        ).count()
+
+
         for student in students:
             responses = UserResponse.objects.filter(student=student, quiz_session=session)
-            skipped_questions_ids = QuizSessionQuestion.objects.filter(
-                quiz_session=session, skipped=True
-            ).values_list("question", flat=True)
+
 
             # Exclude responses for skipped questions
             responses = responses.exclude(question_id__in=skipped_questions_ids)
 
             # Calculate total possible questions excluding skipped ones
-            total_possible_responses = session.quiz.questions.exclude(
-                id__in=skipped_questions_ids
-            ).count()
+
 
             # Count correct responses
             correct_responses = responses.filter(is_correct=True).count()
