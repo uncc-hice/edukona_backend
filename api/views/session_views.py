@@ -176,7 +176,8 @@ class QuizSessionsByQuizView(APIView):
         quiz = get_object_or_404(Quiz, id=quiz_id)
         if instructor != quiz.instructor:
             return JsonResponse(
-                {"message": "You do not have permission to access this resource"}, status=403
+                {"message": "You do not have permission to access this resource"},
+                status=403,
             )
         sessions = QuizSession.objects.filter(quiz=quiz).order_by("start_time")
         quiz_sessions_data = [
@@ -184,8 +185,8 @@ class QuizSessionsByQuizView(APIView):
                 "quiz_session_id": session.id,
                 "quiz_id": session.quiz.id,
                 "quiz_name": session.quiz.title,
-                "start_time": session.start_time.isoformat() if session.start_time else None,
-                "end_time": session.start_time.isoformat() if session.end_time else None,
+                "start_time": (session.start_time.isoformat() if session.start_time else None),
+                "end_time": (session.start_time.isoformat() if session.end_time else None),
                 "code": session.code,
                 "num_of_participants": session.students.count(),
             }
@@ -254,7 +255,8 @@ class DeleteQuizSession(APIView):
                 )
             else:
                 return Response(
-                    {"message": "You cannot delete quiz sessions you did not create."}, status=403
+                    {"message": "You cannot delete quiz sessions you did not create."},
+                    status=403,
                 )
         except QuizSession.DoesNotExist:
             return Response({"message": "Invalid session code."}, status=404)
