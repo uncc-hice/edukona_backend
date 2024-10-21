@@ -9,17 +9,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v2
         with:
-          fetch-depth: 0  # Fetch entire history for accurate diffs
+          fetch-depth: 0  # fetch entire history so that we can diff properly
 
       - name: Fetch base branch
-        run: |
-          git fetch --no-tags --prune --depth=1 origin +refs/heads/${{ github.event.pull_request.base.ref }}:refs/remotes/origin/${{ github.event.pull_request.base.ref }}
+        run: git fetch --no-tags --prune --depth=1 origin +refs/heads/${{ github.event.pull_request.base.ref }}:refs/remotes/origin/${{ github.event.pull_request.base.ref }}
 
       - name: Diagnostics
         run: |
-          echo "Listing commits between base and head:"
+          echo "Listing commits between base and head"
           git log --oneline origin/${{ github.event.pull_request.base.ref }}..${{ github.sha }}
           echo "HEAD commit hash: ${{ github.sha }}"
           echo "BASE commit hash: $(git merge-base origin/${{ github.event.pull_request.base.ref }} ${{ github.sha }})"
@@ -29,28 +28,22 @@ jobs:
           # Initialize counter
           total_lines_changed=0
           
-          # Get the list of changed files, excluding Django migration files and any tests directories or files named tests.py
-          files=$(git diff --name-only origin/${{ github.event.pull_request.base.ref }} ${{ github.sha }} | grep -Ev "migrations/[^/]+\.py$|/tests/|(^|/)tests\.py$")
-          
-          echo "Changed files after exclusion:"
-          echo "$files"
+          # Get the list of changed files, excluding Django migration files
+          files=$(git diff --name-only origin/${{ github.event.pull_request.base.ref }} ${{ github.sha }} | grep -Ev "migrations/[^/]+\.py$")
           
           # Loop through each changed file
           for file in $files; do
-            # Count lines added and removed for each file, excluding certain patterns
-            lines_changed=$(git diff origin/${{ github.event.pull_request.base.ref }} ${{ github.sha }} -- "$file" | \
-              grep '^[+-]' | \
-              grep -Ev '^(--- a/|\+\+\+ b/|^\s*$|^[+-]\s*#|^[+-]\s*$)' | \
-              wc -l)
-          
+            # Count lines added and removed for each file
+            lines_changed=$(git diff origin/${{ github.event.pull_request.base.ref }} ${{ github.sha }} -- "$file" | grep '^[+-]' | grep -Ev '^(--- a/|\+\+\+ b/|^\s*$|^[+-]\s*#|^[+-]\s*$)' | wc -l)
+
             # Add to total counter
             total_lines_changed=$((total_lines_changed + lines_changed))
           done
           
           # Print total lines changed
-          echo "Total lines changed (excluding Django migration files and tests directories): $total_lines_changed"
-          
-          if [[ "$total_lines_changed" -gt 100 ]]; then
+          echo "Total lines changed (excluding Django migration files): $total_lines_changed"
+
+          if [[ "$total_lines_changed" -gt 150 ]]; then
             echo "Too many lines changed. Failing the check."
             exit 1
           fi
