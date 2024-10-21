@@ -149,24 +149,6 @@ class InstructorViewTest(BaseTest):
 
 
 class QuizViewTest(BaseTest):
-    def test_post_quiz(self):
-        url = reverse("quiz-list")
-        data = {
-            "title": "Test Quiz",
-            "instructor_id": self.new_user_instructor.instructor.id,
-            "start_time": "2023-01-01T00:00:00Z",
-            "end_time": "2023-01-02T00:00:00Z",
-        }
-
-        response = self.client_instructor.post(url, data, format="json")
-
-        self.assertEqual(response.status_code, 201)
-        response_data = response.json()
-        self.assertEqual(response_data["message"], "Quiz created successfully")
-        new_quiz = Quiz.objects.get(id=response_data["quiz_id"])
-        self.assertEqual(new_quiz.title, data["title"])
-        self.assertEqual(new_quiz.instructor.id, data["instructor_id"])
-
     def test_get_quiz(self):
         url = reverse("quiz-detail", kwargs={"quiz_id": self.new_quiz.id})
         response = self.client_instructor.get(url)
@@ -205,6 +187,34 @@ class QuizViewTest(BaseTest):
 
         with self.assertRaises(Quiz.DoesNotExist):
             Quiz.objects.get(id=self.new_quiz.id)
+
+
+class CreateQuizViewTest(BaseTest):
+    def test_post_quiz(self):
+        url = reverse("create-quiz")
+        data = {
+            "title": "Test Quiz",
+            "instructor_id": self.new_user_instructor.instructor.id,
+            "start_time": "2023-01-01T00:00:00Z",
+            "end_time": "2023-01-02T00:00:00Z",
+        }
+
+        response = self.client_instructor.post(url, data, format="json")
+
+        self.assertEqual(response.status_code, 201)
+        response_data = response.json()
+        self.assertEqual(response_data["message"], "Quiz created successfully")
+        new_quiz = Quiz.objects.get(id=response_data["quiz_id"])
+        self.assertEqual(new_quiz.title, data["title"])
+        self.assertEqual(new_quiz.instructor.id, data["instructor_id"])
+
+
+class InstructorQuizzesViewTest(BaseTest):
+    def test_get_quizzes(self):
+        url = reverse("instructor-quizzes")
+        instructor_response = self.client_instructor.get(url)
+
+        self.assertEqual(instructor_response.status_code, 200)
 
 
 class QuestionViewTest(BaseTest):

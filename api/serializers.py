@@ -8,6 +8,7 @@ from .models import (
     Quiz,
     QuestionMultipleChoice,
     UserResponse,
+    QuizSession,
     QuizSessionStudent,
     InstructorRecordings,
     Settings,
@@ -94,6 +95,8 @@ class QuizSerializer(serializers.ModelSerializer):
     instructor_recording = serializers.PrimaryKeyRelatedField(
         queryset=InstructorRecordings.objects.all(), required=False, allow_null=True
     )
+    num_questions = serializers.SerializerMethodField()
+    num_sessions = serializers.SerializerMethodField()
 
     class Meta:
         model = Quiz
@@ -105,6 +108,8 @@ class QuizSerializer(serializers.ModelSerializer):
             "settings",
             "instructor_recording",
             "created_at",
+            "num_questions",
+            "num_sessions",
         ]
         read_only_fields = ["id", "created_at"]
 
@@ -121,7 +126,17 @@ class QuizSerializer(serializers.ModelSerializer):
             SettingsSerializer().update(instance.settings, settings_data)
         return super().update(instance, validated_data)
 
+    def get_num_questions(self, obj):
+        return QuestionMultipleChoice.objects.filter(quiz__id=obj.id).count()
 
+    def get_num_sessions(self, obj):
+        return QuizSession.objects.filter(quiz__id=obj.id).count()
+
+
+class QuizListSerializer(serializers.Serializer):
+    quizzes = QuizSerializer(many=True)
+
+    
 class SignUpInstructorSerializer(serializers.Serializer):
     first_name = serializers.CharField(max_length=150)
     last_name = serializers.CharField(max_length=150, required=False, allow_blank=True)
