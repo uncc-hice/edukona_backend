@@ -6,6 +6,7 @@ from .models import (
     Quiz,
     QuestionMultipleChoice,
     UserResponse,
+    QuizSession,
     QuizSessionStudent,
     InstructorRecordings,
     Settings,
@@ -93,6 +94,8 @@ class QuizSerializer(serializers.ModelSerializer):
     instructor_recording = serializers.PrimaryKeyRelatedField(
         queryset=InstructorRecordings.objects.all(), required=False, allow_null=True
     )
+    num_questions = serializers.SerializerMethodField()
+    num_sessions = serializers.SerializerMethodField()
 
     class Meta:
         model = Quiz
@@ -104,6 +107,8 @@ class QuizSerializer(serializers.ModelSerializer):
             "settings",
             "instructor_recording",
             "created_at",
+            "num_questions",
+            "num_sessions",
         ]
         read_only_fields = ["id", "created_at"]
 
@@ -120,36 +125,47 @@ class QuizSerializer(serializers.ModelSerializer):
             SettingsSerializer().update(instance.settings, settings_data)
         return super().update(instance, validated_data)
 
+    def get_num_questions(self, obj):
+        return QuestionMultipleChoice.objects.filter(quiz__id=obj.id).count()
 
+    def get_num_sessions(self, obj):
+        return QuizSession.objects.filter(quiz__id=obj.id).count()
+
+
+class QuizListSerializer(serializers.Serializer):
+    quizzes = QuizSerializer(many=True)
+
+    
+    
 class ContactMessageSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ContactMessage
-        fields = ["id", "first_name", "last_name", "email", "message", "created_at"]
-        read_only_fields = ["id", "created_at"]
+  class Meta:
+      model = ContactMessage
+      fields = ["id", "first_name", "last_name", "email", "message", "created_at"]
+      read_only_fields = ["id", "created_at"]
 
-    # Make 'last_name' optional with default value ""
-    last_name = serializers.CharField(required=False, allow_blank=True, default="")
+  # Make 'last_name' optional with default value ""
+  last_name = serializers.CharField(required=False, allow_blank=True, default="")
 
-    def validate_email(self, value):
-        """
-        Validate that the email has a proper format.
-        """
-        if not value:
-            raise serializers.ValidationError("Email is required.")
-        return value
+  def validate_email(self, value):
+      """
+      Validate that the email has a proper format.
+      """
+      if not value:
+          raise serializers.ValidationError("Email is required.")
+      return value
 
-    def validate_first_name(self, value):
-        """
-        Ensure that 'first_name' is not just whitespace.
-        """
-        if not value.strip():
-            raise serializers.ValidationError("First name cannot be blank.")
-        return value
+  def validate_first_name(self, value):
+      """
+      Ensure that 'first_name' is not just whitespace.
+      """
+      if not value.strip():
+          raise serializers.ValidationError("First name cannot be blank.")
+      return value
 
-    def validate_message(self, value):
-        """
-        Ensure that 'message' is not just whitespace.
-        """
-        if not value.strip():
-            raise serializers.ValidationError("Message cannot be blank.")
-        return value
+  def validate_message(self, value):
+      """
+      Ensure that 'message' is not just whitespace.
+      """
+      if not value.strip():
+          raise serializers.ValidationError("Message cannot be blank.")
+      return value
