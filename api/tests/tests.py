@@ -210,6 +210,10 @@ class InstructorQuizzesViewTest(BaseTest):
         print("Testing changes here..")
         print("Testing changes here..")
         print("Testing changes here..")
+        print("Testing changes here..")
+        print("Testing changes here..")
+        print("Testing changes here..")
+        print("Testing changes here..")
         url = reverse("instructor-quizzes")
         instructor_response = self.client_instructor.get(url)
 
