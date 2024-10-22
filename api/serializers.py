@@ -136,7 +136,7 @@ class QuizSerializer(serializers.ModelSerializer):
 class QuizListSerializer(serializers.Serializer):
     quizzes = QuizSerializer(many=True)
 
-    
+
 class SignUpInstructorSerializer(serializers.Serializer):
     first_name = serializers.CharField(max_length=150)
     last_name = serializers.CharField(max_length=150, required=False, allow_blank=True)
