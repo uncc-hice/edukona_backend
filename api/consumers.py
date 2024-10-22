@@ -2,6 +2,7 @@ import json
 import logging
 import random
 import datetime
+from collections import defaultdict
 
 from channels.generic.websocket import AsyncWebsocketConsumer
 from django.utils import timezone
@@ -183,9 +184,59 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
 
     async def end_quiz(self):
         if await self.update_quiz_end_time():
-            await self.send(text_data=json.dumps({"type": "quiz_ended"}))
+            grades = await self.fetch_grades()
+            await self.send(
+                text_data=json.dumps(
+                    {
+                        "type": "quiz_ended",
+                        "grades": grades,
+                    }
+                )
+            )
         else:
             print("Failed to end the quiz; session not found.")
+
+    @database_sync_to_async
+    def fetch_grades(self):
+        try:
+            session = QuizSession.objects.get(code=self.code)
+        except QuizSession.DoesNotExist:
+            return {}
+
+        students = session.students.all()
+        grade_buckets = defaultdict(list)
+
+        skipped_questions_ids = QuizSessionQuestion.objects.filter(
+            quiz_session=session, skipped=True
+        ).values_list("question", flat=True)
+
+        total_possible_responses = session.quiz.questions.exclude(
+            id__in=skipped_questions_ids
+        ).count()
+
+        for student in students:
+            responses = UserResponse.objects.filter(student=student, quiz_session=session)
+
+            # Exclude responses for skipped questions
+            responses = responses.exclude(question_id__in=skipped_questions_ids)
+
+            # Count correct responses
+            correct_responses = responses.filter(is_correct=True).count()
+
+            # Calculate percentage
+            if total_possible_responses > 0:
+                percentage = (correct_responses / total_possible_responses) * 100
+            else:
+                percentage = 0.0
+
+            # Round to two decimal places
+            percentage = round(percentage, 2)
+            percentage_key = f"{percentage}"
+
+            # Append the student's username to the appropriate bucket
+            grade_buckets[percentage_key].append(student.username)
+
+        return grade_buckets
 
     async def start_quiz(self):
         await self.channel_layer.group_send(f"quiz_session_{self.code}", {"type": "quiz_started"})

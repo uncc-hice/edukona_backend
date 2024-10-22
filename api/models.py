@@ -190,7 +190,9 @@ class QuizSessionQuestion(models.Model):
         QuizSession, on_delete=models.CASCADE, related_name="quiz_session_questions"
     )
     question = models.ForeignKey(
-        QuestionMultipleChoice, on_delete=models.CASCADE, related_name="quiz_session_questions"
+        QuestionMultipleChoice,
+        on_delete=models.CASCADE,
+        related_name="quiz_session_questions",
     )
     skipped = models.BooleanField(default=False)
     unlocked = models.BooleanField(default=True)
