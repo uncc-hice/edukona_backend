@@ -12,10 +12,12 @@ from django.http import JsonResponse
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 
 from ..permissions import IsQuestionOwner
+from ..permissions import AllowInstructor
 
 
 class QuestionView(APIView):
-    permission_classes = [IsQuestionOwner]
+    # permission_classes = [IsQuestionOwner]
+    permission_classes = [AllowInstructor]
 
     @extend_schema(
         request=QuestionMultipleChoiceSerializer(many=True),
