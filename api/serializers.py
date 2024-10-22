@@ -135,37 +135,36 @@ class QuizSerializer(serializers.ModelSerializer):
 class QuizListSerializer(serializers.Serializer):
     quizzes = QuizSerializer(many=True)
 
-    
-    
+
 class ContactMessageSerializer(serializers.ModelSerializer):
-  class Meta:
-      model = ContactMessage
-      fields = ["id", "first_name", "last_name", "email", "message", "created_at"]
-      read_only_fields = ["id", "created_at"]
+    class Meta:
+        model = ContactMessage
+        fields = ["id", "first_name", "last_name", "email", "message", "created_at"]
+        read_only_fields = ["id", "created_at"]
 
-  # Make 'last_name' optional with default value ""
-  last_name = serializers.CharField(required=False, allow_blank=True, default="")
+    # Make 'last_name' optional with default value ""
+    last_name = serializers.CharField(required=False, allow_blank=True, default="")
 
-  def validate_email(self, value):
-      """
-      Validate that the email has a proper format.
-      """
-      if not value:
-          raise serializers.ValidationError("Email is required.")
-      return value
+    def validate_email(self, value):
+        """
+        Validate that the email has a proper format.
+        """
+        if not value:
+            raise serializers.ValidationError("Email is required.")
+        return value
 
-  def validate_first_name(self, value):
-      """
-      Ensure that 'first_name' is not just whitespace.
-      """
-      if not value.strip():
-          raise serializers.ValidationError("First name cannot be blank.")
-      return value
+    def validate_first_name(self, value):
+        """
+        Ensure that 'first_name' is not just whitespace.
+        """
+        if not value.strip():
+            raise serializers.ValidationError("First name cannot be blank.")
+        return value
 
-  def validate_message(self, value):
-      """
-      Ensure that 'message' is not just whitespace.
-      """
-      if not value.strip():
-          raise serializers.ValidationError("Message cannot be blank.")
-      return value
+    def validate_message(self, value):
+        """
+        Ensure that 'message' is not just whitespace.
+        """
+        if not value.strip():
+            raise serializers.ValidationError("Message cannot be blank.")
+        return value
