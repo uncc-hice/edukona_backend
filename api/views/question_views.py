@@ -11,13 +11,12 @@ from rest_framework import serializers
 from django.http import JsonResponse
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 
-from ..permissions import IsQuestionOwner
-from ..permissions import AllowInstructor
+from api.permissions import IsQuestionOwner
+from api.permissions import IsOwnerOfAllQuizzes
 
 
-class QuestionView(APIView):
-    # permission_classes = [IsQuestionOwner]
-    permission_classes = [AllowInstructor]
+class CreateMultipleQuestionsView(APIView):
+    permission_classes = [IsOwnerOfAllQuizzes]
 
     @extend_schema(
         request=QuestionMultipleChoiceSerializer(many=True),
@@ -62,6 +61,10 @@ class QuestionView(APIView):
             {"created_questions": created_questions, "errors": errors},
             status=status.HTTP_201_CREATED,
         )
+
+
+class QuestionView(APIView):
+    permission_classes = [IsQuestionOwner]
 
     # Get method to question by id
     def get(self, request, question_id):
