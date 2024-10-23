@@ -18,6 +18,11 @@ urlpatterns = [
         AllQuizQuestionsView.as_view(),
         name="all-questions",
     ),
+    path(
+        "create-multiple-questions/",
+        CreateMultipleQuestionsView.as_view(),
+        name="create-multiple-questions",
+    ),
     path("instructor/", InstructorView.as_view(), name="instructor-detail"),
     path(
         "instructor/<int:instructor_id>/",
