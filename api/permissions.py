@@ -11,6 +11,36 @@ class AllowInstructor(permissions.BasePermission):
         return Instructor.objects.filter(user=request.user).exists()
 
 
+class IsOwnerOfAllQuizzes(permissions.BasePermission):
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+
+        # Ensure request data is parsed
+        if not hasattr(request, "data"):
+            return False
+
+        if not isinstance(request.data, list):
+            return False  # Expected a list of questions
+
+        quiz_ids = set()
+        for question_data in request.data:
+            quiz_id = question_data.get("quiz_id")
+            if not quiz_id:
+                return False  # 'quiz_id' is required
+            quiz_ids.add(quiz_id)
+
+        quizzes = Quiz.objects.filter(id__in=quiz_ids)
+        if quizzes.count() != len(quiz_ids):
+            return False  # One or more quizzes do not exist
+
+        for quiz in quizzes:
+            if request.user != quiz.instructor.user:
+                return False  # User does not own all quizzes
+
+        return True
+
+
 class IsQuizOwner(permissions.BasePermission):
     def has_permission(self, request, view):
         if not request.user or not request.user.is_authenticated:
