@@ -5,7 +5,6 @@ from rest_framework.test import APIClient, APITestCase
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from api.models import User, Instructor, Student, Quiz, QuestionMultipleChoice
-from api.serializers import QuestionMultipleChoiceSerializer
 
 
 class CreateMultipleQuestionsViewTest(APITestCase):
