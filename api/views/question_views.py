@@ -28,7 +28,7 @@ class CreateMultipleQuestionsView(APIView):
     )
     def post(self, request):
         # Expecting request.data to be a list of questions
-        if not isinstance(request.data, list):
+        if not isinstance(request.data, list) or not request.data:
             return JsonResponse(
                 {"error": "Expected a list of questions"},
                 status=status.HTTP_400_BAD_REQUEST,
