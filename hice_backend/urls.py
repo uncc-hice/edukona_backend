@@ -152,4 +152,9 @@ urlpatterns = [
         GenerateTemporaryCredentialsView.as_view(),
         name="generate-temporary-credentials",
     ),
+    path(
+        "create-recording/",
+        CreateRecordingView.as_view(),
+        name="create-recording",
+    ),
 ]
