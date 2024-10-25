@@ -1,7 +1,14 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from drf_spectacular.utils import extend_schema
+from rest_framework import status
+
+from api.serializers import InstructorRecordingsSerializer
 from django.conf import settings
+from django.shortcuts import get_object_or_404
+
+from api.models import Instructor
 import boto3
 import json
 
@@ -61,3 +68,64 @@ class GenerateTemporaryCredentialsView(APIView):
             )
         except Exception as e:
             return Response({"error": str(e)}, status=500)
+
+
+class CreateRecordingView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        operation_id="create_recording",
+        summary="Create a new recording entry",
+        description="Creates a new InstructorRecordings entry in the database with the provided S3 key and metadata.",
+        request=InstructorRecordingsSerializer,
+        responses={
+            201: InstructorRecordingsSerializer,
+            400: "Bad Request",
+            401: "Unauthorized",
+        },
+    )
+    def post(self, request):
+        instructor = get_object_or_404(Instructor, user=request.user)
+        data = request.data.copy()
+        data["instructor"] = instructor.id  # Add the instructor ID to the data
+
+        serializer = InstructorRecordingsSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            new_recording = serializer.instance  # Get the newly created recording instance
+
+            # Invoke the Lambda function asynchronously
+            try:
+                lambda_client = boto3.client(
+                    "lambda",
+                    aws_access_key_id=settings.AWS_LAMBDA_INVOKER_ACCESS_KEY_ID,
+                    aws_secret_access_key=settings.AWS_LAMBDA_INVOKER_SECRET_ACCESS_KEY,
+                    region_name=settings.AWS_LAMBDA_INVOKER_REGION_NAME,
+                )
+
+                # Extract the token from the Authorization header
+                token = request.META.get("HTTP_AUTHORIZATION").split(" ")[1]
+
+                # Prepare the payload for the Lambda function
+                payload = {
+                    "s3_key": new_recording.s3_path,
+                    "token": token,
+                    "recording_id": str(new_recording.id),
+                }
+
+                # Invoke the Lambda function asynchronously
+                lambda_client.invoke(
+                    FunctionName="TranscribeAudio",  # Replace with your Lambda function name
+                    InvocationType="Event",  # Asynchronous invocation
+                    Payload=json.dumps(payload),
+                )
+            except Exception as e:
+                # Handle Lambda invocation errors if necessary
+                return Response(
+                    {"error": f"Recording saved, but failed to invoke Lambda: {str(e)}"},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                )
+
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
