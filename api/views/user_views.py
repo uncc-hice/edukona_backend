@@ -576,6 +576,7 @@ class ContactPageView(APIView):
                     {"message": "Invalid data provided"}, status=status.HTTP_400_BAD_REQUEST
                 )
 
+
 class DeleteUserView(APIView):
     def delete(self, request, user_id):
         user = get_object_or_404(User, id=user_id)
