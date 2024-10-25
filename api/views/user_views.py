@@ -578,7 +578,8 @@ class ContactPageView(APIView):
 
 
 class DeleteUserView(APIView):
-    def delete(self, request, user_id):
-        user = get_object_or_404(User, id=user_id)
+    def delete(self, request):
+        id = request.user.id
+        user = get_object_or_404(User, id=id)
         user.delete()
         return JsonResponse({"message": "User deleted successfully"})
