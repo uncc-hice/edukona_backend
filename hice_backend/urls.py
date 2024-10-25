@@ -18,6 +18,11 @@ urlpatterns = [
         AllQuizQuestionsView.as_view(),
         name="all-questions",
     ),
+    path(
+        "create-multiple-questions/",
+        CreateMultipleQuestionsView.as_view(),
+        name="create-multiple-questions",
+    ),
     path("instructor/", InstructorView.as_view(), name="instructor-detail"),
     path(
         "instructor/<int:instructor_id>/",
@@ -139,5 +144,6 @@ urlpatterns = [
         name="get-transcript",
     ),
     path("auth/google/", GoogleLogin.as_view()),  # Route for Google login
+    path("contact-us/", ContactPageView.as_view(), name="contact-us"),
     path("profile/", ProfileView.as_view(), name="profile"),
 ]
