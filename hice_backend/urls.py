@@ -4,6 +4,7 @@ from api.views.question_views import *
 from api.views.quiz_views import *
 from api.views.session_views import *
 from api.views.user_views import *
+from api.views.recordings_views import *
 from api.consumers import *
 
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
@@ -146,4 +147,14 @@ urlpatterns = [
     path("auth/google/", GoogleLogin.as_view()),  # Route for Google login
     path("contact-us/", ContactPageView.as_view(), name="contact-us"),
     path("profile/", ProfileView.as_view(), name="profile"),
+    path(
+        "generate-temporary-credentials/",
+        GenerateTemporaryCredentialsView.as_view(),
+        name="generate-temporary-credentials",
+    ),
+    path(
+        "create-recording/",
+        CreateRecordingView.as_view(),
+        name="create-recording",
+    ),
 ]

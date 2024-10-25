@@ -65,6 +65,9 @@ class InstructorRecordingsSerializer(serializers.ModelSerializer):
     class Meta:
         model = InstructorRecordings
         fields = ["id", "s3_path", "uploaded_at", "instructor", "transcript", "title"]
+        read_only_fields = ["id", "uploaded_at", "transcript"]
+
+        instructor = serializers.PrimaryKeyRelatedField(read_only=True)
 
 
 class UpdateTranscriptSerializer(serializers.Serializer):
