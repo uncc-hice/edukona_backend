@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 from django.test import TestCase
 from django.urls import reverse
 from rest_framework.test import APIClient
@@ -10,38 +12,50 @@ from api.models import *
 
 
 class BaseTest(TestCase):
-
     def setUp(self):
         self.client = APIClient()
+
+        # Create Instructor User
         self.new_user_instructor = User.objects.create_user(
-            username="test@gmail.com", password="password"
+            username="test@gmail.com",
+            email="test@gmail.com",
+            password="password",
+            first_name="Test",
+            last_name="Instructor",
         )
-        Instructor.objects.create(user=self.new_user_instructor)
+        self.instructor = Instructor.objects.create(user=self.new_user_instructor)
         token, _ = Token.objects.get_or_create(user=self.new_user_instructor)
         self.client_instructor = APIClient()
         self.client_instructor.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
+        # Create Student User
         self.new_user_student = User.objects.create_user(
-            username="student@gmail.com", password="password"
+            username="student@gmail.com",
+            email="student@gmail.com",
+            password="password",
+            first_name="Student",
+            last_name="User",
         )
-        Student.objects.create(user=self.new_user_student)
+        self.student = Student.objects.create(user=self.new_user_student)
         token, _ = Token.objects.get_or_create(user=self.new_user_student)
         self.client_student = APIClient()
         self.client_student.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
+        # Create Quiz
         self.new_quiz = Quiz.objects.create(
             title="Test Quiz",
-            instructor_id=1,
+            instructor=self.instructor,
             start_time="2021-10-10T00:00:00Z",
             end_time="2021-10-10T00:00:00Z",
         )
 
+        # Create Questions
         self.new_question = QuestionMultipleChoice.objects.create(
             question_text="What is 1+1?",
             incorrect_answer_list=["0", "1", "3"],
             correct_answer="2",
             points=1,
-            quiz_id=1,
+            quiz=self.new_quiz,
         )
 
         self.second_new_question = QuestionMultipleChoice.objects.create(
@@ -49,21 +63,24 @@ class BaseTest(TestCase):
             incorrect_answer_list=["3", "4", "5"],
             correct_answer="6",
             points=5,
-            quiz_id=1,
+            quiz=self.new_quiz,
         )
 
+        # Create Quiz Session
         self.new_quiz_session = QuizSession.objects.create(
             quiz=self.new_quiz, code=QuizSession.generate_unique_code(self)
         )
 
+        # Create Quiz Session Student
         self.new_quiz_session_student = QuizSessionStudent.objects.create(
             quiz_session=self.new_quiz_session, username="test"
         )
 
+        # Create User Response
         self.new_user_response = UserResponse.objects.create(
             student=self.new_quiz_session_student,
-            question_id=self.new_question.id,
-            quiz_session_id=self.new_quiz_session.id,
+            question=self.new_question,
+            quiz_session=self.new_quiz_session,
             selected_answer="2",
             is_correct=(self.new_question.correct_answer == "2"),
         )
@@ -512,3 +529,142 @@ class ProfileViewTest(BaseTest):
         response_data = response.json()
         self.assertIn("detail", response_data)
         self.assertEqual(response_data["detail"], "Authentication credentials were not provided.")
+
+
+class SignUpInstructorTests(BaseTest):
+    def setUp(self):
+        super().setUp()
+        self.signup_url = reverse(
+            "sign-up-instructor"
+        )  # Ensure this name matches your URL configuration
+
+    @patch("api.views.user_views.mailInstructor")  # Adjust the path based on your project structure
+    def test_signup_instructor_success(self, mock_mailInstructor):
+        """
+        Test that a user can successfully sign up as an instructor with all required fields.
+        """
+        data = {
+            "first_name": "Jane",
+            "last_name": "Doe",
+            "email": "jane.doe@example.com",
+            "password": "StrongPassword123!",
+        }
+
+        response = self.client.post(self.signup_url, data, format="json")
+
+        # Assert HTTP 201 Created
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # Assert response contains token, user, and instructor IDs
+        self.assertIn("token", response.data)
+        self.assertIn("user", response.data)
+        self.assertIn("instructor", response.data)
+
+        # Verify User creation
+        user = User.objects.get(email=data["email"])
+        self.assertEqual(user.first_name, data["first_name"])
+        self.assertEqual(user.last_name, data["last_name"])
+        self.assertTrue(user.check_password(data["password"]))
+
+        # Verify Token creation
+        token = Token.objects.get(user=user)
+        self.assertEqual(response.data["token"], token.key)
+
+        # Verify Instructor creation
+        instructor = Instructor.objects.get(user=user)
+        self.assertEqual(str(instructor.id), response.data["instructor"])
+
+        # Assert that mailInstructor was called once with correct email
+        mock_mailInstructor.assert_called_once_with(user.email)
+
+    @patch("api.views.user_views.mailInstructor")
+    def test_signup_instructor_invalid_email_format(self, mock_mailInstructor):
+        """
+        Test that signing up with an invalid email format fails.
+        """
+        data = {
+            "first_name": "Alice",
+            "last_name": "Wonderland",
+            "email": "invalid-email-format",
+            "password": "ValidPass123!",
+        }
+
+        response = self.client.post(self.signup_url, data, format="json")
+
+        # Assert HTTP 400 Bad Request
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        # Assert error message
+        self.assertIn("message", response.data)
+        self.assertEqual(response.data["message"], "Enter a valid email address.")
+
+        # Ensure no User or Instructor was created
+        self.assertFalse(User.objects.filter(email=data["email"]).exists())
+
+        # Assert that mailInstructor was not called
+        mock_mailInstructor.assert_not_called()
+
+    @patch("api.views.user_views.mailInstructor")
+    def test_signup_instructor_missing_required_fields(self, mock_mailInstructor):
+        """
+        Test that signing up without required fields fails.
+        """
+        data = {
+            "last_name": "NoFirstName",
+            "email": "nofirstname@example.com",
+            "password": "ValidPass123!",
+        }
+
+        response = self.client.post(self.signup_url, data, format="json")
+
+        # Assert HTTP 400 Bad Request
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        # Assert error message
+        self.assertIn("message", response.data)
+        self.assertEqual(response.data["message"], "Please provide all required fields.")
+
+        # Ensure no User or Instructor was created
+        self.assertFalse(User.objects.filter(email=data["email"]).exists())
+
+        # Assert that mailInstructor was not called
+        mock_mailInstructor.assert_not_called()
+
+    @patch("api.views.user_views.mailInstructor")
+    def test_signup_instructor_blank_last_name(self, mock_mailInstructor):
+        """
+        Test that signing up with a blank last_name sets it to an empty string.
+        """
+        data = {
+            "first_name": "Charlie",
+            "last_name": "",  # Blank last_name
+            "email": "charlie@example.com",
+            "password": "StrongPass123!",
+        }
+
+        response = self.client.post(self.signup_url, data, format="json")
+
+        # Assert HTTP 201 Created
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # Assert response contains token, user, and instructor IDs
+        self.assertIn("token", response.data)
+        self.assertIn("user", response.data)
+        self.assertIn("instructor", response.data)
+
+        # Verify User creation
+        user = User.objects.get(email=data["email"])
+        self.assertEqual(user.first_name, data["first_name"])
+        self.assertEqual(user.last_name, "")  # Should be empty string
+        self.assertTrue(user.check_password(data["password"]))
+
+        # Verify Token creation
+        token = Token.objects.get(user=user)
+        self.assertEqual(response.data["token"], token.key)
+
+        # Verify Instructor creation
+        instructor = Instructor.objects.get(user=user)
+        self.assertEqual(str(instructor.id), response.data["instructor"])
+
+        # Assert that mailInstructor was called once with correct email
+        mock_mailInstructor.assert_called_once_with(user.email)

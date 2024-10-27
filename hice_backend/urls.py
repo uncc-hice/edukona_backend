@@ -39,7 +39,7 @@ urlpatterns = [
         UserResponseView.as_view(),
         name="user-response-detail",
     ),
-    path("sign-up-instructor/", SignUpInstructor.as_view()),
+    path("sign-up-instructor/", SignUpInstructor.as_view(), name="sign-up-instructor"),
     # path('sign-up-student/', SignUpStudent.as_view()),
     path("login/", Login.as_view(), name="login"),
     path("logout/", Logout.as_view()),
