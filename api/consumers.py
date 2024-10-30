@@ -390,7 +390,7 @@ class StudentConsumer(AsyncWebsocketConsumer):
             )
             return False
 
-        if quiz_session_question.unlocked == False:
+        if quiz_session_question.unlocked is False:
             return False
         extension = quiz_session_question.extension
         adjusted_open_time = quiz_session_question.opened_at.timestamp() + extension
