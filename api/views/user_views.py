@@ -33,9 +33,10 @@ from api.serializers import (
     GetTranscriptResponseSerializer,
     GoogleLoginResponseSerializer,
     GoogleLoginRequestSerializer,
+    SignUpInstructorSerializer,
     ContactMessageSerializer,
 )
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, OpenApiExample
 from drf_spectacular.types import OpenApiTypes
 
 import boto3
@@ -59,15 +60,78 @@ def mailInstructor(email):
 class SignUpInstructor(APIView):
     permission_classes = [AllowAny]
 
+    @extend_schema(
+        operation_id="sign_up_instructor",
+        summary="Sign up as an Instructor",
+        description="Allows a new user to sign up as an instructor by "
+        "providing first name, last name (optional), email, and password.",
+        request=SignUpInstructorSerializer,
+        responses={
+            201: {
+                "description": "Instructor created successfully.",
+                "content": {
+                    "application/json": {
+                        "example": {
+                            "token": "abc123def456ghi789",
+                            "user": "user-uuid-string",
+                            "instructor": "instructor-uuid-string",
+                        }
+                    }
+                },
+            },
+            400: {
+                "description": "Bad Request. Input data is invalid.",
+                "content": {
+                    "application/json": {
+                        "example": {"message": "A user with this email already exists."}
+                    }
+                },
+            },
+        },
+        examples=[
+            OpenApiExample(
+                "Valid Input",
+                value={
+                    "first_name": "John",
+                    "last_name": "Doe",
+                    "email": "john.doe@example.com",
+                    "password": "StrongPassword123!",
+                },
+                request_only=True,
+                response_only=False,
+            ),
+        ],
+    )
     def post(self, request):
-        new_user = request.data.pop("user", {})
-        instructor = Instructor.objects.create(user=User.objects.create(**new_user), **request.data)
-        user = get_object_or_404(User, id=instructor.user_id)
-        user.set_password(new_user["password"])
-        user.save()
-        token = Token.objects.create(user=user)
-        mailInstructor(user.email)
-        return JsonResponse({"token": token.key, "user": user.id, "instructor": instructor.id})
+        serializer = SignUpInstructorSerializer(data=request.data)
+        if serializer.is_valid():
+            instructor = serializer.save()
+            user = instructor.user
+            token, created = Token.objects.get_or_create(user=user)
+            mailInstructor(user.email)  # Send a welcome email to the instructor
+            return Response(
+                {"token": token.key, "user": str(user.id), "instructor": str(instructor.id)},
+                status=status.HTTP_201_CREATED,
+            )
+        else:
+            # Customize error messages based on validation errors
+            errors = serializer.errors
+            if "email" in errors:
+                return Response({"message": errors["email"][0]}, status=status.HTTP_400_BAD_REQUEST)
+            elif "password" in errors:
+                return Response(
+                    {"message": errors["password"][0]}, status=status.HTTP_400_BAD_REQUEST
+                )
+            elif "first_name" in errors:
+                return Response(
+                    {"message": "Please provide all required fields."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            else:
+                # Generic error message for other validation errors
+                return Response(
+                    {"message": "Invalid data provided."}, status=status.HTTP_400_BAD_REQUEST
+                )
 
 
 class ProfileView(APIView):
@@ -575,3 +639,11 @@ class ContactPageView(APIView):
                 return Response(
                     {"message": "Invalid data provided"}, status=status.HTTP_400_BAD_REQUEST
                 )
+
+
+class DeleteUserView(APIView):
+    def delete(self, request):
+        id = request.user.id
+        user = get_object_or_404(User, id=id)
+        user.delete()
+        return JsonResponse({"message": "User deleted successfully"})

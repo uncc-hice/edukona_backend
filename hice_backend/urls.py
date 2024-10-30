@@ -39,7 +39,7 @@ urlpatterns = [
         UserResponseView.as_view(),
         name="user-response-detail",
     ),
-    path("sign-up-instructor/", SignUpInstructor.as_view()),
+    path("sign-up-instructor/", SignUpInstructor.as_view(), name="sign-up-instructor"),
     # path('sign-up-student/', SignUpStudent.as_view()),
     path("login/", Login.as_view(), name="login"),
     path("logout/", Logout.as_view()),
@@ -147,6 +147,7 @@ urlpatterns = [
     path("auth/google/", GoogleLogin.as_view()),  # Route for Google login
     path("contact-us/", ContactPageView.as_view(), name="contact-us"),
     path("profile/", ProfileView.as_view(), name="profile"),
+    path("delete-user/", DeleteUserView.as_view(), name="delete-user"),
     path(
         "generate-temporary-credentials/",
         GenerateTemporaryCredentialsView.as_view(),
