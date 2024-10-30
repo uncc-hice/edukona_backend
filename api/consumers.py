@@ -1,7 +1,6 @@
 import json
 import logging
 import random
-import datetime
 from collections import defaultdict
 
 from channels.generic.websocket import AsyncWebsocketConsumer
@@ -67,6 +66,8 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
                 await self.add_to_duration(data["question_id"], data["extension"])
             elif data["type"] == "skip_question":
                 await self.skip_question(data["question_id"])
+            elif data["type"] == "question_timer_started":
+                await self.question_timer_started(data)
 
     async def send_student_question_and_order(self, data):
         order = data.get("order")
@@ -317,6 +318,19 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
         await self.skip_question_db(question_id)
         await self.send_next_question()
 
+    @database_sync_to_async
+    def update_opened_at(self, question_id):
+        quiz_session_question = QuizSessionQuestion.objects.get(
+            question__id=question_id, quiz_session__code=self.code
+        )
+        quiz_session_question.opened_at = timezone.now()
+        quiz_session_question.save()
+        return json.dumps({"type": "question_timer_started", "status": "success"})
+
+    async def question_timer_started(self, data):
+        result = await self.update_opened_at(data["question_id"])
+        await self.send(text_data=result)
+
 
 class StudentConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -376,11 +390,11 @@ class StudentConsumer(AsyncWebsocketConsumer):
             )
             return False
 
-        if not quiz_session_question.unlocked:
+        if quiz_session_question.unlocked is False:
             return False
-        extension = datetime.timedelta(seconds=quiz_session_question.extension)
-        adjusted_open_time = quiz_session_question.opened_at + extension
-        return (timezone.now() - adjusted_open_time).seconds < question.duration
+        extension = quiz_session_question.extension
+        adjusted_open_time = quiz_session_question.opened_at.timestamp() + extension
+        return timezone.now().timestamp() - adjusted_open_time <= question.duration
 
     @database_sync_to_async
     def create_user_response(self, data):
@@ -415,7 +429,7 @@ class StudentConsumer(AsyncWebsocketConsumer):
             "message": "User response created successfully",
             "response_id": user_response.id,
             "question_id": data["question_id"],
-            "is_correct": is_correct,
+            "selected_answer": selected_answer,
         }
 
     @database_sync_to_async
