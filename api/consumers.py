@@ -1,7 +1,6 @@
 import json
 import logging
 import random
-import datetime
 from collections import defaultdict
 
 from channels.generic.websocket import AsyncWebsocketConsumer
