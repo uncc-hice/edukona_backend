@@ -408,8 +408,8 @@ class StudentConsumer(AsyncWebsocketConsumer):
 
         if not self.is_question_open(question):
             return {
-                "status": "failed",
                 "type": "question_locked",
+                "status": "failed",
                 "question_id": question.id,
             }
 
@@ -425,6 +425,7 @@ class StudentConsumer(AsyncWebsocketConsumer):
         user_response.save()
 
         return {
+            "type": "answer_accepted",
             "status": "success",
             "message": "User response created successfully",
             "response_id": user_response.id,
