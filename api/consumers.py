@@ -425,7 +425,7 @@ class StudentConsumer(AsyncWebsocketConsumer):
         user_response.save()
 
         return {
-            "type": "answer_accepted",
+            "type": "answer",
             "status": "success",
             "message": "User response created successfully",
             "response_id": user_response.id,
