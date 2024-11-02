@@ -27,10 +27,14 @@ jobs:
         pip install -r requirements.txt
         pip install pytest-django pytest-asyncio
 
+    - name: Test Redis Connection
+      run: |
+        redis-cli -h redis ping
+
     - name: Run WebSocket Tests
       env:
         DJANGO_SETTINGS_MODULE: hice_backend.settings
         SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
-        REDIS: redis
+        REDIS_HOST: 'redis'
       run: |
         pytest api/tests/consumer_tests.py -v
