@@ -4,13 +4,13 @@ from api.views.question_views import *
 from api.views.quiz_views import *
 from api.views.session_views import *
 from api.views.user_views import *
+from api.views.recordings_views import *
 from api.consumers import *
 
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("quiz/", QuizView.as_view(), name="quiz-list"),
     path("quiz/<int:quiz_id>/", QuizView.as_view(), name="quiz-detail"),
     path("question/", QuestionView.as_view(), name="question-list"),
     path("question/<int:question_id>/", QuestionView.as_view(), name="question-detail"),
@@ -19,12 +19,18 @@ urlpatterns = [
         AllQuizQuestionsView.as_view(),
         name="all-questions",
     ),
+    path(
+        "create-multiple-questions/",
+        CreateMultipleQuestionsView.as_view(),
+        name="create-multiple-questions",
+    ),
     path("instructor/", InstructorView.as_view(), name="instructor-detail"),
     path(
         "instructor/<int:instructor_id>/",
         InstructorView.as_view(),
         name="instructor-detail",
     ),
+    path("instructor/quizzes/", InstructorQuizzesView.as_view(), name="instructor-quizzes"),
     # path('student/', StudentView.as_view(), name='student-list'),
     # path('student/<int:student_id>/', StudentView.as_view(), name='student-detail'),
     path("user-response/", UserResponseView.as_view(), name="user-response-list"),
@@ -33,7 +39,7 @@ urlpatterns = [
         UserResponseView.as_view(),
         name="user-response-detail",
     ),
-    path("sign-up-instructor/", SignUpInstructor.as_view()),
+    path("sign-up-instructor/", SignUpInstructor.as_view(), name="sign-up-instructor"),
     # path('sign-up-student/', SignUpStudent.as_view()),
     path("login/", Login.as_view(), name="login"),
     path("logout/", Logout.as_view()),
@@ -110,6 +116,7 @@ urlpatterns = [
         name="quiz-session-responses",
     ),
     path("quiz/<int:quiz_id>/settings", SettingsView.as_view(), name="quiz-settings"),
+    path("quiz/create/", CreateQuizView.as_view(), name="create-quiz"),
     path(
         "schema/swagger-ui/",
         SpectacularSwaggerView.as_view(url_name="schema"),
@@ -138,4 +145,17 @@ urlpatterns = [
         name="get-transcript",
     ),
     path("auth/google/", GoogleLogin.as_view()),  # Route for Google login
+    path("contact-us/", ContactPageView.as_view(), name="contact-us"),
+    path("profile/", ProfileView.as_view(), name="profile"),
+    path("delete-user/", DeleteUserView.as_view(), name="delete-user"),
+    path(
+        "generate-temporary-credentials/",
+        GenerateTemporaryCredentialsView.as_view(),
+        name="generate-temporary-credentials",
+    ),
+    path(
+        "create-recording/",
+        CreateRecordingView.as_view(),
+        name="create-recording",
+    ),
 ]

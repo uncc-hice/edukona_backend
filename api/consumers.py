@@ -1,7 +1,7 @@
 import json
 import logging
 import random
-import datetime
+from collections import defaultdict
 
 from channels.generic.websocket import AsyncWebsocketConsumer
 from django.utils import timezone
@@ -62,6 +62,12 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
                 await self.send_current_question()
             elif data["type"] == "delete_student":
                 await self.delete_student(data["username"])
+            elif data["type"] == "increase_duration":
+                await self.add_to_duration(data["question_id"], data["extension"])
+            elif data["type"] == "skip_question":
+                await self.skip_question(data["question_id"])
+            elif data["type"] == "question_timer_started":
+                await self.question_timer_started(data)
 
     async def send_student_question_and_order(self, data):
         order = data.get("order")
@@ -179,9 +185,59 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
 
     async def end_quiz(self):
         if await self.update_quiz_end_time():
-            await self.send(text_data=json.dumps({"type": "quiz_ended"}))
+            grades = await self.fetch_grades()
+            await self.send(
+                text_data=json.dumps(
+                    {
+                        "type": "quiz_ended",
+                        "grades": grades,
+                    }
+                )
+            )
         else:
             print("Failed to end the quiz; session not found.")
+
+    @database_sync_to_async
+    def fetch_grades(self):
+        try:
+            session = QuizSession.objects.get(code=self.code)
+        except QuizSession.DoesNotExist:
+            return {}
+
+        students = session.students.all()
+        grade_buckets = defaultdict(list)
+
+        skipped_questions_ids = QuizSessionQuestion.objects.filter(
+            quiz_session=session, skipped=True
+        ).values_list("question", flat=True)
+
+        total_possible_responses = session.quiz.questions.exclude(
+            id__in=skipped_questions_ids
+        ).count()
+
+        for student in students:
+            responses = UserResponse.objects.filter(student=student, quiz_session=session)
+
+            # Exclude responses for skipped questions
+            responses = responses.exclude(question_id__in=skipped_questions_ids)
+
+            # Count correct responses
+            correct_responses = responses.filter(is_correct=True).count()
+
+            # Calculate percentage
+            if total_possible_responses > 0:
+                percentage = (correct_responses / total_possible_responses) * 100
+            else:
+                percentage = 0.0
+
+            # Round to two decimal places
+            percentage = round(percentage, 2)
+            percentage_key = f"{percentage}"
+
+            # Append the student's username to the appropriate bucket
+            grade_buckets[percentage_key].append(student.username)
+
+        return grade_buckets
 
     async def start_quiz(self):
         await self.channel_layer.group_send(f"quiz_session_{self.code}", {"type": "quiz_started"})
@@ -230,6 +286,50 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
     async def update_answers(self, event):
         results = await self.fetch_question_results(event["question_id"])
         await self.send(text_data=json.dumps({"type": "update_answers", "data": results}))
+
+    @database_sync_to_async
+    def add_to_duration_db(self, question_id, extension: int):
+        quiz_session_question = QuizSessionQuestion.objects.get(
+            quiz_session__code=self.code, question__id=question_id
+        )
+        quiz_session_question.extension += extension
+        quiz_session_question.save()
+        return quiz_session_question
+
+    async def add_to_duration(self, question_id, extension: int):
+        quiz_session_question = await self.add_to_duration_db(question_id, extension)
+        response = {
+            "type": "time_extended",
+            "question_opened_at": quiz_session_question.opened_at.isoformat(),
+            "extension": quiz_session_question.extension,
+        }
+        await self.send(text_data=json.dumps(response))
+
+    @database_sync_to_async
+    def skip_question_db(self, question_id):
+        quiz_session_question = QuizSessionQuestion.objects.get(
+            question__id=question_id, quiz_session__code=self.code
+        )
+        quiz_session_question.skipped = True
+        quiz_session_question.unlocked = False
+        quiz_session_question.save()
+
+    async def skip_question(self, question_id):
+        await self.skip_question_db(question_id)
+        await self.send_next_question()
+
+    @database_sync_to_async
+    def update_opened_at(self, question_id):
+        quiz_session_question = QuizSessionQuestion.objects.get(
+            question__id=question_id, quiz_session__code=self.code
+        )
+        quiz_session_question.opened_at = timezone.now()
+        quiz_session_question.save()
+        return json.dumps({"type": "question_timer_started", "status": "success"})
+
+    async def question_timer_started(self, data):
+        result = await self.update_opened_at(data["question_id"])
+        await self.send(text_data=result)
 
 
 class StudentConsumer(AsyncWebsocketConsumer):
@@ -290,9 +390,11 @@ class StudentConsumer(AsyncWebsocketConsumer):
             )
             return False
 
-        extension = datetime.timedelta(seconds=quiz_session_question.extension)
-        adjusted_open_time = quiz_session_question.opened_at + extension
-        return (timezone.now() - adjusted_open_time).seconds < question.duration
+        if quiz_session_question.unlocked is False:
+            return False
+        extension = quiz_session_question.extension
+        adjusted_open_time = quiz_session_question.opened_at.timestamp() + extension
+        return timezone.now().timestamp() - adjusted_open_time <= question.duration
 
     @database_sync_to_async
     def create_user_response(self, data):
@@ -327,7 +429,7 @@ class StudentConsumer(AsyncWebsocketConsumer):
             "message": "User response created successfully",
             "response_id": user_response.id,
             "question_id": data["question_id"],
-            "is_correct": is_correct,
+            "selected_answer": selected_answer,
         }
 
     @database_sync_to_async
@@ -379,6 +481,9 @@ class StudentConsumer(AsyncWebsocketConsumer):
 
     async def quiz_started(self, event):
         await self.send(text_data=json.dumps({"type": "quiz_started"}))
+
+    async def time_extended(self, event):
+        await self.send(text_data=json.dumps(event))
 
     @database_sync_to_async
     def get_student(self, student_id):

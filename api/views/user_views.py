@@ -2,6 +2,10 @@ from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
 from django.db import transaction
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
+import os
+from rest_framework.throttling import UserRateThrottle
 
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -29,25 +33,119 @@ from api.serializers import (
     GetTranscriptResponseSerializer,
     GoogleLoginResponseSerializer,
     GoogleLoginRequestSerializer,
+    SignUpInstructorSerializer,
+    ContactMessageSerializer,
 )
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, OpenApiExample
 from drf_spectacular.types import OpenApiTypes
 
 import boto3
 import json
 
 
+def mailInstructor(email):
+    message = Mail(from_email="edukona.team@gmail.com", to_emails=email)
+
+    message.template_id = os.getenv("WELCOME_TEMPLATE_ID")
+    try:
+        sg = SendGridAPIClient(os.environ.get("SENDGRID_API_KEY"))
+        response = sg.send(message)
+        print(response.status_code)
+        print(response.body)
+        print(response.headers)
+    except Exception as e:
+        print(e.message)
+
+
 class SignUpInstructor(APIView):
     permission_classes = [AllowAny]
 
+    @extend_schema(
+        operation_id="sign_up_instructor",
+        summary="Sign up as an Instructor",
+        description="Allows a new user to sign up as an instructor by "
+        "providing first name, last name (optional), email, and password.",
+        request=SignUpInstructorSerializer,
+        responses={
+            201: {
+                "description": "Instructor created successfully.",
+                "content": {
+                    "application/json": {
+                        "example": {
+                            "token": "abc123def456ghi789",
+                            "user": "user-uuid-string",
+                            "instructor": "instructor-uuid-string",
+                        }
+                    }
+                },
+            },
+            400: {
+                "description": "Bad Request. Input data is invalid.",
+                "content": {
+                    "application/json": {
+                        "example": {"message": "A user with this email already exists."}
+                    }
+                },
+            },
+        },
+        examples=[
+            OpenApiExample(
+                "Valid Input",
+                value={
+                    "first_name": "John",
+                    "last_name": "Doe",
+                    "email": "john.doe@example.com",
+                    "password": "StrongPassword123!",
+                },
+                request_only=True,
+                response_only=False,
+            ),
+        ],
+    )
     def post(self, request):
-        new_user = request.data.pop("user", {})
-        instructor = Instructor.objects.create(user=User.objects.create(**new_user), **request.data)
-        user = get_object_or_404(User, id=instructor.user_id)
-        user.set_password(new_user["password"])
-        user.save()
-        token = Token.objects.create(user=user)
-        return JsonResponse({"token": token.key, "user": user.id, "instructor": instructor.id})
+        serializer = SignUpInstructorSerializer(data=request.data)
+        if serializer.is_valid():
+            instructor = serializer.save()
+            user = instructor.user
+            token, created = Token.objects.get_or_create(user=user)
+            mailInstructor(user.email)  # Send a welcome email to the instructor
+            return Response(
+                {"token": token.key, "user": str(user.id), "instructor": str(instructor.id)},
+                status=status.HTTP_201_CREATED,
+            )
+        else:
+            # Customize error messages based on validation errors
+            errors = serializer.errors
+            if "email" in errors:
+                return Response({"message": errors["email"][0]}, status=status.HTTP_400_BAD_REQUEST)
+            elif "password" in errors:
+                return Response(
+                    {"message": errors["password"][0]}, status=status.HTTP_400_BAD_REQUEST
+                )
+            elif "first_name" in errors:
+                return Response(
+                    {"message": "Please provide all required fields."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            else:
+                # Generic error message for other validation errors
+                return Response(
+                    {"message": "Invalid data provided."}, status=status.HTTP_400_BAD_REQUEST
+                )
+
+
+class ProfileView(APIView):
+    def get(self, request):
+        user = request.user
+        return Response(
+            {
+                "user": user.id,
+                "username": user.username,
+                "email": user.email,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+            }
+        )
 
 
 class LoginSerializer(serializers.Serializer):
@@ -76,12 +174,14 @@ class Login(APIView):
             user = User.objects.get(username=request.data["username"])
         except User.DoesNotExist:
             return JsonResponse(
-                {"detail": "Invalid username or password!"}, status=status.HTTP_401_UNAUTHORIZED
+                {"detail": "Invalid username or password!"},
+                status=status.HTTP_401_UNAUTHORIZED,
             )
 
         if not user.check_password(request.data["password"]):
             return JsonResponse(
-                {"detail": "Invalid username or password!"}, status=status.HTTP_401_UNAUTHORIZED
+                {"detail": "Invalid username or password!"},
+                status=status.HTTP_401_UNAUTHORIZED,
             )
         token = Token.objects.get_or_create(user=user)
         if hasattr(user, "instructor"):
@@ -438,7 +538,8 @@ class GetTranscriptView(APIView):
 
         if not recording.transcript:
             return JsonResponse(
-                {"message": "Transcript is not available yet"}, status=status.HTTP_404_NOT_FOUND
+                {"message": "Transcript is not available yet"},
+                status=status.HTTP_404_NOT_FOUND,
             )
 
         return JsonResponse({"transcript": recording.transcript}, status=status.HTTP_200_OK)
@@ -492,5 +593,57 @@ class GoogleLogin(APIView):
 
         except ValueError as e:
             return Response(
-                {"message": f"Invalid token: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST
+                {"message": f"Invalid token: {str(e)}"},
+                status=status.HTTP_400_BAD_REQUEST,
             )
+
+
+class ContactPageThrottle(UserRateThrottle):
+    rate = "10/hour"
+
+
+class ContactPageView(APIView):
+    permission_classes = [AllowAny]
+    throttle_classes = [ContactPageThrottle]
+    serializers = ContactMessageSerializer
+
+    @extend_schema(
+        operation_id="create_contact_message",
+        summary="Add a contact message to the DB",
+        description="Creates a contact message entry in the ContactMessage table",
+        request=ContactMessageSerializer,
+        responses={
+            200: OpenApiTypes.OBJECT,
+            400: OpenApiTypes.OBJECT,
+        },
+    )
+    def post(self, request):
+        serializer = ContactMessageSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "Message sent successfully"}, status=status.HTTP_200_OK)
+        else:
+            # Extracting error messages
+            errors = serializer.errors
+            if "email" in errors:
+                return Response(
+                    {"message": "Invalid email format"}, status=status.HTTP_400_BAD_REQUEST
+                )
+            elif any(field in errors for field in ["first_name", "last_name", "message"]):
+                return Response(
+                    {"message": "Please provide all required fields"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            else:
+                # Generic error message
+                return Response(
+                    {"message": "Invalid data provided"}, status=status.HTTP_400_BAD_REQUEST
+                )
+
+
+class DeleteUserView(APIView):
+    def delete(self, request):
+        id = request.user.id
+        user = get_object_or_404(User, id=id)
+        user.delete()
+        return JsonResponse({"message": "User deleted successfully"})

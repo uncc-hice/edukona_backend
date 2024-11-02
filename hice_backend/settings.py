@@ -103,11 +103,16 @@ else:
 
 # run sqlite if test is in the argument
 
-if "test" in sys.argv:
+# Detect if pytest is running
+TESTING = False
+if "pytest" in sys.modules or "pytest" in sys.argv[0]:
+    TESTING = True
+
+if TESTING or "test" in sys.argv:
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
-            "NAME": "hice_test",
+            "NAME": ":memory:",  # Use in-memory SQLite database for faster tests
         }
     }
 else:
@@ -249,7 +254,7 @@ AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 AWS_STORAGE_BUCKET_NAME = os.getenv("AWS_STORAGE_BUCKET_NAME")
 AWS_S3_REGION_NAME = os.getenv("AWS_S3_REGION_NAME", default="us-east-1")
-
+AWS_ROLE_ARN = os.getenv("AWS_ROLE_ARN")
 
 AWS_LAMBDA_INVOKER_ACCESS_KEY_ID = os.getenv("AWS_LAMBDA_INVOKER_ACCESS_KEY_ID")
 AWS_LAMBDA_INVOKER_SECRET_ACCESS_KEY = os.getenv("AWS_LAMBDA_INVOKER_SECRET_ACCESS_KEY")

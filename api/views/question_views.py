@@ -3,6 +3,7 @@ from rest_framework.views import APIView
 from api.models import *
 from django.shortcuts import get_object_or_404
 from rest_framework import status
+from rest_framework.exceptions import PermissionDenied
 from api.serializers import (
     QuestionMultipleChoiceSerializer,
 )
@@ -10,18 +11,24 @@ from rest_framework import serializers
 from django.http import JsonResponse
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 
+from api.permissions import IsQuestionOwner
+from api.permissions import IsOwnerOfAllQuizzes
 
-class QuestionView(APIView):
+
+class CreateMultipleQuestionsView(APIView):
+    permission_classes = [IsOwnerOfAllQuizzes]
+
     @extend_schema(
         request=QuestionMultipleChoiceSerializer(many=True),
         responses={
             201: OpenApiResponse(description="Questions created successfully"),
             400: OpenApiResponse(description="Bad Request"),
+            403: OpenApiResponse(description="Forbidden"),
         },
     )
     def post(self, request):
         # Expecting request.data to be a list of questions
-        if not isinstance(request.data, list):
+        if not isinstance(request.data, list) or not request.data:
             return JsonResponse(
                 {"error": "Expected a list of questions"},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -37,6 +44,8 @@ class QuestionView(APIView):
                     serializer.is_valid(raise_exception=True)
                     serializer.save()
                     created_questions.append(serializer.data)
+                except PermissionDenied as e:
+                    return JsonResponse({"detail": e.__str__()}, status=status.HTTP_403_FORBIDDEN)
                 except serializers.ValidationError as e:
                     errors.append({"question_data": question_data, "error": e.detail})
                 except Exception as e:
@@ -52,6 +61,10 @@ class QuestionView(APIView):
             {"created_questions": created_questions, "errors": errors},
             status=status.HTTP_201_CREATED,
         )
+
+
+class QuestionView(APIView):
+    permission_classes = [IsQuestionOwner]
 
     # Get method to question by id
     def get(self, request, question_id):
