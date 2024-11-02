@@ -123,7 +123,7 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
         if session.quiz.settings:
             return session.quiz.settings.to_json()
         else:
-            return {"timer": False, "timer_duration": 0, "live_bar_chart": False}
+            return {"timer": False, "live_bar_chart": False}
 
     async def send_current_question(self):
         question_data = await self.fetch_current_question()

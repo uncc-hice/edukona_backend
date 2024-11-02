@@ -19,7 +19,6 @@ class Instructor(models.Model):
 
 class Settings(models.Model):
     timer = models.BooleanField(default=False)
-    timer_duration = models.IntegerField(default=60)
     live_bar_chart = models.BooleanField(default=True)
     skip_question = models.BooleanField(default=False)
     skip_count_per_student = models.IntegerField(default=1)
@@ -31,7 +30,6 @@ class Settings(models.Model):
         return {
             "id": self.id,
             "timer": self.timer,
-            "timer_duration": self.timer_duration,
             "live_bar_chart": self.live_bar_chart,
             "skip_question": self.skip_question,
             "skip_count_per_student": self.skip_count_per_student,
