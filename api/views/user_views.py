@@ -149,7 +149,7 @@ class ProfileView(APIView):
 
 
 class LoginSerializer(serializers.Serializer):
-    username = serializers.CharField(max_length=150)
+    email = serializers.EmailField(max_length=128)
     password = serializers.CharField(max_length=128, style={"input_type": "password"})
 
 
@@ -171,16 +171,16 @@ class Login(APIView):
 
         # use a try catch block to catch the error, and return a 401 status code
         try:
-            user = User.objects.get(username=request.data["username"])
+            user = User.objects.get(email=request.data["email"])
         except User.DoesNotExist:
             return JsonResponse(
-                {"detail": "Invalid username or password!"},
+                {"detail": "Invalid email or password!"},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
         if not user.check_password(request.data["password"]):
             return JsonResponse(
-                {"detail": "Invalid username or password!"},
+                {"detail": "Invalid email or password!"},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
         token = Token.objects.get_or_create(user=user)
