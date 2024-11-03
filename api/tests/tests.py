@@ -381,11 +381,11 @@ class LoginViewTest(BaseTest):
 
     def test_post_login(self):
         url = reverse("login")
-        data = {"username": "bad_username", "password": "bad_password!"}
+        data = {"email": "bad_email", "password": "bad_password!"}
         response = self.client_student.post(url, data, format="json")
         self.assertEqual(response.status_code, 401)
         response_data = response.json()
-        self.assertEqual(response_data["detail"], "Invalid username or password!")
+        self.assertEqual(response_data["detail"], "Invalid email or password!")
 
 
 class ContactPageViewTests(BaseTest):

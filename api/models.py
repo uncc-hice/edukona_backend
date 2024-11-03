@@ -19,7 +19,6 @@ class Instructor(models.Model):
 
 class Settings(models.Model):
     timer = models.BooleanField(default=False)
-    timer_duration = models.IntegerField(default=60)
     live_bar_chart = models.BooleanField(default=True)
     skip_question = models.BooleanField(default=False)
     skip_count_per_student = models.IntegerField(default=1)
@@ -31,7 +30,6 @@ class Settings(models.Model):
         return {
             "id": self.id,
             "timer": self.timer,
-            "timer_duration": self.timer_duration,
             "live_bar_chart": self.live_bar_chart,
             "skip_question": self.skip_question,
             "skip_count_per_student": self.skip_count_per_student,
@@ -61,6 +59,14 @@ class Quiz(models.Model):
     start_time = models.DateTimeField(null=True, blank=True)
     end_time = models.DateTimeField(null=True, blank=True)
     settings = models.ForeignKey(Settings, on_delete=models.CASCADE, null=True, related_name="quiz")
+    # Settings starts here
+    timer = models.BooleanField(default=False)
+    live_bar_chart = models.BooleanField(default=True)
+    skip_question = models.BooleanField(default=False)
+    skip_count_per_student = models.IntegerField(default=1)
+    skip_question_logic = models.TextField(default="random")
+    skip_question_streak_count = models.IntegerField(default=1)
+    skip_question_percentage = models.FloatField(default=0.0)
 
     instructor_recording = models.ForeignKey(
         InstructorRecordings, on_delete=models.CASCADE, null=True
@@ -79,6 +85,13 @@ class Quiz(models.Model):
             ),
             "num_sessions": self.sessions.count(),
             "num_questions": self.questions.count(),
+            # Settings attributes
+            "timer": self.timer,
+            "live_bar_chart": self.live_bar_chart,
+            "skip_question": self.skip_question,
+            "skip_count_per_student": self.skip_count_per_student,
+            "skip_question_logic": self.skip_question_logic,
+            "skip_question_streak_count": self.skip_question_streak_count,
         }
 
 
