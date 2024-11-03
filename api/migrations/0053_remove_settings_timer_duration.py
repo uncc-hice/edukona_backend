@@ -6,12 +6,12 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('api', '0052_quiz_live_bar_chart_quiz_skip_count_per_student_and_more'),
+        ("api", "0052_quiz_live_bar_chart_quiz_skip_count_per_student_and_more"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='settings',
-            name='timer_duration',
+            model_name="settings",
+            name="timer_duration",
         ),
     ]
