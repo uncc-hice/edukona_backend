@@ -1,5 +1,6 @@
 from unittest.mock import patch
 
+from django.db import transaction
 from django.test import TestCase
 from django.urls import reverse
 from rest_framework.test import APIClient
@@ -668,3 +669,44 @@ class SignUpInstructorTests(BaseTest):
 
         # Assert that mailInstructor was called once with correct email
         mock_mailInstructor.assert_called_once_with(user.email)
+
+
+class LectureSummaryViewTest(BaseTest):
+    def setUp(self):
+        super().setUp()
+        # Set up a sample InstructorRecordings instance for valid recording_id tests
+        self.recording = InstructorRecordings.objects.create(instructor=self.instructor)
+
+    def test_create_lecture_summary_success(self):
+        url = reverse('lecture_summary')  # Replace with the actual URL name if necessary
+        data = {
+            "summary": "This is a test summary",
+            "recording_id": self.recording.id
+        }
+        response = self.client_instructor.post(url, data, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertIn("id", response.data)
+        self.assertEqual(str(response.data["recording_id"]), str(self.recording.id))
+        self.assertIn("created_at", response.data)
+
+    def test_create_lecture_summary_invalid_recording_id(self):
+        url = reverse('lecture_summary')
+        data = {
+            "summary": "Test summary with invalid recording_id",
+            "recording_id": "127ac01a-379b-44af-97e6-286bac44ff7f"
+        }
+        response = self.client_instructor.post(url, data, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN) #Instructor doesnt own it
+
+    def test_create_lecture_summary_unexpected_error(self):
+        url = reverse('lecture_summary')
+        data = {
+            "summary": "Test summary",
+            "recording_id": self.recording.id
+        }
+        with self.assertRaises(Exception):
+            with transaction.atomic():
+                response = self.client_instructor.post(url, data, format='json')
+                self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
