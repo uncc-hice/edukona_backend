@@ -273,7 +273,7 @@ class LectureSummaryView(APIView):
         if not summary or not recording_id:
             return Response(
                 {"error": "Summary and recording_id are required fields."},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         # Wrap in atomic transaction to ensure consistency
@@ -281,21 +281,17 @@ class LectureSummaryView(APIView):
             with transaction.atomic():
                 recording = InstructorRecordings.objects.get(id=recording_id)
                 lecture_summary = LectureSummary.objects.create(
-                    summary=summary,
-                    recording_id=recording
+                    summary=summary, recording_id=recording
                 )
                 return Response(
                     {
                         "id": lecture_summary.id,
                         "recording_id": lecture_summary.recording_id.id,
-                        "created_at": lecture_summary.created_at
+                        "created_at": lecture_summary.created_at,
                     },
-                    status=status.HTTP_201_CREATED
+                    status=status.HTTP_201_CREATED,
                 )
         except InstructorRecordings.DoesNotExist:
-            return Response(
-                {"error": "Recording not found."},
-                status=status.HTTP_404_NOT_FOUND
-            )
+            return Response({"error": "Recording not found."}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
