@@ -26,6 +26,7 @@ from api.models import (
     QuestionMultipleChoice,
     QuizSession,
     InstructorRecordings,
+    Quiz,
 )
 from api.serializers import (
     InstructorRecordingsSerializer,
@@ -35,6 +36,7 @@ from api.serializers import (
     GoogleLoginRequestSerializer,
     SignUpInstructorSerializer,
     ContactMessageSerializer,
+    QuizSerializer,
 )
 from drf_spectacular.utils import extend_schema, OpenApiExample
 from drf_spectacular.types import OpenApiTypes
@@ -647,3 +649,35 @@ class DeleteUserView(APIView):
         user = get_object_or_404(User, id=id)
         user.delete()
         return JsonResponse({"message": "User deleted successfully"})
+
+
+class QuizByRecordingView(APIView):
+    @extend_schema(
+        operation_id="get_quizzes_by_recording",
+        summary="Get quizzes by recording ID",
+        description="Returns all quizzes associated with a specific recording ID.",
+        responses={
+            200: QuizSerializer(many=True),
+            403: OpenApiTypes.OBJECT,
+        },
+    )
+    def get(self, request, recording_id):
+        current_user = request.user
+
+        # Check if the user is an instructor
+        if not hasattr(current_user, "instructor"):
+            return Response(
+                {"message": "You are not authorized to view this resource."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        instructor_id = current_user.instructor.id
+        quizzes = Quiz.objects.filter(
+            instructor_recording_id=recording_id, instructor_id=instructor_id
+        )
+
+        if not quizzes.exists():
+            return Response([], status=status.HTTP_200_OK)
+
+        serializer = QuizSerializer(quizzes, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
