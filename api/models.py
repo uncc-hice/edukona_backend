@@ -232,7 +232,9 @@ class ContactMessage(models.Model):
 
 class LectureSummary(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    recording_id = models.ForeignKey(InstructorRecordings, on_delete=models.CASCADE, related_name="summaries")
+    recording_id = models.ForeignKey(
+        InstructorRecordings, on_delete=models.CASCADE, related_name="summaries"
+    )
     summary = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
 

@@ -269,6 +269,7 @@ class DeleteQuizSession(APIView):
 
 class LectureSummaryView(APIView):
     permission_classes = [IsRecordingOwner]
+
     def post(self, request):
         summary = request.data.get("summary")
         recording_id = request.data.get("recording_id")

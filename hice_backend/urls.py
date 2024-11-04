@@ -167,5 +167,5 @@ urlpatterns = [
         "recordings/summary/",
         LectureSummaryView.as_view(),
         name="lecture_summary",
-    )
+    ),
 ]
