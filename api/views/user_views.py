@@ -672,7 +672,9 @@ class QuizByRecordingView(APIView):
             )
 
         instructor_id = current_user.instructor.id
-        quizzes = Quiz.objects.filter(instructor_recording_id=recording_id, instructor_id=instructor_id)
+        quizzes = Quiz.objects.filter(
+            instructor_recording_id=recording_id, instructor_id=instructor_id
+        )
 
         if not quizzes.exists():
             return Response([], status=status.HTTP_200_OK)
