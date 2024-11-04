@@ -163,4 +163,9 @@ urlpatterns = [
         QuizByRecordingView.as_view(),
         name="quizzes-by-recording",
     ),
+    path(
+        "recordings/summary/",
+        LectureSummaryView.as_view(),
+        name="lecture_summary",
+    )
 ]
