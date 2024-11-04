@@ -1,9 +1,12 @@
+from django.db import transaction
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from api.models import *
 from django.shortcuts import get_object_or_404
 from rest_framework.permissions import AllowAny
 from rest_framework import status
+
+from api.permissions import IsRecordingOwner
 from api.serializers import QuizSessionStudentSerializer
 from django.http import JsonResponse
 from drf_spectacular.utils import extend_schema
@@ -265,6 +268,7 @@ class DeleteQuizSession(APIView):
 
 
 class LectureSummaryView(APIView):
+    permission_classes = [IsRecordingOwner]
     def post(self, request):
         summary = request.data.get("summary")
         recording_id = request.data.get("recording_id")
