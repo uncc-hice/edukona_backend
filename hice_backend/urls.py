@@ -159,7 +159,7 @@ urlpatterns = [
         name="create-recording",
     ),
     path(
-        "quizzes/<uuid:recording_id>/",
+        "recordings/<uuid:recording_id>/quizzes/",
         QuizByRecordingView.as_view(),
         name="quizzes-by-recording",
     ),
