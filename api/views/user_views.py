@@ -26,6 +26,7 @@ from api.models import (
     QuestionMultipleChoice,
     QuizSession,
     InstructorRecordings,
+    Quiz,
 )
 from api.serializers import (
     InstructorRecordingsSerializer,
@@ -35,6 +36,7 @@ from api.serializers import (
     GoogleLoginRequestSerializer,
     SignUpInstructorSerializer,
     ContactMessageSerializer,
+    QuizSerializer,
 )
 from drf_spectacular.utils import extend_schema, OpenApiExample
 from drf_spectacular.types import OpenApiTypes
@@ -647,3 +649,18 @@ class DeleteUserView(APIView):
         user = get_object_or_404(User, id=id)
         user.delete()
         return JsonResponse({"message": "User deleted successfully"})
+
+
+class QuizByRecordingView(APIView):
+    def get(self, request, recording_id):
+        _ = get_object_or_404(InstructorRecordings, id=recording_id)
+        quizzes = Quiz.objects.filter(instructor_recording_id=recording_id)
+
+        if not quizzes.exists():
+            return Response(
+                {"detail": "No quizzes found for the given recording_id."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        serializer = QuizSerializer(quizzes, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
