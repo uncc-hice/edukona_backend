@@ -158,4 +158,9 @@ urlpatterns = [
         CreateRecordingView.as_view(),
         name="create-recording",
     ),
+    path(
+        "quizzes/<uuid:recording_id>/",
+        QuizByRecordingView.as_view(),
+        name="quizzes-by-recording",
+    ),
 ]

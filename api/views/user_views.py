@@ -26,6 +26,7 @@ from api.models import (
     QuestionMultipleChoice,
     QuizSession,
     InstructorRecordings,
+    Quiz,
 )
 from api.serializers import (
     InstructorRecordingsSerializer,
@@ -35,6 +36,7 @@ from api.serializers import (
     GoogleLoginRequestSerializer,
     SignUpInstructorSerializer,
     ContactMessageSerializer,
+    QuizSerializer,
 )
 from drf_spectacular.utils import extend_schema, OpenApiExample
 from drf_spectacular.types import OpenApiTypes
@@ -110,17 +112,24 @@ class SignUpInstructor(APIView):
             token, created = Token.objects.get_or_create(user=user)
             mailInstructor(user.email)  # Send a welcome email to the instructor
             return Response(
-                {"token": token.key, "user": str(user.id), "instructor": str(instructor.id)},
+                {
+                    "token": token.key,
+                    "user": str(user.id),
+                    "instructor": str(instructor.id),
+                },
                 status=status.HTTP_201_CREATED,
             )
         else:
             # Customize error messages based on validation errors
             errors = serializer.errors
             if "email" in errors:
-                return Response({"message": errors["email"][0]}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"message": errors["email"][0]}, status=status.HTTP_400_BAD_REQUEST
+                )
             elif "password" in errors:
                 return Response(
-                    {"message": errors["password"][0]}, status=status.HTTP_400_BAD_REQUEST
+                    {"message": errors["password"][0]},
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
             elif "first_name" in errors:
                 return Response(
@@ -130,7 +139,8 @@ class SignUpInstructor(APIView):
             else:
                 # Generic error message for other validation errors
                 return Response(
-                    {"message": "Invalid data provided."}, status=status.HTTP_400_BAD_REQUEST
+                    {"message": "Invalid data provided."},
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
 
 
@@ -154,7 +164,6 @@ class LoginSerializer(serializers.Serializer):
 
 
 class CheckDeveloperStatus(APIView):
-
     def get(self, request):
         user = request.user
         if user.is_staff:
@@ -168,7 +177,6 @@ class Login(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-
         # use a try catch block to catch the error, and return a 401 status code
         try:
             user = User.objects.get(email=request.data["email"])
@@ -205,7 +213,6 @@ class Logout(APIView):
 
 
 class InstructorView(APIView):
-
     def post(self, request):
         user_data = request.data.pop("user", {})
         new_instructor = Instructor.objects.create(
@@ -278,9 +285,13 @@ class UserResponseView(APIView):
     def post(self, request):
         student_data = request.data.pop("student", {})
         student = get_object_or_404(QuizSessionStudent, id=student_data["id"])
-        question = get_object_or_404(QuestionMultipleChoice, id=request.data["question_id"])
+        question = get_object_or_404(
+            QuestionMultipleChoice, id=request.data["question_id"]
+        )
         selected_answer = request.data["selected_answer"]
-        quiz_session = get_object_or_404(QuizSession, code=request.data["quiz_session_code"])
+        quiz_session = get_object_or_404(
+            QuizSession, code=request.data["quiz_session_code"]
+        )
 
         is_correct = selected_answer == question.correct_answer
         new_user_response = UserResponse.objects.create(
@@ -312,7 +323,9 @@ class UserResponseView(APIView):
             UserResponse, id=response_id, student_id=request.data["student_id"]
         )
 
-        is_correct = request.data.get("selected_answer") == user_response.question.correct_answer
+        is_correct = (
+            request.data.get("selected_answer") == user_response.question.correct_answer
+        )
         user_response.__dict__.update({"is_correct": is_correct, **request.data})
         user_response.save()
 
@@ -351,7 +364,9 @@ class UploadAudioView(APIView):
         instructor = get_object_or_404(Instructor, user=request.user)
         title = request.data.get("title", "")
         # Create the recording instance first to get the ID
-        new_recording = InstructorRecordings.objects.create(instructor=instructor, title=title)
+        new_recording = InstructorRecordings.objects.create(
+            instructor=instructor, title=title
+        )
 
         # Sanitize and get the file details
         file = request.data["file"]
@@ -395,7 +410,9 @@ class UploadAudioView(APIView):
                 ),
             )
 
-            return JsonResponse(InstructorRecordingsSerializer(new_recording).data, status=201)
+            return JsonResponse(
+                InstructorRecordingsSerializer(new_recording).data, status=201
+            )
 
         except Exception as e:
             transaction.set_rollback(True)
@@ -412,7 +429,6 @@ class UploadAudioView(APIView):
 
 
 class UpdateTranscriptView(APIView):
-
     @extend_schema(
         operation_id="update_transcript",
         summary="Update the transcript of a recording",
@@ -458,9 +474,9 @@ class RecordingsView(APIView):
     )
     def get(self, request):
         instructor = request.user.instructor
-        recordings = InstructorRecordings.objects.filter(instructor=instructor).order_by(
-            "-uploaded_at"
-        )
+        recordings = InstructorRecordings.objects.filter(
+            instructor=instructor
+        ).order_by("-uploaded_at")
 
         # Filter so that the serializer only returns the s3_path, uploaded_at, id
 
@@ -542,7 +558,9 @@ class GetTranscriptView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        return JsonResponse({"transcript": recording.transcript}, status=status.HTTP_200_OK)
+        return JsonResponse(
+            {"transcript": recording.transcript}, status=status.HTTP_200_OK
+        )
 
 
 class GoogleLogin(APIView):
@@ -559,7 +577,9 @@ class GoogleLogin(APIView):
         token = request.data.get("token")
 
         if not token:
-            return Response({"message": "Token not provided"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"message": "Token not provided"}, status=status.HTTP_400_BAD_REQUEST
+            )
 
         try:
             # Verify the Google token
@@ -621,15 +641,20 @@ class ContactPageView(APIView):
         serializer = ContactMessageSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            return Response({"message": "Message sent successfully"}, status=status.HTTP_200_OK)
+            return Response(
+                {"message": "Message sent successfully"}, status=status.HTTP_200_OK
+            )
         else:
             # Extracting error messages
             errors = serializer.errors
             if "email" in errors:
                 return Response(
-                    {"message": "Invalid email format"}, status=status.HTTP_400_BAD_REQUEST
+                    {"message": "Invalid email format"},
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
-            elif any(field in errors for field in ["first_name", "last_name", "message"]):
+            elif any(
+                field in errors for field in ["first_name", "last_name", "message"]
+            ):
                 return Response(
                     {"message": "Please provide all required fields"},
                     status=status.HTTP_400_BAD_REQUEST,
@@ -637,7 +662,8 @@ class ContactPageView(APIView):
             else:
                 # Generic error message
                 return Response(
-                    {"message": "Invalid data provided"}, status=status.HTTP_400_BAD_REQUEST
+                    {"message": "Invalid data provided"},
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
 
 
@@ -647,3 +673,18 @@ class DeleteUserView(APIView):
         user = get_object_or_404(User, id=id)
         user.delete()
         return JsonResponse({"message": "User deleted successfully"})
+
+
+class QuizByRecordingView(APIView):
+    def get(self, request, recording_id):
+        _ = get_object_or_404(InstructorRecordings, id=recording_id)
+        quizzes = Quiz.objects.filter(instructor_recording_id=recording_id)
+
+        if not quizzes.exists():
+            return Response(
+                {"detail": "No quizzes found for the given recording_id."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        serializer = QuizSerializer(quizzes, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
