@@ -658,12 +658,21 @@ class QuizByRecordingView(APIView):
         description="Returns all quizzes associated with a specific recording ID.",
         responses={
             200: QuizSerializer(many=True),
-            404: OpenApiTypes.OBJECT,
+            403: OpenApiTypes.OBJECT,
         },
     )
     def get(self, request, recording_id):
-        _ = get_object_or_404(InstructorRecordings, id=recording_id)
-        quizzes = Quiz.objects.filter(instructor_recording_id=recording_id)
+        current_user = request.user
+
+        # Check if the user is an instructor
+        if not hasattr(current_user, "instructor"):
+            return Response(
+                {"message": "You are not authorized to view this resource."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        instructor_id = current_user.instructor.id
+        quizzes = Quiz.objects.filter(instructor_recording_id=recording_id, instructor_id=instructor_id)
 
         if not quizzes.exists():
             return Response([], status=status.HTTP_200_OK)
