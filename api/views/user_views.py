@@ -124,8 +124,7 @@ class SignUpInstructor(APIView):
             errors = serializer.errors
             if "email" in errors:
                 return Response(
-                    {"message": errors["email"][0]}, status=status.HTTP_400_BAD_REQUEST
-                )
+                    {"message": errors["email"][0]}, status=status.HTTP_400_BAD_REQUEST)
             elif "password" in errors:
                 return Response(
                     {"message": errors["password"][0]},
@@ -285,13 +284,9 @@ class UserResponseView(APIView):
     def post(self, request):
         student_data = request.data.pop("student", {})
         student = get_object_or_404(QuizSessionStudent, id=student_data["id"])
-        question = get_object_or_404(
-            QuestionMultipleChoice, id=request.data["question_id"]
-        )
+        question = get_object_or_404(QuestionMultipleChoice, id=request.data["question_id"])
         selected_answer = request.data["selected_answer"]
-        quiz_session = get_object_or_404(
-            QuizSession, code=request.data["quiz_session_code"]
-        )
+        quiz_session = get_object_or_404(QuizSession, code=request.data["quiz_session_code"])
 
         is_correct = selected_answer == question.correct_answer
         new_user_response = UserResponse.objects.create(
@@ -323,9 +318,7 @@ class UserResponseView(APIView):
             UserResponse, id=response_id, student_id=request.data["student_id"]
         )
 
-        is_correct = (
-            request.data.get("selected_answer") == user_response.question.correct_answer
-        )
+        is_correct = (request.data.get("selected_answer") == user_response.question.correct_answer)
         user_response.__dict__.update({"is_correct": is_correct, **request.data})
         user_response.save()
 
@@ -410,9 +403,7 @@ class UploadAudioView(APIView):
                 ),
             )
 
-            return JsonResponse(
-                InstructorRecordingsSerializer(new_recording).data, status=201
-            )
+            return JsonResponse(InstructorRecordingsSerializer(new_recording).data, status=201)
 
         except Exception as e:
             transaction.set_rollback(True)
@@ -474,9 +465,9 @@ class RecordingsView(APIView):
     )
     def get(self, request):
         instructor = request.user.instructor
-        recordings = InstructorRecordings.objects.filter(
-            instructor=instructor
-        ).order_by("-uploaded_at")
+        recordings = InstructorRecordings.objects.filter(instructor=instructor).order_by(
+            "-uploaded_at"
+        )
 
         # Filter so that the serializer only returns the s3_path, uploaded_at, id
 
@@ -558,9 +549,7 @@ class GetTranscriptView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        return JsonResponse(
-            {"transcript": recording.transcript}, status=status.HTTP_200_OK
-        )
+        return JsonResponse({"transcript": recording.transcript}, status=status.HTTP_200_OK)
 
 
 class GoogleLogin(APIView):
@@ -577,9 +566,7 @@ class GoogleLogin(APIView):
         token = request.data.get("token")
 
         if not token:
-            return Response(
-                {"message": "Token not provided"}, status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"message": "Token not provided"},status=status.HTTP_400_BAD_REQUEST)
 
         try:
             # Verify the Google token
@@ -641,9 +628,7 @@ class ContactPageView(APIView):
         serializer = ContactMessageSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            return Response(
-                {"message": "Message sent successfully"}, status=status.HTTP_200_OK
-            )
+            return Response({"message": "Message sent successfully"}, status=status.HTTP_200_OK)            )
         else:
             # Extracting error messages
             errors = serializer.errors
@@ -652,9 +637,7 @@ class ContactPageView(APIView):
                     {"message": "Invalid email format"},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            elif any(
-                field in errors for field in ["first_name", "last_name", "message"]
-            ):
+            elif any(field in errors for field in ["first_name", "last_name", "message"]):
                 return Response(
                     {"message": "Please provide all required fields"},
                     status=status.HTTP_400_BAD_REQUEST,
