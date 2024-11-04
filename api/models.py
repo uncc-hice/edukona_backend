@@ -228,3 +228,14 @@ class ContactMessage(models.Model):
 
     class Meta:
         db_table = "api_contact_message"
+
+
+class LectureSummary(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    recording_id = models.ForeignKey(InstructorRecordings, on_delete=models.CASCADE, related_name="summaries")
+    summary = models.TextField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "api_lecture_summary"
+        ordering = ["-created_at"]
