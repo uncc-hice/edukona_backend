@@ -652,6 +652,15 @@ class DeleteUserView(APIView):
 
 
 class QuizByRecordingView(APIView):
+    @extend_schema(
+        operation_id="get_quizzes_by_recording",
+        summary="Get quizzes by recording ID",
+        description="Returns all quizzes associated with a specific recording ID.",
+        responses={
+            200: QuizSerializer(many=True),
+            404: OpenApiTypes.OBJECT,
+        },
+    )
     def get(self, request, recording_id):
         _ = get_object_or_404(InstructorRecordings, id=recording_id)
         quizzes = Quiz.objects.filter(instructor_recording_id=recording_id)
