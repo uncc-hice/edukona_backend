@@ -666,10 +666,7 @@ class QuizByRecordingView(APIView):
         quizzes = Quiz.objects.filter(instructor_recording_id=recording_id)
 
         if not quizzes.exists():
-            return Response(
-                {"detail": "No quizzes found for the given recording_id."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            return Response([], status=status.HTTP_200_OK)
 
         serializer = QuizSerializer(quizzes, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
