@@ -69,25 +69,29 @@ class GenerateTemporaryCredentialsView(APIView):
         except Exception as e:
             return Response({"error": str(e)}, status=500)
 
+
 class UpdateRecordingTitleView(APIView):
     permission_classes = [IsAuthenticated]
+
     @extend_schema(
         request=RecordingTitleUpdateSerializer,
-        description="Endpoint to update the title of a recording"
-        )
-
+        description="Endpoint to update the title of a recording",
+    )
     def patch(self, request, recording_id):
         recording = get_object_or_404(InstructorRecordings, id=recording_id)
-        
+
         # Pass request data to the serializer for validation
         serializer = RecordingTitleUpdateSerializer(data=request.data)
-        
+
         if serializer.is_valid():
             # If valid, update the quiz title
-            recording.title = serializer.validated_data['title']
+            recording.title = serializer.validated_data["title"]
             recording.save()
-            return Response({"message": "Title updated successfully", "title": recording.title}, status=status.HTTP_200_OK)
-        
+            return Response(
+                {"message": "Title updated successfully", "title": recording.title},
+                status=status.HTTP_200_OK,
+            )
+
         # If not valid, return validation errors
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
