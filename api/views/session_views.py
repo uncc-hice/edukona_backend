@@ -262,5 +262,3 @@ class DeleteQuizSession(APIView):
             return Response({"message": "Invalid session code."}, status=404)
         except Exception as e:
             return Response({"message": f"{str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
