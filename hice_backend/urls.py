@@ -12,6 +12,11 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("quiz/<int:quiz_id>/", QuizView.as_view(), name="quiz-detail"),
+    path(
+        "quiz/<int:quiz_id>/update-title/",
+        UpdateQuizTitleView.as_view(),
+        name="quiz-update-title",
+    ),
     path("question/", QuestionView.as_view(), name="question-list"),
     path("question/<int:question_id>/", QuestionView.as_view(), name="question-detail"),
     path(
@@ -30,7 +35,11 @@ urlpatterns = [
         InstructorView.as_view(),
         name="instructor-detail",
     ),
-    path("instructor/quizzes/", InstructorQuizzesView.as_view(), name="instructor-quizzes"),
+    path(
+        "instructor/quizzes/",
+        InstructorQuizzesView.as_view(),
+        name="instructor-quizzes",
+    ),
     # path('student/', StudentView.as_view(), name='student-list'),
     # path('student/<int:student_id>/', StudentView.as_view(), name='student-detail'),
     path("user-response/", UserResponseView.as_view(), name="user-response-list"),
@@ -143,6 +152,11 @@ urlpatterns = [
         "instructor-recordings/<uuid:recording_id>/get-transcript/",
         GetTranscriptView.as_view(),
         name="get-transcript",
+    ),
+    path(
+        "instructor-recordings/<uuid:recording_id>/update-title/",
+        UpdateRecordingTitleView.as_view(),
+        name="recording-update-title",
     ),
     path("auth/google/", GoogleLogin.as_view()),  # Route for Google login
     path("contact-us/", ContactPageView.as_view(), name="contact-us"),

@@ -35,7 +35,9 @@ class InstructorSerializer(serializers.ModelSerializer):
 
 
 class QuestionMultipleChoiceSerializer(serializers.ModelSerializer):
-    quiz_id = serializers.PrimaryKeyRelatedField(queryset=Quiz.objects.all(), source="quiz")
+    quiz_id = serializers.PrimaryKeyRelatedField(
+        queryset=Quiz.objects.all(), source="quiz"
+    )
     duration = serializers.IntegerField(required=False, default=20)
 
     class Meta:
@@ -121,7 +123,9 @@ class QuizSerializer(serializers.ModelSerializer):
         settings_data = validated_data.pop("settings", {})
         settings = Settings.objects.create(**settings_data)
         instructor = self.context["request"].user.instructor
-        quiz = Quiz.objects.create(instructor=instructor, settings=settings, **validated_data)
+        quiz = Quiz.objects.create(
+            instructor=instructor, settings=settings, **validated_data
+        )
         return quiz
 
     def update(self, instance, validated_data):
@@ -139,6 +143,14 @@ class QuizSerializer(serializers.ModelSerializer):
 
 class QuizListSerializer(serializers.Serializer):
     quizzes = QuizSerializer(many=True)
+
+
+class QuizTitleUpdateSerializer(serializers.Serializer):
+    title = serializers.CharField(required=True, allow_blank=False)
+
+
+class RecordingTitleUpdateSerializer(serializers.Serializer):
+    title = serializers.CharField(required=True, allow_blank=False)
 
 
 class ContactMessageSerializer(serializers.ModelSerializer):
