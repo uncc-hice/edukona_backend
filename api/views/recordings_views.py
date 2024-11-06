@@ -4,11 +4,11 @@ from rest_framework.permissions import IsAuthenticated
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
 
-from api.serializers import InstructorRecordingsSerializer
+from api.serializers import InstructorRecordingsSerializer, RecordingTitleUpdateSerializer
 from django.conf import settings
 from django.shortcuts import get_object_or_404
 
-from api.models import Instructor
+from api.models import Instructor, InstructorRecordings
 import boto3
 import json
 
@@ -68,6 +68,39 @@ class GenerateTemporaryCredentialsView(APIView):
             )
         except Exception as e:
             return Response({"error": str(e)}, status=500)
+
+
+class UpdateRecordingTitleView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=RecordingTitleUpdateSerializer,
+        description="Endpoint to update the title of a recording",
+    )
+    def patch(self, request, recording_id):
+        recording = get_object_or_404(InstructorRecordings, id=recording_id)
+
+        # check if owned by requested user
+        if request.user != recording.instructor.user:
+            return Response(
+                {"error": "You do not have permission to modify this recording."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        # Pass request data to the serializer for validation
+        serializer = RecordingTitleUpdateSerializer(data=request.data)
+
+        if serializer.is_valid():
+            # If valid, update the recording title
+            recording.title = serializer.validated_data["title"]
+            recording.save()
+            return Response(
+                {"message": "Title updated successfully", "title": recording.title},
+                status=status.HTTP_200_OK,
+            )
+
+        # If not valid, return validation errors
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class CreateRecordingView(APIView):

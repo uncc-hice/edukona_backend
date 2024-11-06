@@ -668,3 +668,98 @@ class SignUpInstructorTests(BaseTest):
 
         # Assert that mailInstructor was called once with correct email
         mock_mailInstructor.assert_called_once_with(user.email)
+
+
+class RecordingTitleChangeTest(BaseTest):
+    def setUp(self):
+        super().setUp()
+        self.recording = InstructorRecordings.objects.create(
+            title="Initial Title", instructor=self.instructor
+        )
+
+        # Create another instructor user to act as a non-owner
+        self.other_user_instructor = User.objects.create_user(
+            username="other_instructor@gmail.com",
+            email="other_instructor@gmail.com",
+            password="password",
+            first_name="Other",
+            last_name="Instructor",
+        )
+        self.other_instructor = Instructor.objects.create(user=self.other_user_instructor)
+        other_token, _ = Token.objects.get_or_create(user=self.other_user_instructor)
+        self.client_other_instructor = APIClient()
+        self.client_other_instructor.credentials(HTTP_AUTHORIZATION="Token " + other_token.key)
+        self.url = reverse("recording-update-title", kwargs={"recording_id": self.recording.id})
+
+    def test_change_recording_title_by_owner(self):
+        data = {"title": "New Title From Owner"}
+
+        response = self.client_instructor.patch(self.url, data, format="json")
+
+        # Assert HTTP 200 OK and title change
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["title"], data["title"])
+
+        # Verify the recording title in the database was changed
+        changed_recording = InstructorRecordings.objects.get(id=self.recording.id)
+        self.assertEqual(changed_recording.title, data["title"])
+
+    def test_change_recording_title_by_non_owner(self):
+        data = {"title": "Unauthorized Title Change"}
+
+        response = self.client_other_instructor.patch(self.url, data, format="json")
+
+        # Assert forbidden response and no title change
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(
+            response.data["error"],
+            "You do not have permission to modify this recording.",
+        )
+
+        # Verify the title remains unchanged in the database
+        unchanged_recording = InstructorRecordings.objects.get(id=self.recording.id)
+        self.assertEqual(unchanged_recording.title, "Initial Title")
+
+
+class QuizTitleChangeTest(BaseTest):
+    def setUp(self):
+        super().setUp()
+
+        # Create another instructor user to act as a non-owner
+        self.other_user_instructor = User.objects.create_user(
+            username="other_instructor@gmail.com",
+            email="other_instructor@gmail.com",
+            password="password",
+            first_name="Other",
+            last_name="Instructor",
+        )
+
+        self.other_instructor = Instructor.objects.create(user=self.other_user_instructor)
+        other_token, _ = Token.objects.get_or_create(user=self.other_user_instructor)
+        self.client_other_instructor = APIClient()
+        self.client_other_instructor.credentials(HTTP_AUTHORIZATION="Token " + other_token.key)
+        self.url = reverse("quiz-update-title", kwargs={"quiz_id": self.new_quiz.id})
+
+    def test_change_quiz_title_by_owner(self):
+        data = {"title": "New Title From Owner"}
+
+        response = self.client_instructor.patch(self.url, data, format="json")
+
+        # Assert HTTP 200 OK and title change
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["title"], data["title"])
+
+        # Verify the quiz title in the database was changed
+        changed_quiz = Quiz.objects.get(id=self.new_quiz.id)
+        self.assertEqual(changed_quiz.title, data["title"])
+
+    def test_change_quiz_title_by_non_owner(self):
+        data = {"title": "Unauthorized Title Change"}
+
+        response = self.client_other_instructor.patch(self.url, data, format="json")
+
+        # Assert forbidden response and no title change
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        # Verify the title remains unchanged in the database
+        unchanged_quiz = Quiz.objects.get(id=self.new_quiz.id)
+        self.assertEqual(unchanged_quiz.title, "Test Quiz")
