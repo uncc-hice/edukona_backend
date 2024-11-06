@@ -164,7 +164,7 @@ urlpatterns = [
         name="quizzes-by-recording",
     ),
     path(
-        "recordings/summary/",
+        "recordings/<uuid:recording_id>/summary/",
         LectureSummaryView.as_view(),
         name="lecture_summary",
     ),

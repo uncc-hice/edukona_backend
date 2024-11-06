@@ -282,9 +282,8 @@ class LectureSummaryView(APIView):
             500: OpenApiTypes.OBJECT,  # Error response for server error
         },
     )
-    def post(self, request):
+    def post(self, request, recording_id):
         summary = request.data.get("summary")
-        recording_id = request.data.get("recording_id")
 
         # Validate required fields
         if not summary or not recording_id:

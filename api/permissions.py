@@ -78,7 +78,8 @@ class IsRecordingOwner(permissions.BasePermission):
         if not request.user or not request.user.is_authenticated:
             return False
 
-        recording_id = request.data.get("recording_id")
+        # Get recording_id from path parameters
+        recording_id = view.kwargs.get("recording_id")
 
         try:
             recording = InstructorRecordings.objects.get(id=recording_id)
