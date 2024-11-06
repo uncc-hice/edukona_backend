@@ -678,9 +678,7 @@ class LectureSummaryViewTest(BaseTest):
         self.recording = InstructorRecordings.objects.create(instructor=self.instructor)
 
     def test_create_lecture_summary_success(self):
-        url = reverse(
-            "lecture_summary", kwargs={"recording_id": str(self.recording.id)}
-        )
+        url = reverse("lecture_summary", kwargs={"recording_id": str(self.recording.id)})
         data = {"summary": "This is a test summary"}
         response = self.client_instructor.post(url, data, format="json")
 
@@ -701,9 +699,7 @@ class LectureSummaryViewTest(BaseTest):
         )  # Instructor doesn't own the recording
 
     def test_create_lecture_summary_unexpected_error(self):
-        url = reverse(
-            "lecture_summary", kwargs={"recording_id": str(self.recording.id)}
-        )
+        url = reverse("lecture_summary", kwargs={"recording_id": str(self.recording.id)})
         data = {"summary": "Test summary"}
         with self.assertRaises(Exception):
             with transaction.atomic():
