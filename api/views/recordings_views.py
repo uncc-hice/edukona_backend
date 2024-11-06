@@ -84,7 +84,13 @@ class UpdateRecordingTitleView(APIView):
         serializer = RecordingTitleUpdateSerializer(data=request.data)
 
         if serializer.is_valid():
-            # If valid, update the quiz title
+            # If valid, update the recording title if owned by user
+            if request.user.id != recording.instructor.user.id:
+                return Response(
+                    {"error": "You do not have permission to modify this recording."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
             recording.title = serializer.validated_data["title"]
             recording.save()
             return Response(
