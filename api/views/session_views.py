@@ -7,7 +7,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework import status
 
 from api.permissions import IsRecordingOwner
-from api.serializers import QuizSessionStudentSerializer
+from api.serializers import QuizSessionStudentSerializer, LectureSummarySerializer
 from django.http import JsonResponse
 from drf_spectacular.utils import extend_schema
 from drf_spectacular.types import OpenApiTypes
@@ -270,6 +270,18 @@ class DeleteQuizSession(APIView):
 class LectureSummaryView(APIView):
     permission_classes = [IsRecordingOwner]
 
+    @extend_schema(
+        operation_id="create_lecture_summary",
+        summary="Create a lecture summary",
+        description="Creates a summary for a specific recording using the recording ID.",
+        request=LectureSummarySerializer,
+        responses={
+            201: OpenApiTypes.OBJECT,  # Successful creation response
+            400: OpenApiTypes.OBJECT,  # Error response for bad request
+            404: OpenApiTypes.OBJECT,  # Error response when recording is not found
+            500: OpenApiTypes.OBJECT,  # Error response for server error
+        },
+    )
     def post(self, request):
         summary = request.data.get("summary")
         recording_id = request.data.get("recording_id")
