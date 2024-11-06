@@ -80,17 +80,18 @@ class UpdateRecordingTitleView(APIView):
     def patch(self, request, recording_id):
         recording = get_object_or_404(InstructorRecordings, id=recording_id)
 
+        # check if owned by requested user
+        if request.user != recording.instructor.user:
+            return Response(
+                {"error": "You do not have permission to modify this recording."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
         # Pass request data to the serializer for validation
         serializer = RecordingTitleUpdateSerializer(data=request.data)
 
         if serializer.is_valid():
-            # If valid, update the recording title if owned by user
-            if request.user.id != recording.instructor.user.id:
-                return Response(
-                    {"error": "You do not have permission to modify this recording."},
-                    status=status.HTTP_403_FORBIDDEN,
-                )
-
+            # If valid, update the recording title
             recording.title = serializer.validated_data["title"]
             recording.save()
             return Response(
