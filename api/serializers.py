@@ -141,6 +141,14 @@ class QuizListSerializer(serializers.Serializer):
     quizzes = QuizSerializer(many=True)
 
 
+class QuizTitleUpdateSerializer(serializers.Serializer):
+    title = serializers.CharField(required=True, allow_blank=False)
+
+
+class RecordingTitleUpdateSerializer(serializers.Serializer):
+    title = serializers.CharField(required=True, allow_blank=False)
+
+
 class ContactMessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ContactMessage

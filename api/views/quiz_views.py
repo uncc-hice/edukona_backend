@@ -3,7 +3,7 @@ from rest_framework import status
 from rest_framework.response import Response
 
 from api.models import *
-from api.serializers import QuizSerializer, QuizListSerializer
+from api.serializers import QuizSerializer, QuizListSerializer, QuizTitleUpdateSerializer
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
 
@@ -58,6 +58,32 @@ class CreateQuizView(APIView):
                 {"message": "Quiz created successfully", "quiz_id": quiz.id},
                 status=status.HTTP_201_CREATED,
             )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UpdateQuizTitleView(APIView):
+    permission_classes = [IsQuizOwner]
+
+    @extend_schema(
+        request=QuizTitleUpdateSerializer,
+        description="Endpoint to update the title of a specific quiz",
+    )
+    def patch(self, request, quiz_id):
+        quiz = get_object_or_404(Quiz, id=quiz_id)
+
+        # Pass request data to the serializer for validation
+        serializer = QuizTitleUpdateSerializer(data=request.data)
+
+        if serializer.is_valid():
+            # If valid, update the quiz title
+            quiz.title = serializer.validated_data["title"]
+            quiz.save()
+            return Response(
+                {"message": "Title updated successfully", "title": quiz.title},
+                status=status.HTTP_200_OK,
+            )
+
+        # If not valid, return validation errors
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
