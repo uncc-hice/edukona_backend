@@ -647,8 +647,39 @@ class DeleteUserView(APIView):
     def delete(self, request):
         id = request.user.id
         user = get_object_or_404(User, id=id)
-        user.delete()
-        return JsonResponse({"message": "User deleted successfully"})
+
+        if hasattr(user, "instructor"):
+            boto3_client = boto3.client(
+                's3',
+                aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+                aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+                region_name=settings.AWS_S3_REGION_NAME
+            )
+            bucket_name = settings.AWS_STORAGE_BUCKET_NAME
+            recordings = InstructorRecordings.objects.filter(instructor=user.instructor)
+
+            try:
+                for recording in recordings:
+                    boto3_client.delete_object(Bucket=bucket_name, Key=recording.s3_path)
+            except Exception as e:
+                return JsonResponse(
+                    {"error": f"Failed to delete files from S3: {str(e)}"},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+
+        try:
+            with transaction.atomic():
+                user.delete()
+        except Exception as e:
+            return JsonResponse(
+                {"error": f"Failed to delete user: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+        return JsonResponse(
+            {"message": "User and associated files deleted successfully"},
+            status=status.HTTP_200_OK
+        )
 
 
 class QuizByRecordingView(APIView):
