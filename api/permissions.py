@@ -1,5 +1,5 @@
 from rest_framework import permissions
-from .models import Instructor, Quiz, QuestionMultipleChoice
+from .models import Instructor, Quiz, QuestionMultipleChoice, InstructorRecordings
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned, FieldError
 
 
@@ -71,3 +71,18 @@ class IsQuestionOwner(AllowInstructor):
         except (ObjectDoesNotExist, MultipleObjectsReturned, FieldError):
             return False
         return request.user.id == question.quiz.instructor.user.id
+
+
+class IsRecordingOwner(permissions.BasePermission):
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+
+        # Get recording_id from path parameters
+        recording_id = view.kwargs.get("recording_id")
+
+        try:
+            recording = InstructorRecordings.objects.get(id=recording_id)
+        except (ObjectDoesNotExist, MultipleObjectsReturned, FieldError):
+            return False
+        return request.user == recording.instructor.user

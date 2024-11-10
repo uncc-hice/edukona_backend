@@ -171,4 +171,9 @@ urlpatterns = [
         QuizByRecordingView.as_view(),
         name="quizzes-by-recording",
     ),
+    path(
+        "recordings/<uuid:recording_id>/summary/",
+        LectureSummaryView.as_view(),
+        name="lecture_summary",
+    ),
 ]
