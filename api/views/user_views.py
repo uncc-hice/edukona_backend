@@ -657,14 +657,16 @@ class DeleteUserView(APIView):
             )
             bucket_name = settings.AWS_STORAGE_BUCKET_NAME
 
-            target_folder = 'user_' + str(user.id) + '/'
+            target_folder = "user_" + str(user.id) + "/"
 
             try:
-                objects_to_delete = boto3_client.list_objects_v2(Bucket=bucket_name, Prefix=target_folder)
+                objects_to_delete = boto3_client.list_objects_v2(
+                    Bucket=bucket_name, Prefix=target_folder
+                )
                 if 'Contents' in objects_to_delete:
                     delete_keys = [{'Key': obj['Key']} for obj in objects_to_delete['Contents']]
                     boto3_client.delete_objects(Bucket=bucket_name, Delete={'Objects': delete_keys})
-            except Exception as _:
+            except Exception:
                 # TODO Log the error
                 pass
 
