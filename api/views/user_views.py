@@ -656,16 +656,17 @@ class DeleteUserView(APIView):
                 region_name=settings.AWS_S3_REGION_NAME,
             )
             bucket_name = settings.AWS_STORAGE_BUCKET_NAME
-            recordings = InstructorRecordings.objects.filter(instructor=user.instructor)
+
+            target_folder = 'user_' + str(user.id) + '/'
 
             try:
-                for recording in recordings:
-                    boto3_client.delete_object(Bucket=bucket_name, Key=recording.s3_path)
-            except Exception as e:
-                return JsonResponse(
-                    {"error": f"Failed to delete files from S3: {str(e)}"},
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                )
+                objects_to_delete = boto3_client.list_objects_v2(Bucket=bucket_name, Prefix=target_folder)
+                if 'Contents' in objects_to_delete:
+                    delete_keys = [{'Key': obj['Key']} for obj in objects_to_delete['Contents']]
+                    boto3_client.delete_objects(Bucket=bucket_name, Delete={'Objects': delete_keys})
+            except Exception as _:
+                # TODO Log the error
+                pass
 
         try:
             with transaction.atomic():
