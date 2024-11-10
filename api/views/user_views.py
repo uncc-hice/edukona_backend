@@ -650,10 +650,10 @@ class DeleteUserView(APIView):
 
         if hasattr(user, "instructor"):
             boto3_client = boto3.client(
-                's3',
+                "s3",
                 aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
                 aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
-                region_name=settings.AWS_S3_REGION_NAME
+                region_name=settings.AWS_S3_REGION_NAME,
             )
             bucket_name = settings.AWS_STORAGE_BUCKET_NAME
             recordings = InstructorRecordings.objects.filter(instructor=user.instructor)
@@ -664,7 +664,7 @@ class DeleteUserView(APIView):
             except Exception as e:
                 return JsonResponse(
                     {"error": f"Failed to delete files from S3: {str(e)}"},
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 )
 
         try:
@@ -673,12 +673,11 @@ class DeleteUserView(APIView):
         except Exception as e:
             return JsonResponse(
                 {"error": f"Failed to delete user: {str(e)}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
         return JsonResponse(
-            {"message": "User and associated files deleted successfully"},
-            status=status.HTTP_200_OK
+            {"message": "User and associated files deleted successfully"}, status=status.HTTP_200_OK
         )
 
 
