@@ -663,9 +663,9 @@ class DeleteUserView(APIView):
                 objects_to_delete = boto3_client.list_objects_v2(
                     Bucket=bucket_name, Prefix=target_folder
                 )
-                if 'Contents' in objects_to_delete:
-                    delete_keys = [{'Key': obj['Key']} for obj in objects_to_delete['Contents']]
-                    boto3_client.delete_objects(Bucket=bucket_name, Delete={'Objects': delete_keys})
+                if "Contents" in objects_to_delete:
+                    delete_keys = [{"Key": obj["Key"]} for obj in objects_to_delete["Contents"]]
+                    boto3_client.delete_objects(Bucket=bucket_name, Delete={"Objects": delete_keys})
             except Exception:
                 # TODO Log the error
                 pass
