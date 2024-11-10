@@ -26,5 +26,5 @@ jobs:
 
       - name: Run Django Tests
         run: |
-          coverage run --source=. manage.py test -v 3
-          coverage report --fail-under=55
+          coverage run --source=. --omit=api/tests/consumer_tests.py manage.py test -v 3
+          coverage report --fail-under=65
