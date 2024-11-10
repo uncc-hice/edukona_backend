@@ -706,7 +706,7 @@ class LectureSummaryViewTest(BaseTest):
                 response = self.client_instructor.post(url, data, format="json")
                 self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-                
+
 class RecordingTitleChangeTest(BaseTest):
     def setUp(self):
         super().setUp()
