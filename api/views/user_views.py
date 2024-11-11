@@ -717,6 +717,8 @@ class QuizByRecordingView(APIView):
 
 
 class TokenVerificationView(APIView):
+    permission_classes = [AllowAny]
+
     def get(self, request, token):
         if not Token.objects.filter(key=token).exists():
             return JsonResponse(
