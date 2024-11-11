@@ -800,3 +800,23 @@ class QuizTitleChangeTest(BaseTest):
         # Verify the title remains unchanged in the database
         unchanged_quiz = Quiz.objects.get(id=self.new_quiz.id)
         self.assertEqual(unchanged_quiz.title, "Test Quiz")
+
+
+class TokenVerificationTest(BaseTest):
+    def setUp(self):
+        super().setUp()
+        self.token = Token.objects.get(user=self.new_user_instructor)
+        self.token_verification_url = reverse("verify-token", kwargs={"token": self.token.key})
+
+    def test_token_verification_success(self):
+        response = self.client.get(self.token_verification_url, {"token": self.token.key})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json()["message"], "Token is valid")
+
+    def test_token_verification_failure(self):
+        invalid_token = "invalidtoken123"
+        response = self.client.get(self.token_verification_url, {"token": invalid_token})
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        response = response.json()
+        self.assertEqual(response["message"], "Token is invalid")

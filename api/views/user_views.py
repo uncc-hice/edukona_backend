@@ -714,3 +714,12 @@ class QuizByRecordingView(APIView):
 
         serializer = QuizSerializer(quizzes, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class TokenVerificationView(APIView):
+    def get(self, request, token):
+        if not Token.objects.filter(key=token).exists():
+            return JsonResponse(
+                {"message": "Token is invalid"}, status=status.HTTP_401_UNAUTHORIZED
+            )
+        return JsonResponse({"message": "Token is valid"}, status=status.HTTP_200_OK)

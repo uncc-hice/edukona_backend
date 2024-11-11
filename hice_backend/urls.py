@@ -176,4 +176,9 @@ urlpatterns = [
         LectureSummaryView.as_view(),
         name="lecture_summary",
     ),
+    path(
+        "token/verify/<str:token>/",
+        TokenVerificationView.as_view(),
+        name="verify-token",
+    ),
 ]
