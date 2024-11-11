@@ -21,24 +21,22 @@ jobs:
       - name: Install Black
         run: pip install black
 
-      - name: Get changed files
+      - name: Get changed Python files
         id: changed-files
         run: |
-          files=$(git diff --name-only origin/${{ github.event.pull_request.base.ref }} ${{ github.sha }} | grep '\.py$')
-          if [[ -n "$files" ]]; then
-            echo "::set-output name=files::$(echo $files)"
-          fi
+          files=$(git diff --name-only origin/${{ github.event.pull_request.base.ref }} ${{ github.sha }} | grep '\.py$' || true)
+          echo "files=$files" >> $GITHUB_OUTPUT
 
       - name: Run Black and show diff
-        if: steps.changed-files.outputs.files != ''
+        if: ${{ steps.changed-files.outputs.files != '' }}
         run: |
           exit_code=0
           for file in ${{ steps.changed-files.outputs.files }}
           do
-            cp $file $file.bak
-            black $file --line-length 100
+            cp "$file" "$file.bak"
+            black "$file" --line-length 100
             echo "Diff for $file:"
-            diff -u $file.bak $file || exit_code=$?
-            mv $file.bak $file
+            diff -u "$file.bak" "$file" || exit_code=$?
+            mv "$file.bak" "$file"
           done
           exit $exit_code
