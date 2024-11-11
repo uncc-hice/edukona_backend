@@ -806,7 +806,7 @@ class TokenVerificationTest(BaseTest):
     def setUp(self):
         super().setUp()
         self.token = Token.objects.get(user=self.new_user_instructor)
-        self.token_verification_url = reverse('verify-token', kwargs={'token': self.token.key})
+        self.token_verification_url = reverse("verify-token", kwargs={"token": self.token.key})
 
     def test_token_verification_success(self):
         response = self.client.get(self.token_verification_url)
@@ -814,7 +814,7 @@ class TokenVerificationTest(BaseTest):
         self.assertEqual(response.json()["message"], "Token is valid")
 
     def test_token_verification_failure(self):
-        invalid_token_url = reverse('verify-token', kwargs={'token': 'invalidtoken123'})
+        invalid_token_url = reverse("verify-token", kwargs={"token": "invalidtoken123"})
         response = self.client.get(invalid_token_url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         self.assertEqual(response.json()["message"], "Token is invalid")
