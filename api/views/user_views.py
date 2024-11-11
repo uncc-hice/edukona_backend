@@ -647,8 +647,41 @@ class DeleteUserView(APIView):
     def delete(self, request):
         id = request.user.id
         user = get_object_or_404(User, id=id)
-        user.delete()
-        return JsonResponse({"message": "User deleted successfully"})
+
+        if hasattr(user, "instructor"):
+            boto3_client = boto3.client(
+                "s3",
+                aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+                aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+                region_name=settings.AWS_S3_REGION_NAME,
+            )
+            bucket_name = settings.AWS_STORAGE_BUCKET_NAME
+
+            target_folder = "user_" + str(user.id) + "/"
+
+            try:
+                objects_to_delete = boto3_client.list_objects_v2(
+                    Bucket=bucket_name, Prefix=target_folder
+                )
+                if "Contents" in objects_to_delete:
+                    delete_keys = [{"Key": obj["Key"]} for obj in objects_to_delete["Contents"]]
+                    boto3_client.delete_objects(Bucket=bucket_name, Delete={"Objects": delete_keys})
+            except Exception:
+                # TODO Log the error
+                pass
+
+        try:
+            with transaction.atomic():
+                user.delete()
+        except Exception as e:
+            return JsonResponse(
+                {"error": f"Failed to delete user: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+        return JsonResponse(
+            {"message": "User and associated files deleted successfully"}, status=status.HTTP_200_OK
+        )
 
 
 class QuizByRecordingView(APIView):

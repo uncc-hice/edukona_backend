@@ -1,10 +1,13 @@
+from django.db import transaction
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from api.models import *
 from django.shortcuts import get_object_or_404
 from rest_framework.permissions import AllowAny
 from rest_framework import status
-from api.serializers import QuizSessionStudentSerializer
+
+from api.permissions import IsRecordingOwner
+from api.serializers import QuizSessionStudentSerializer, LectureSummarySerializer
 from django.http import JsonResponse
 from drf_spectacular.utils import extend_schema
 from drf_spectacular.types import OpenApiTypes
@@ -264,3 +267,47 @@ class DeleteQuizSession(APIView):
             return Response({"message": f"{str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+class LectureSummaryView(APIView):
+    permission_classes = [IsRecordingOwner]
+
+    @extend_schema(
+        operation_id="create_lecture_summary",
+        summary="Create a lecture summary",
+        description="Creates a summary for a specific recording using the recording ID.",
+        request=LectureSummarySerializer,
+        responses={
+            201: OpenApiTypes.OBJECT,  # Successful creation response
+            400: OpenApiTypes.OBJECT,  # Error response for bad request
+            404: OpenApiTypes.OBJECT,  # Error response when recording is not found
+            500: OpenApiTypes.OBJECT,  # Error response for server error
+        },
+    )
+    def post(self, request, recording_id):
+        summary = request.data.get("summary")
+
+        # Validate required fields
+        if not summary or not recording_id:
+            return Response(
+                {"error": "Summary and recording_id are required fields."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Wrap in atomic transaction to ensure consistency
+        try:
+            with transaction.atomic():
+                recording = InstructorRecordings.objects.get(id=recording_id)
+                lecture_summary = LectureSummary.objects.create(
+                    summary=summary, recording_id=recording
+                )
+                return Response(
+                    {
+                        "id": lecture_summary.id,
+                        "recording_id": lecture_summary.recording_id.id,
+                        "created_at": lecture_summary.created_at,
+                    },
+                    status=status.HTTP_201_CREATED,
+                )
+        except InstructorRecordings.DoesNotExist:
+            return Response({"error": "Recording not found."}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

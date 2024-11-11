@@ -141,6 +141,14 @@ class QuizListSerializer(serializers.Serializer):
     quizzes = QuizSerializer(many=True)
 
 
+class QuizTitleUpdateSerializer(serializers.Serializer):
+    title = serializers.CharField(required=True, allow_blank=False)
+
+
+class RecordingTitleUpdateSerializer(serializers.Serializer):
+    title = serializers.CharField(required=True, allow_blank=False)
+
+
 class ContactMessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ContactMessage
@@ -223,3 +231,8 @@ class SignUpInstructorSerializer(serializers.Serializer):
         instructor = Instructor.objects.create(user=user)
 
         return instructor
+
+
+class LectureSummarySerializer(serializers.Serializer):
+    summary = serializers.CharField(required=True)
+    recording_id = serializers.IntegerField(required=True)
