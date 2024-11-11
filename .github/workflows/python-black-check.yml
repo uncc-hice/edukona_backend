@@ -2,7 +2,7 @@ name: Python Black Code Style
 
 on:
   pull_request:
-    types: [ opened, synchronize ]
+    types: [opened, synchronize]
 
 jobs:
   black:
@@ -25,7 +25,9 @@ jobs:
         id: changed-files
         run: |
           files=$(git diff --name-only origin/${{ github.event.pull_request.base.ref }} ${{ github.sha }} | grep '\.py$' || true)
-          echo "files=$files" >> $GITHUB_OUTPUT
+          echo "files<<EOF" >> $GITHUB_OUTPUT
+          echo "$files" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Run Black and show diff
         if: ${{ steps.changed-files.outputs.files != '' }}
@@ -33,8 +35,8 @@ jobs:
           exit_code=0
           for file in ${{ steps.changed-files.outputs.files }}
           do
-            cp $file $file.bak
-            black $file
+            cp "$file" "$file.bak"
+            black "$file"
             echo "Diff for $file:"
             diff -u "$file.bak" "$file" || exit_code=$?
             mv "$file.bak" "$file"
