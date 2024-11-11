@@ -12,7 +12,7 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from django.contrib.auth.models import User
 from rest_framework.authtoken.models import Token
 from rest_framework.views import APIView
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework import status
 from rest_framework import serializers
 
@@ -170,8 +170,6 @@ class Login(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-
-        # use a try catch block to catch the error, and return a 401 status code
         try:
             user = User.objects.get(email=request.data["email"])
         except User.DoesNotExist:
@@ -185,25 +183,28 @@ class Login(APIView):
                 {"detail": "Invalid email or password!"},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
-        token = Token.objects.get_or_create(user=user)
+        # Delete all previous tokens
+        Token.objects.filter(user=user).delete()
+
+        token = Token.objects.create(user=user)
+
+        response = {
+            "token": token.key,
+            "user": user.id,
+        }
+
         if hasattr(user, "instructor"):
-            return JsonResponse(
-                {
-                    "token": token[0].key,
-                    "user": user.id,
-                    "instructor": user.instructor.id,
-                }
-            )
-        # else:
-        #     return JsonResponse({"token": token[0].key, "user": user.id, "student": user.student.id})
+            response["instructor"] = user.instructor.id
+
+        return JsonResponse(response, status=status.HTTP_200_OK)
 
 
 class Logout(APIView):
+    permission_classes = [IsAuthenticated]
+
     def post(self, request):
-        token = request.user.auth_token
-        token.delete()
-        token.save()
-        return JsonResponse({"message": "User logged out successfully"})
+        request.user.auth_token.delete()
+        return JsonResponse({"message": "User logged out successfully"}, status=status.HTTP_200_OK)
 
 
 class InstructorView(APIView):
