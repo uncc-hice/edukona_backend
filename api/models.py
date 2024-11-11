@@ -106,6 +106,17 @@ class QuestionMultipleChoice(models.Model):
     class Meta:
         db_table = "api_question_multiple_choice"
 
+    def to_json_with_feedback(self):
+        return {
+            "id": self.id,
+            "question_text": self.question_text,
+            "incorrect_answer_list": self.incorrect_answer_list,
+            "correct_answer": self.correct_answer,
+            "points": self.points,
+            "quiz_id": self.quiz.id,
+            "duration": self.duration,
+        }
+
     def to_json(self):
         # Extract the list of answers from the new data structure
         incorrect_answers = []
