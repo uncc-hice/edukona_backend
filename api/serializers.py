@@ -235,4 +235,4 @@ class SignUpInstructorSerializer(serializers.Serializer):
 
 class LectureSummarySerializer(serializers.Serializer):
     summary = serializers.CharField(required=True)
-    recording_id = serializers.IntegerField(required=True)
+    recording_id_id = serializers.IntegerField(required=False)  # corrected column name

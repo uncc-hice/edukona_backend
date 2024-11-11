@@ -1,3 +1,5 @@
+import uuid
+
 from django.db import transaction
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -325,8 +327,8 @@ class LectureSummaryView(APIView):
     )
     def get(self, request, recording_id):
         try:
-            lecture_summary = LectureSummary.objects.get(id=recording_id)
-            serializer = LectureSummarySerializer(lecture_summary)
+            lecture_summary = LectureSummary.objects.filter(recording_id_id=recording_id)
+            serializer = LectureSummarySerializer(lecture_summary, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except LectureSummary.DoesNotExist:
             return Response(
