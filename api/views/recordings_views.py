@@ -4,11 +4,16 @@ from rest_framework.permissions import IsAuthenticated
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
 
-from api.serializers import *
+from api.serializers import (
+    InstructorRecordingsSerializer,
+    RecordingTitleUpdateSerializer,
+    RecordingDurationUpdateSerializer,
+)
 from django.conf import settings
 from django.shortcuts import get_object_or_404
 
 from api.models import Instructor, InstructorRecordings
+from api.permissions import IsRecordingOwner
 import boto3
 import json
 
@@ -107,20 +112,14 @@ class UpdateRecordingTitleView(APIView):
 
 @extend_schema(tags=["Recordings"])
 class UpdateRecordingDurationView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsRecordingOwner]
 
     @extend_schema(
         request=RecordingDurationUpdateSerializer,
         description="Endpoint too update the duration of the recording",
     )
     def patch(self, request, recording_id):
-        recording = get_object_or_404(InstructorRecordings, id=recording_id)
-
-        if request.user != recording.instructor.user:
-            return Response(
-                {"error": "You do not have permission to modify this recording."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
+        recording = InstructorRecordings.objects.get(id=recording_id)
 
         serializer = RecordingDurationUpdateSerializer(data=request.data)
 

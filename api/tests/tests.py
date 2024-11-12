@@ -802,12 +802,8 @@ class RecordingDurationChangeTest(BaseTest):
 
         response = self.client_other_instructor.patch(self.url, data, format="json")
 
-        # Assert forbidden response and no duration change
+        # Assert forbidden response
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-        self.assertEqual(
-            response.data["error"],
-            "You do not have permission to modify this recording.",
-        )
 
         # Verify the duration remains unchanged in the database
         unchanged_recording = InstructorRecordings.objects.get(id=self.recording.id)
