@@ -12,7 +12,7 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from django.contrib.auth.models import User
 from rest_framework.authtoken.models import Token
 from rest_framework.views import APIView
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework import status
 from rest_framework import serializers
 
@@ -717,11 +717,8 @@ class QuizByRecordingView(APIView):
 
 
 class TokenVerificationView(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [UserRateThrottle]
 
-    def get(self, request, token):
-        if not Token.objects.filter(key=token).exists():
-            return JsonResponse(
-                {"message": "Token is invalid"}, status=status.HTTP_401_UNAUTHORIZED
-            )
-        return JsonResponse({"message": "Token is valid"}, status=status.HTTP_200_OK)
+    def get(self, request):
+        return Response({"message": "Token is valid"}, status=status.HTTP_200_OK)
