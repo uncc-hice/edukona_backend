@@ -1,7 +1,15 @@
 from django.db import transaction
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from api.models import *
+from api.models import (
+    Quiz,
+    QuizSession,
+    QuizSessionStudent,
+    UserResponse,
+    QuestionMultipleChoice,
+    InstructorRecordings,
+    LectureSummary,
+)
 from django.shortcuts import get_object_or_404
 from rest_framework.permissions import AllowAny
 from rest_framework import status
@@ -12,8 +20,12 @@ from django.http import JsonResponse
 from drf_spectacular.utils import extend_schema
 from drf_spectacular.types import OpenApiTypes
 
+from ..permissions import IsQuizOwner, AllowInstructor, IsSessionOwner
+
 
 class StudentResponseCountView(APIView):
+    permission_classes = [IsSessionOwner]
+
     def get(self, request, code):
         quiz_session = get_object_or_404(QuizSession, code=code)
         responses = quiz_session.responses.filter(question_id=quiz_session.current_question)
@@ -44,6 +56,8 @@ class StoreColorAPIView(APIView):
 
 
 class QuizSessionView(APIView):
+    permission_classes = [IsQuizOwner]
+
     def post(self, request):
         try:
             quiz_id = request.data.get("quiz_id")
@@ -93,7 +107,7 @@ class QuizSessionStudentView(APIView):
 
 
 class QuizSessionStudentInstructorView(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = [IsSessionOwner]
 
     def get(self, request, code):
         quiz_session = get_object_or_404(QuizSession, code=code)
@@ -107,6 +121,8 @@ class QuizSessionStudentInstructorView(APIView):
 
 
 class QuizSessionInstructorView(APIView):
+    permission_classes = [IsQuizOwner]
+
     def get(self, request, quiz_id):
         quiz = get_object_or_404(Quiz, id=quiz_id)
         questions = QuestionMultipleChoice.objects.filter(quiz=quiz)
@@ -120,6 +136,8 @@ class QuizSessionInstructorView(APIView):
 
 
 class QuizSessionResults(APIView):
+    permission_classes = [IsSessionOwner]
+
     def get(self, request, code):
         quiz_session = get_object_or_404(QuizSession, code=code)
         students = QuizSessionStudent.objects.filter(quiz_session=quiz_session)
@@ -141,6 +159,8 @@ class QuizSessionResults(APIView):
 
 
 class QuizSessionsByInstructorView(APIView):
+    permissions = [AllowInstructor]
+
     def get(self, request):
         instructor = request.user.instructor
 
@@ -164,6 +184,8 @@ class QuizSessionsByInstructorView(APIView):
 
 
 class QuizSessionsByQuizView(APIView):
+    permission_classes = [IsQuizOwner]
+
     @extend_schema(
         operation_id="quiz-sessions",
         description="Returns all sessions of the quiz with the specified id",
@@ -175,13 +197,7 @@ class QuizSessionsByQuizView(APIView):
         },
     )
     def get(self, request, quiz_id):
-        instructor = request.user.instructor
         quiz = get_object_or_404(Quiz, id=quiz_id)
-        if instructor != quiz.instructor:
-            return JsonResponse(
-                {"message": "You do not have permission to access this resource"},
-                status=403,
-            )
         sessions = QuizSession.objects.filter(quiz=quiz).order_by("start_time")
         quiz_sessions_data = [
             {
@@ -200,9 +216,11 @@ class QuizSessionsByQuizView(APIView):
 
 
 class NextQuestionAPIView(APIView):
-    def get(self, request, session_code):
+    permission_classes = [AllowInstructor, IsSessionOwner]
+
+    def get(self, request, code):
         try:
-            session = QuizSession.objects.get(code=session_code)
+            session = QuizSession.objects.get(code=code)
             served_questions_ids = session.served_questions.all().values_list("id", flat=True)
             next_question = (
                 QuestionMultipleChoice.objects.exclude(id__in=served_questions_ids)
@@ -247,6 +265,8 @@ class StudentQuestion(APIView):
 
 
 class DeleteQuizSession(APIView):
+    permission_classes = [IsSessionOwner]
+
     def delete(self, request, code):
         try:
             session = QuizSession.objects.get(code=code)

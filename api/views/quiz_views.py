@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.response import Response
 
-from api.models import *
+from api.models import Quiz, Settings
 from api.serializers import QuizSerializer, QuizListSerializer, QuizTitleUpdateSerializer
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse

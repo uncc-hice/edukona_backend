@@ -12,7 +12,7 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from django.contrib.auth.models import User
 from rest_framework.authtoken.models import Token
 from rest_framework.views import APIView
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework import status
 from rest_framework import serializers
 
@@ -43,6 +43,8 @@ from drf_spectacular.types import OpenApiTypes
 
 import boto3
 import json
+
+from ..permissions import IsRecordingOwner
 
 
 def mailInstructor(email):
@@ -137,6 +139,8 @@ class SignUpInstructor(APIView):
 
 
 class ProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def get(self, request):
         user = request.user
         return Response(
@@ -414,6 +418,7 @@ class UploadAudioView(APIView):
 
 
 class UpdateTranscriptView(APIView):
+    permission_classes = [IsRecordingOwner]
 
     @extend_schema(
         operation_id="update_transcript",
@@ -480,6 +485,8 @@ class RecordingsView(APIView):
 
 
 class DeleteRecordingView(APIView):
+    permission_classes = [IsRecordingOwner]
+
     @extend_schema(
         operation_id="delete_recording",
         summary="Delete recording",
@@ -519,6 +526,8 @@ class DeleteRecordingView(APIView):
 
 
 class GetTranscriptView(APIView):
+    permission_classes = [IsRecordingOwner]
+
     @extend_schema(
         operation_id="get_transcript",
         summary="Get transcript of a recording",
@@ -685,6 +694,8 @@ class DeleteUserView(APIView):
 
 
 class QuizByRecordingView(APIView):
+    permission_classes = [IsRecordingOwner]
+
     @extend_schema(
         operation_id="get_quizzes_by_recording",
         summary="Get quizzes by recording ID",
