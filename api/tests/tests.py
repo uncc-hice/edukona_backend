@@ -800,3 +800,46 @@ class QuizTitleChangeTest(BaseTest):
         # Verify the title remains unchanged in the database
         unchanged_quiz = Quiz.objects.get(id=self.new_quiz.id)
         self.assertEqual(unchanged_quiz.title, "Test Quiz")
+
+
+class UserAuthTests(BaseTest):
+
+    def setUp(self):
+        super().setUp()
+        self.login_url = reverse("login")
+        self.logout_url = reverse("logout")
+
+    def test_login_success(self):
+        data = {"email": "test@gmail.com", "password": "password"}
+        response = self.client.post(self.login_url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_data = response.json()
+        self.assertIn("token", response_data)
+        self.assertEqual(response_data["user"], self.new_user_instructor.id)
+
+    def test_login_invalid_email(self):
+        data = {"email": "invalid@example.com", "password": "password"}
+        response = self.client.post(self.login_url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        response_data = response.json()
+        self.assertEqual(response_data["detail"], "Invalid email or password!")
+
+    def test_login_invalid_password(self):
+        data = {"email": "test@gmail.com", "password": "wrongpassword"}
+        response = self.client.post(self.login_url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        response_data = response.json()
+        self.assertEqual(response_data["detail"], "Invalid email or password!")
+
+    def test_logout_success(self):
+        token = Token.objects.get(user=self.new_user_instructor)
+        self.client.credentials(HTTP_AUTHORIZATION="Token {}".format(token.key))
+        response = self.client.post(self.logout_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_data = response.json()
+        self.assertEqual(response_data["message"], "User logged out successfully")
+        self.assertFalse(Token.objects.filter(user=self.new_user_instructor).exists())
+
+    def test_logout_without_token(self):
+        response = self.client.post(self.logout_url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
