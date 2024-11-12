@@ -176,4 +176,10 @@ urlpatterns = [
         LectureSummaryView.as_view(),
         name="lecture_summary",
     ),
+
+    path(
+        "recordings/<uuid:id>/summary/",
+        SingleLectureSummaryView.as_view(),
+        name="single_lecture_summary"
+    )
 ]
