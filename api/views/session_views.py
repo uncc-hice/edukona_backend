@@ -333,7 +333,7 @@ class LectureSummaryView(APIView):
     )
     def get(self, request, recording_id):
         try:
-            lecture_summary = LectureSummary.objects.filter(recording_id_id=recording_id)
+            lecture_summary = LectureSummary.objects.filter(recording=recording_id)
             serializer = LectureSummarySerializer(lecture_summary, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except LectureSummary.DoesNotExist:
