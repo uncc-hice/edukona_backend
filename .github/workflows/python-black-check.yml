@@ -2,41 +2,49 @@ name: Python Black Code Style
 
 on:
   pull_request:
-    types: [ opened, synchronize ]
+    types: [opened, synchronize]
 
 jobs:
   black:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Check out code
-        uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12.7'
-
-      - name: Install Black
-        run: pip install black
 
       - name: Get changed Python files
         id: changed-files
         run: |
-          files=$(git diff --name-only origin/${{ github.event.pull_request.base.ref }} ${{ github.sha }} | grep '\.py$' || true)
-          echo "files=$files" >> $GITHUB_OUTPUT
+          git fetch origin ${{ github.base_ref }}
+          CHANGED_FILES=$(git diff --name-only --diff-filter=ACMRT origin/${{ github.base_ref }} ${{ github.sha }} | grep "\.py$" || true)
+          echo "CHANGED_FILES<<EOF" >> $GITHUB_ENV
+          echo "$CHANGED_FILES" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+          if [ -n "$CHANGED_FILES" ]; then
+            echo "HAS_PYTHON_CHANGES=true" >> $GITHUB_ENV
+          else
+            echo "HAS_PYTHON_CHANGES=false" >> $GITHUB_ENV
+          fi
 
-      - name: Run Black and show diff
-        if: ${{ steps.changed-files.outputs.files != '' }}
+      - name: Set up Python
+        if: env.HAS_PYTHON_CHANGES == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install Black
+        if: env.HAS_PYTHON_CHANGES == 'true'
+        run: pip install black
+
+      - name: Run Black check on changed files
+        if: env.HAS_PYTHON_CHANGES == 'true'
         run: |
-          exit_code=0
-          for file in ${{ steps.changed-files.outputs.files }}
-          do
-            cp $file $file.bak
-            black $file
-            echo "Diff for $file:"
-            diff -u "$file.bak" "$file" || exit_code=$?
-            mv "$file.bak" "$file"
-          done
-          exit $exit_code
+          echo "Changed Python files:"
+          echo "${{ env.CHANGED_FILES }}"
+          echo "${{ env.CHANGED_FILES }}" | xargs black --check
+
+      - name: No Python files changed
+        if: env.HAS_PYTHON_CHANGES == 'false'
+        run: echo "No Python files were changed in this PR"
