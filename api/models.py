@@ -47,6 +47,7 @@ class InstructorRecordings(models.Model):
     instructor = models.ForeignKey(Instructor, on_delete=models.CASCADE)
     transcript = models.TextField(default="")
     title = models.CharField(max_length=250, default="")
+    duration = models.PositiveIntegerField(default=0)
 
     class Meta:
         db_table = "api_instructor_recordings"
@@ -251,7 +252,7 @@ class ContactMessage(models.Model):
 
 class LectureSummary(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    recording_id = models.ForeignKey(
+    recording = models.ForeignKey(
         InstructorRecordings, on_delete=models.CASCADE, related_name="summaries"
     )
     summary = models.TextField()
