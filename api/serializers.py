@@ -12,8 +12,7 @@ from .models import (
     QuizSessionStudent,
     InstructorRecordings,
     Settings,
-    ContactMessage,
-    LectureSummary,
+    ContactMessage, LectureSummary,
 )
 
 
