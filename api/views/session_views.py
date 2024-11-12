@@ -5,6 +5,7 @@ from api.models import *
 from django.shortcuts import get_object_or_404
 from rest_framework.permissions import AllowAny
 from rest_framework import status
+from django.core.exceptions import PermissionDenied
 
 from api.permissions import IsRecordingOwner
 from api.serializers import QuizSessionStudentSerializer, LectureSummarySerializer
@@ -325,6 +326,7 @@ class LectureSummaryView(APIView):
         request=LectureSummarySerializer,
         responses={
             200: OpenApiTypes.OBJECT,  # Successful retrieval of data.
+            403: OpenApiTypes.OBJECT,  # Response when the user is not authorized to proceed with the request.
             404: OpenApiTypes.OBJECT,  # Response when the lecture summary is not found.
             500: OpenApiTypes.OBJECT,  # Response when there is an error from the server side.
         },
@@ -338,5 +340,7 @@ class LectureSummaryView(APIView):
             return Response(
                 {"error": "The lecture summary was not found."}, status=status.HTTP_404_NOT_FOUND
             )
+        except PermissionDenied:
+            return Response({"error: Permission denied"}, status=status.HTTP_403_FORBIDDEN)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
