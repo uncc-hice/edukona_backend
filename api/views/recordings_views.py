@@ -12,6 +12,7 @@ from api.models import Instructor, InstructorRecordings
 import boto3
 import json
 
+
 @extend_schema(tags=["Authentication Endpoint"])
 class GenerateTemporaryCredentialsView(APIView):
     permission_classes = [IsAuthenticated]
@@ -69,6 +70,7 @@ class GenerateTemporaryCredentialsView(APIView):
         except Exception as e:
             return Response({"error": str(e)}, status=500)
 
+
 @extend_schema(tags=["Recordings"])
 class UpdateRecordingTitleView(APIView):
     permission_classes = [IsAuthenticated]
@@ -101,6 +103,7 @@ class UpdateRecordingTitleView(APIView):
 
         # If not valid, return validation errors
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 @extend_schema(tags=["Recordings"])
 class CreateRecordingView(APIView):

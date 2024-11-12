@@ -11,6 +11,7 @@ from drf_spectacular.utils import extend_schema, OpenApiResponse
 
 from ..permissions import IsQuizOwner, AllowInstructor
 
+
 @extend_schema(tags=["Quiz Creation and Modification"])
 class QuizView(APIView):
     permission_classes = [IsQuizOwner]
@@ -30,6 +31,7 @@ class QuizView(APIView):
         quiz = get_object_or_404(Quiz, id=quiz_id)
         quiz.delete()
         return JsonResponse({"message": "Quiz deleted successfully"})
+
 
 @extend_schema(tags=["Quiz Creation and Modification"])
 class CreateQuizView(APIView):
@@ -60,6 +62,7 @@ class CreateQuizView(APIView):
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
 @extend_schema(tags=["Quiz Creation and Modification"])
 class UpdateQuizTitleView(APIView):
     permission_classes = [IsQuizOwner]
@@ -86,6 +89,7 @@ class UpdateQuizTitleView(APIView):
         # If not valid, return validation errors
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
 @extend_schema(tags=["Quiz Creation and Modification"])
 class InstructorQuizzesView(APIView):
     permission_class = [AllowInstructor]
@@ -94,6 +98,7 @@ class InstructorQuizzesView(APIView):
     def get(self, request):
         quizzes = Quiz.objects.filter(instructor=request.user.instructor)
         return Response(QuizListSerializer({"quizzes": quizzes}).data, status=status.HTTP_200_OK)
+
 
 @extend_schema(tags=["Quiz Creation and Modification"])
 class SettingsView(APIView):

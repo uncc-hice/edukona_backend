@@ -14,6 +14,7 @@ from drf_spectacular.utils import extend_schema, OpenApiResponse
 from api.permissions import IsQuestionOwner
 from api.permissions import IsOwnerOfAllQuizzes
 
+
 @extend_schema(tags=["Question Management"])
 class CreateMultipleQuestionsView(APIView):
     permission_classes = [IsOwnerOfAllQuizzes]
@@ -62,6 +63,7 @@ class CreateMultipleQuestionsView(APIView):
             status=status.HTTP_201_CREATED,
         )
 
+
 @extend_schema(tags=["Question Management"])
 class QuestionView(APIView):
     permission_classes = [IsQuestionOwner]
@@ -84,6 +86,7 @@ class QuestionView(APIView):
         question = get_object_or_404(QuestionMultipleChoice, id=question_id)
         question.delete()
         return JsonResponse({"message": "Question deleted successfully"})
+
 
 @extend_schema(tags=["Question Management"])
 class AllQuizQuestionsView(APIView):

@@ -121,8 +121,8 @@ class QuestionMultipleChoice(models.Model):
         # Extract the list of answers from the new data structure
         incorrect_answers = []
         for item in self.incorrect_answer_list:
-            if isinstance(item, dict) and 'answer' in item:
-                incorrect_answers.append(item['answer'])
+            if isinstance(item, dict) and "answer" in item:
+                incorrect_answers.append(item["answer"])
             else:
                 # In case of any anomalies, include the item as is
                 incorrect_answers.append(item)

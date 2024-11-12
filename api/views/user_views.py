@@ -58,6 +58,7 @@ def mailInstructor(email):
     except Exception as e:
         print(e.message)
 
+
 @extend_schema(tags=["Authentication Endpoint"])
 class SignUpInstructor(APIView):
     permission_classes = [AllowAny]
@@ -135,6 +136,7 @@ class SignUpInstructor(APIView):
                     {"message": "Invalid data provided."}, status=status.HTTP_400_BAD_REQUEST
                 )
 
+
 @extend_schema(tags=["Profile and User Management"])
 class ProfileView(APIView):
     def get(self, request):
@@ -153,6 +155,7 @@ class ProfileView(APIView):
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField(max_length=128)
     password = serializers.CharField(max_length=128, style={"input_type": "password"})
+
 
 @extend_schema(tags=["Profile and User Management"])
 class CheckDeveloperStatus(APIView):
@@ -198,6 +201,7 @@ class Login(APIView):
         # else:
         #     return JsonResponse({"token": token[0].key, "user": user.id, "student": user.student.id})
 
+
 @extend_schema(tags=["Authentication Endpoint"])
 class Logout(APIView):
     def post(self, request):
@@ -205,6 +209,7 @@ class Logout(APIView):
         token.delete()
         token.save()
         return JsonResponse({"message": "User logged out successfully"})
+
 
 @extend_schema(tags=["Profile and User Management"])
 class InstructorView(APIView):
@@ -274,6 +279,7 @@ class InstructorView(APIView):
 #     student.delete()
 #     return JsonResponse({'message': 'Student deleted successfully'})
 
+
 @extend_schema(tags=["User Responses"])
 class UserResponseView(APIView):
     permission_classes = [AllowAny]
@@ -328,6 +334,7 @@ class UserResponseView(APIView):
     #
     #     user_response.delete()
     #     return JsonResponse({'message': 'User response deleted successfully'})
+
 
 @extend_schema(tags=["Recordings"])
 class UploadAudioView(APIView):
@@ -413,6 +420,7 @@ class UploadAudioView(APIView):
             char for char in filename if char.isalnum() or char in (" ", ".", "_")
         ).strip()
 
+
 @extend_schema(tags=["Recordings"])
 class UpdateTranscriptView(APIView):
 
@@ -446,6 +454,7 @@ class UpdateTranscriptView(APIView):
             status=status.HTTP_200_OK,
         )
 
+
 @extend_schema(tags=["Recordings"])
 class RecordingsView(APIView):
     @extend_schema(
@@ -478,6 +487,7 @@ class RecordingsView(APIView):
                 recording["transcript"] = "completed"
 
         return JsonResponse({"recordings": serializer.data})
+
 
 @extend_schema(tags=["Recordings"])
 class DeleteRecordingView(APIView):
@@ -518,6 +528,7 @@ class DeleteRecordingView(APIView):
             status=status.HTTP_200_OK,
         )
 
+
 @extend_schema(tags=["Recordings"])
 class GetTranscriptView(APIView):
     @extend_schema(
@@ -557,7 +568,7 @@ class GoogleLogin(APIView):
             200: GoogleLoginResponseSerializer,
             400: OpenApiTypes.OBJECT,
         },
-        tags=["Authentication Endpoint"]
+        tags=["Authentication Endpoint"],
     )
     def post(self, request):
         token = request.data.get("token")
@@ -605,6 +616,7 @@ class GoogleLogin(APIView):
 class ContactPageThrottle(UserRateThrottle):
     rate = "10/hour"
 
+
 @extend_schema(tags=["Contact and Support"])
 class ContactPageView(APIView):
     permission_classes = [AllowAny]
@@ -643,6 +655,7 @@ class ContactPageView(APIView):
                 return Response(
                     {"message": "Invalid data provided"}, status=status.HTTP_400_BAD_REQUEST
                 )
+
 
 @extend_schema(tags=["Authentication Endpoint"])
 class DeleteUserView(APIView):
@@ -684,6 +697,7 @@ class DeleteUserView(APIView):
         return JsonResponse(
             {"message": "User and associated files deleted successfully"}, status=status.HTTP_200_OK
         )
+
 
 @extend_schema(tags=["Recordings"])
 class QuizByRecordingView(APIView):
