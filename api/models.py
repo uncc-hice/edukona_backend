@@ -47,6 +47,7 @@ class InstructorRecordings(models.Model):
     instructor = models.ForeignKey(Instructor, on_delete=models.CASCADE)
     transcript = models.TextField(default="")
     title = models.CharField(max_length=250, default="")
+    duration = models.PositiveIntegerField(default=0)
 
     class Meta:
         db_table = "api_instructor_recordings"
