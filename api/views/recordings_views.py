@@ -15,6 +15,7 @@ import json
 from ..permissions import IsRecordingOwner
 
 
+@extend_schema(tags=["Authentication Endpoint"])
 class GenerateTemporaryCredentialsView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -72,6 +73,7 @@ class GenerateTemporaryCredentialsView(APIView):
             return Response({"error": str(e)}, status=500)
 
 
+@extend_schema(tags=["Recordings"])
 class UpdateRecordingTitleView(APIView):
     permission_classes = [IsAuthenticated, IsRecordingOwner]
 
@@ -98,6 +100,7 @@ class UpdateRecordingTitleView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+@extend_schema(tags=["Recordings"])
 class CreateRecordingView(APIView):
     permission_classes = [IsAuthenticated]
 

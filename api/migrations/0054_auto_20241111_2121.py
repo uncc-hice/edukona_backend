@@ -3,21 +3,27 @@
 
 from django.db import migrations
 
+
 def update_incorrect_answer_list(apps, schema_editor):
-    QuestionMultipleChoice = apps.get_model('api', 'QuestionMultipleChoice')
+    QuestionMultipleChoice = apps.get_model("api", "QuestionMultipleChoice")
     for question in QuestionMultipleChoice.objects.all():
         incorrect_answers = question.incorrect_answer_list
         # Check if the data is in the old format (list of strings)
-        if isinstance(incorrect_answers, list) and all(isinstance(ans, str) for ans in incorrect_answers):
+        if isinstance(incorrect_answers, list) and all(
+            isinstance(ans, str) for ans in incorrect_answers
+        ):
             # Transform to new format
-            updated_incorrect_answers = [{'answer': ans, 'feedback': ''} for ans in incorrect_answers]
+            updated_incorrect_answers = [
+                {"answer": ans, "feedback": ""} for ans in incorrect_answers
+            ]
             question.incorrect_answer_list = updated_incorrect_answers
-            question.save(update_fields=['incorrect_answer_list'])
+            question.save(update_fields=["incorrect_answer_list"])
+
 
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('api', '0053_remove_settings_timer_duration'),
+        ("api", "0053_remove_settings_timer_duration"),
     ]
 
     operations = [

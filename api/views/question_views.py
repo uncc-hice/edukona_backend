@@ -15,6 +15,7 @@ from api.permissions import IsQuestionOwner
 from api.permissions import IsOwnerOfAllQuizzes
 
 
+@extend_schema(tags=["Question Management"])
 class CreateMultipleQuestionsView(APIView):
     permission_classes = [IsOwnerOfAllQuizzes]
 
@@ -63,6 +64,7 @@ class CreateMultipleQuestionsView(APIView):
         )
 
 
+@extend_schema(tags=["Question Management"])
 class QuestionView(APIView):
     permission_classes = [IsQuestionOwner]
 
@@ -86,6 +88,7 @@ class QuestionView(APIView):
         return JsonResponse({"message": "Question deleted successfully"})
 
 
+@extend_schema(tags=["Question Management"])
 class AllQuizQuestionsView(APIView):
     def get(self, request, quiz_id):
         questions = QuestionMultipleChoice.objects.filter(quiz_id=quiz_id)
