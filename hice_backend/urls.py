@@ -45,7 +45,7 @@ urlpatterns = [
     path("sign-up-instructor/", SignUpInstructor.as_view(), name="sign-up-instructor"),
     # path('sign-up-student/', SignUpStudent.as_view()),
     path("login/", Login.as_view(), name="login"),
-    path("logout/", Logout.as_view()),
+    path("logout/", Logout.as_view(), name="logout"),
     path("quiz-session/", QuizSessionView.as_view(), name="quiz-session-list"),
     path(
         "quiz-session/<str:code>/",
