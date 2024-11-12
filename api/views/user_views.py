@@ -12,7 +12,7 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from django.contrib.auth.models import User
 from rest_framework.authtoken.models import Token
 from rest_framework.views import APIView
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework import status
 from rest_framework import serializers
 
@@ -59,6 +59,7 @@ def mailInstructor(email):
         print(e.message)
 
 
+@extend_schema(tags=["Authentication Endpoint"])
 class SignUpInstructor(APIView):
     permission_classes = [AllowAny]
 
@@ -136,6 +137,7 @@ class SignUpInstructor(APIView):
                 )
 
 
+@extend_schema(tags=["Profile and User Management"])
 class ProfileView(APIView):
     def get(self, request):
         user = request.user
@@ -155,6 +157,7 @@ class LoginSerializer(serializers.Serializer):
     password = serializers.CharField(max_length=128, style={"input_type": "password"})
 
 
+@extend_schema(tags=["Profile and User Management"])
 class CheckDeveloperStatus(APIView):
 
     def get(self, request):
@@ -165,13 +168,12 @@ class CheckDeveloperStatus(APIView):
             return Response({"isDeveloper": False}, status=403)
 
 
+@extend_schema(tags=["Authentication Endpoint"])
 class Login(APIView):
     serializer_class = LoginSerializer
     permission_classes = [AllowAny]
 
     def post(self, request):
-
-        # use a try catch block to catch the error, and return a 401 status code
         try:
             user = User.objects.get(email=request.data["email"])
         except User.DoesNotExist:
@@ -185,27 +187,32 @@ class Login(APIView):
                 {"detail": "Invalid email or password!"},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
-        token = Token.objects.get_or_create(user=user)
+        # Delete all previous tokens
+        Token.objects.filter(user=user).delete()
+
+        token = Token.objects.create(user=user)
+
+        response = {
+            "token": token.key,
+            "user": user.id,
+        }
+
         if hasattr(user, "instructor"):
-            return JsonResponse(
-                {
-                    "token": token[0].key,
-                    "user": user.id,
-                    "instructor": user.instructor.id,
-                }
-            )
-        # else:
-        #     return JsonResponse({"token": token[0].key, "user": user.id, "student": user.student.id})
+            response["instructor"] = user.instructor.id
+
+        return JsonResponse(response, status=status.HTTP_200_OK)
 
 
+@extend_schema(tags=["Authentication Endpoint"])
 class Logout(APIView):
+    permission_classes = [IsAuthenticated]
+
     def post(self, request):
-        token = request.user.auth_token
-        token.delete()
-        token.save()
-        return JsonResponse({"message": "User logged out successfully"})
+        request.user.auth_token.delete()
+        return JsonResponse({"message": "User logged out successfully"}, status=status.HTTP_200_OK)
 
 
+@extend_schema(tags=["Profile and User Management"])
 class InstructorView(APIView):
 
     def post(self, request):
@@ -274,6 +281,7 @@ class InstructorView(APIView):
 #     return JsonResponse({'message': 'Student deleted successfully'})
 
 
+@extend_schema(tags=["User Responses"])
 class UserResponseView(APIView):
     permission_classes = [AllowAny]
 
@@ -329,6 +337,7 @@ class UserResponseView(APIView):
     #     return JsonResponse({'message': 'User response deleted successfully'})
 
 
+@extend_schema(tags=["Recordings"])
 class UploadAudioView(APIView):
     parser_classes = [MultiPartParser, FormParser]
 
@@ -413,6 +422,7 @@ class UploadAudioView(APIView):
         ).strip()
 
 
+@extend_schema(tags=["Recordings"])
 class UpdateTranscriptView(APIView):
 
     @extend_schema(
@@ -446,6 +456,7 @@ class UpdateTranscriptView(APIView):
         )
 
 
+@extend_schema(tags=["Recordings"])
 class RecordingsView(APIView):
     @extend_schema(
         operation_id="get_recordings",
@@ -479,6 +490,7 @@ class RecordingsView(APIView):
         return JsonResponse({"recordings": serializer.data})
 
 
+@extend_schema(tags=["Recordings"])
 class DeleteRecordingView(APIView):
     @extend_schema(
         operation_id="delete_recording",
@@ -518,6 +530,7 @@ class DeleteRecordingView(APIView):
         )
 
 
+@extend_schema(tags=["Recordings"])
 class GetTranscriptView(APIView):
     @extend_schema(
         operation_id="get_transcript",
@@ -556,6 +569,7 @@ class GoogleLogin(APIView):
             200: GoogleLoginResponseSerializer,
             400: OpenApiTypes.OBJECT,
         },
+        tags=["Authentication Endpoint"],
     )
     def post(self, request):
         token = request.data.get("token")
@@ -604,6 +618,7 @@ class ContactPageThrottle(UserRateThrottle):
     rate = "10/hour"
 
 
+@extend_schema(tags=["Contact and Support"])
 class ContactPageView(APIView):
     permission_classes = [AllowAny]
     throttle_classes = [ContactPageThrottle]
@@ -643,6 +658,7 @@ class ContactPageView(APIView):
                 )
 
 
+@extend_schema(tags=["Authentication Endpoint"])
 class DeleteUserView(APIView):
     def delete(self, request):
         id = request.user.id
@@ -684,6 +700,7 @@ class DeleteUserView(APIView):
         )
 
 
+@extend_schema(tags=["Recordings"])
 class QuizByRecordingView(APIView):
     @extend_schema(
         operation_id="get_quizzes_by_recording",

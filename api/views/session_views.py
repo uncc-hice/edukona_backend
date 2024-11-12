@@ -13,6 +13,7 @@ from drf_spectacular.utils import extend_schema
 from drf_spectacular.types import OpenApiTypes
 
 
+@extend_schema(tags=["Session Activities"])
 class StudentResponseCountView(APIView):
     def get(self, request, code):
         quiz_session = get_object_or_404(QuizSession, code=code)
@@ -26,6 +27,7 @@ class StudentResponseCountView(APIView):
         return Response(counts, status=200)
 
 
+@extend_schema(tags=["Session Activities"])
 class StoreColorAPIView(APIView):
     def post(self, request, session_code):
         session = get_object_or_404(QuizSession, code=session_code)
@@ -43,6 +45,7 @@ class StoreColorAPIView(APIView):
         return Response({"message": "Colors stored successfully."}, status=200)
 
 
+@extend_schema(tags=["Session Management"])
 class QuizSessionView(APIView):
     def post(self, request):
         try:
@@ -64,6 +67,7 @@ class QuizSessionView(APIView):
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+@extend_schema(tags=["Session Management"])
 class QuizSessionStudentView(APIView):
     permission_classes = [AllowAny]
 
@@ -92,6 +96,7 @@ class QuizSessionStudentView(APIView):
         )
 
 
+@extend_schema(tags=["Session Management"])
 class QuizSessionStudentInstructorView(APIView):
     permission_classes = [AllowAny]
 
@@ -106,6 +111,7 @@ class QuizSessionStudentInstructorView(APIView):
 # just add a get function
 
 
+@extend_schema(tags=["Instructor Quiz Views"])
 class QuizSessionInstructorView(APIView):
     def get(self, request, quiz_id):
         quiz = get_object_or_404(Quiz, id=quiz_id)
@@ -119,6 +125,7 @@ class QuizSessionInstructorView(APIView):
         return Response(quiz_dict, status=200)
 
 
+@extend_schema(tags=["Session Activities"])
 class QuizSessionResults(APIView):
     def get(self, request, code):
         quiz_session = get_object_or_404(QuizSession, code=code)
@@ -140,6 +147,7 @@ class QuizSessionResults(APIView):
         return JsonResponse({"results": results})
 
 
+@extend_schema(tags=["Session Management"])
 class QuizSessionsByInstructorView(APIView):
     def get(self, request):
         instructor = request.user.instructor
@@ -163,6 +171,7 @@ class QuizSessionsByInstructorView(APIView):
         return JsonResponse({"quiz_sessions": quiz_sessions_data})
 
 
+@extend_schema(tags=["Quiz Creation and Modification"])
 class QuizSessionsByQuizView(APIView):
     @extend_schema(
         operation_id="quiz-sessions",
@@ -199,6 +208,7 @@ class QuizSessionsByQuizView(APIView):
         return JsonResponse({"quiz_sessions": quiz_sessions_data})
 
 
+@extend_schema(tags=["Session Activities"])
 class NextQuestionAPIView(APIView):
     def get(self, request, session_code):
         try:
@@ -222,6 +232,7 @@ class NextQuestionAPIView(APIView):
             return Response({"message": "Invalid session code."}, status=404)
 
 
+@extend_schema(tags=["Student Questions"])
 class StudentQuestion(APIView):
     permission_classes = [AllowAny]
 
@@ -246,6 +257,7 @@ class StudentQuestion(APIView):
                 return Response({"message": "Bad Request"}, status=404)
 
 
+@extend_schema(tags=["Session Management"])
 class DeleteQuizSession(APIView):
     def delete(self, request, code):
         try:
@@ -267,6 +279,7 @@ class DeleteQuizSession(APIView):
             return Response({"message": f"{str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+@extend_schema(tags=["Recordings"])
 class LectureSummaryView(APIView):
     permission_classes = [IsRecordingOwner]
 
