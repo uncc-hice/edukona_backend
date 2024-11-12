@@ -58,7 +58,7 @@ def mailInstructor(email):
     except Exception as e:
         print(e.message)
 
-
+@extend_schema(tags=["Authentication Endpoint"])
 class SignUpInstructor(APIView):
     permission_classes = [AllowAny]
 
@@ -135,7 +135,7 @@ class SignUpInstructor(APIView):
                     {"message": "Invalid data provided."}, status=status.HTTP_400_BAD_REQUEST
                 )
 
-
+@extend_schema(tags=["Profile and User Management"])
 class ProfileView(APIView):
     def get(self, request):
         user = request.user
@@ -154,7 +154,7 @@ class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField(max_length=128)
     password = serializers.CharField(max_length=128, style={"input_type": "password"})
 
-
+@extend_schema(tags=["Profile and User Management"])
 class CheckDeveloperStatus(APIView):
 
     def get(self, request):
@@ -165,6 +165,7 @@ class CheckDeveloperStatus(APIView):
             return Response({"isDeveloper": False}, status=403)
 
 
+@extend_schema(tags=["Authentication Endpoint"])
 class Login(APIView):
     serializer_class = LoginSerializer
     permission_classes = [AllowAny]
@@ -197,7 +198,7 @@ class Login(APIView):
         # else:
         #     return JsonResponse({"token": token[0].key, "user": user.id, "student": user.student.id})
 
-
+@extend_schema(tags=["Authentication Endpoint"])
 class Logout(APIView):
     def post(self, request):
         token = request.user.auth_token
@@ -205,7 +206,7 @@ class Logout(APIView):
         token.save()
         return JsonResponse({"message": "User logged out successfully"})
 
-
+@extend_schema(tags=["Profile and User Management"])
 class InstructorView(APIView):
 
     def post(self, request):
@@ -273,7 +274,7 @@ class InstructorView(APIView):
 #     student.delete()
 #     return JsonResponse({'message': 'Student deleted successfully'})
 
-
+@extend_schema(tags=["User Responses"])
 class UserResponseView(APIView):
     permission_classes = [AllowAny]
 
@@ -328,7 +329,7 @@ class UserResponseView(APIView):
     #     user_response.delete()
     #     return JsonResponse({'message': 'User response deleted successfully'})
 
-
+@extend_schema(tags=["Recordings"])
 class UploadAudioView(APIView):
     parser_classes = [MultiPartParser, FormParser]
 
@@ -412,7 +413,7 @@ class UploadAudioView(APIView):
             char for char in filename if char.isalnum() or char in (" ", ".", "_")
         ).strip()
 
-
+@extend_schema(tags=["Recordings"])
 class UpdateTranscriptView(APIView):
 
     @extend_schema(
@@ -445,7 +446,7 @@ class UpdateTranscriptView(APIView):
             status=status.HTTP_200_OK,
         )
 
-
+@extend_schema(tags=["Recordings"])
 class RecordingsView(APIView):
     @extend_schema(
         operation_id="get_recordings",
@@ -478,7 +479,7 @@ class RecordingsView(APIView):
 
         return JsonResponse({"recordings": serializer.data})
 
-
+@extend_schema(tags=["Recordings"])
 class DeleteRecordingView(APIView):
     @extend_schema(
         operation_id="delete_recording",
@@ -517,7 +518,7 @@ class DeleteRecordingView(APIView):
             status=status.HTTP_200_OK,
         )
 
-
+@extend_schema(tags=["Recordings"])
 class GetTranscriptView(APIView):
     @extend_schema(
         operation_id="get_transcript",
@@ -556,6 +557,7 @@ class GoogleLogin(APIView):
             200: GoogleLoginResponseSerializer,
             400: OpenApiTypes.OBJECT,
         },
+        tags=["Authentication Endpoint"]
     )
     def post(self, request):
         token = request.data.get("token")
@@ -603,7 +605,7 @@ class GoogleLogin(APIView):
 class ContactPageThrottle(UserRateThrottle):
     rate = "10/hour"
 
-
+@extend_schema(tags=["Contact and Support"])
 class ContactPageView(APIView):
     permission_classes = [AllowAny]
     throttle_classes = [ContactPageThrottle]
@@ -642,7 +644,7 @@ class ContactPageView(APIView):
                     {"message": "Invalid data provided"}, status=status.HTTP_400_BAD_REQUEST
                 )
 
-
+@extend_schema(tags=["Authentication Endpoint"])
 class DeleteUserView(APIView):
     def delete(self, request):
         id = request.user.id
@@ -683,7 +685,7 @@ class DeleteUserView(APIView):
             {"message": "User and associated files deleted successfully"}, status=status.HTTP_200_OK
         )
 
-
+@extend_schema(tags=["Recordings"])
 class QuizByRecordingView(APIView):
     @extend_schema(
         operation_id="get_quizzes_by_recording",
