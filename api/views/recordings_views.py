@@ -4,11 +4,16 @@ from rest_framework.permissions import IsAuthenticated
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
 
-from api.serializers import InstructorRecordingsSerializer, RecordingTitleUpdateSerializer
+from api.serializers import (
+    InstructorRecordingsSerializer,
+    RecordingTitleUpdateSerializer,
+    RecordingDurationUpdateSerializer,
+)
 from django.conf import settings
 from django.shortcuts import get_object_or_404
 
 from api.models import Instructor, InstructorRecordings
+from api.permissions import IsRecordingOwner
 import boto3
 import json
 
@@ -98,6 +103,32 @@ class UpdateRecordingTitleView(APIView):
             recording.save()
             return Response(
                 {"message": "Title updated successfully", "title": recording.title},
+                status=status.HTTP_200_OK,
+            )
+
+        # If not valid, return validation errors
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@extend_schema(tags=["Recordings"])
+class UpdateRecordingDurationView(APIView):
+    permission_classes = [IsRecordingOwner]
+
+    @extend_schema(
+        request=RecordingDurationUpdateSerializer,
+        description="Endpoint too update the duration of the recording",
+    )
+    def patch(self, request, recording_id):
+        recording = InstructorRecordings.objects.get(id=recording_id)
+
+        serializer = RecordingDurationUpdateSerializer(data=request.data)
+
+        if serializer.is_valid():
+            # If valid, update the recording title
+            recording.duration = serializer.validated_data["duration"]
+            recording.save()
+            return Response(
+                {"message": "Duration updated successfully", "duration": recording.duration},
                 status=status.HTTP_200_OK,
             )
 
