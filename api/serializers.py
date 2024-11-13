@@ -150,6 +150,10 @@ class RecordingTitleUpdateSerializer(serializers.Serializer):
     title = serializers.CharField(required=True, allow_blank=False)
 
 
+class RecordingDurationUpdateSerializer(serializers.Serializer):
+    duration = serializers.IntegerField(required=True, min_value=0, help_text="Duration in seconds")
+
+
 class ContactMessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ContactMessage
