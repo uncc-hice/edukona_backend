@@ -12,7 +12,7 @@ from api.models import Instructor, InstructorRecordings
 import boto3
 import json
 
-from ..permissions import IsRecordingOwner
+from api.permissions import IsRecordingOwner
 
 
 @extend_schema(tags=["Authentication Endpoint"])
