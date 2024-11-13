@@ -75,7 +75,7 @@ class GenerateTemporaryCredentialsView(APIView):
 
 @extend_schema(tags=["Recordings"])
 class UpdateRecordingTitleView(APIView):
-    permission_classes = [IsRecordingOwner]
+    permission_classes = [IsAuthenticated, IsRecordingOwner]
 
     @extend_schema(
         request=RecordingTitleUpdateSerializer,
