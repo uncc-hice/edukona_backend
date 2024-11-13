@@ -341,6 +341,8 @@ class LectureSummaryView(APIView):
                 {"error": "The lecture summary was not found."}, status=status.HTTP_404_NOT_FOUND
             )
         except PermissionDenied:
-            return Response({"error: Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"error: Permission denied for the recording"}, status=status.HTTP_403_FORBIDDEN
+            )
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
