@@ -344,33 +344,3 @@ class LectureSummaryView(APIView):
             return Response({"error: Permission denied"}, status=status.HTTP_403_FORBIDDEN)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-class SingleLectureSummaryView(APIView):
-    permission_classes = [IsRecordingOwner]
-
-    @extend_schema(
-        operation_id="get_single_lecture_summary",
-        summary="Get a summary for a specific recording.",
-        description="Get a summary for a specific recording using the summary ID.",
-        tags=["Recordings"],
-        responses= {
-            200: OpenApiTypes.OBJECT,  # Will use if successful.
-            403: OpenApiTypes.OBJECT, # Will use if the user doesn't have access to the recording.
-            404: OpenApiTypes.OBJECT, # Response when the recording is not found.
-            500: OpenApiTypes.OBJECT, # Response when there is an error on the server side.
-        }
-    )
-    def get(self, request, summary_id):
-        try:
-            lecture_summary = LectureSummary.objects.get(id=summary_id)
-            serializer = LectureSummarySerializer(lecture_summary, many=False)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        except LectureSummary.DoesNotExist:
-            return Response(
-                {"error": "The lecture summary was not found."}, status=status.HTTP_404_NOT_FOUND
-            )
-        except PermissionDenied:
-            return Response({"error: Permission denied"}, status=status.HTTP_403_FORBIDDEN)
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
