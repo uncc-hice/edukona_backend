@@ -706,6 +706,43 @@ class LectureSummaryViewTest(BaseTest):
                 response = self.client_instructor.post(url, data, format="json")
                 self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+    def test_get_lecture_summary_successful(self):
+        url = reverse("lecture_summary", kwargs={"recording_id": str(self.recording.id)})
+        LectureSummary.objects.create(summary="Test Summary 1", recording=self.recording)
+        LectureSummary.objects.create(summary="Test summary 2", recording=self.recording)
+
+        response = self.client.get(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIsInstance(response.data, dict)
+        self.assertEqual(len(response.data), 2)
+        self.assertEqual(response.data[0]["summary"], "Test Summary 1")
+        self.assertEqual(response.data[1]["summary"], "Test Summary 2")
+
+    def test_get_lecture_summary_not_found(self):
+        url = reverse("lecture_summary", kwargs={"recording_id": str(self.recording.id)})
+        LectureSummary.objects.filter(recording=self.recording).delete()
+
+        response = self.client.get(url, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertIn("message", response.data)
+        self.assertEqual(response.data["message"], "Lecture summary not found")
+
+    def test_get_lecture_summary_forbidden(self):
+        url = reverse("lecture_summary", kwargs={"recording_id": str(self.recording.id)})
+        self.client_instructor.force_authenticate(user=None)
+        response = self.client.get(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertIn("message", response.data)
+        self.assertEqual(response.data["message"], "Forbidden")
+
+    def test_get_lecture_summary_server_error(self):
+        url = reverse("lecture_summary", kwargs={"recording_id": str(self.recording.id)})
+        with patch("api.views.user_views.mailInstructor"):
+            response = self.client.get(url, format="json")
+            self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
+            self.assertIn("message", response.data)
+            self.assertEqual(response.data["message"], "Server error")
 
 class RecordingTitleChangeTest(BaseTest):
     def setUp(self):
