@@ -15,10 +15,10 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12.7'
+          python-version: '3.9.6'  # Align with local Python version
 
       - name: Install dependencies
-        run: pip install flake8
+        run: pip install -r requirements-dev.txt  # Use a requirements file
 
       - name: Format code with Flake8
         run: flake8
