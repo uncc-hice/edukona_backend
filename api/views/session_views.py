@@ -309,37 +309,30 @@ class LectureSummaryView(APIView):
         description="Creates a summary for a specific recording using the recording ID.",
         request=LectureSummarySerializer,
         responses={
-            201: OpenApiTypes.OBJECT,  # Successful creation response
+            201: LectureSummarySerializer,  # Successful creation response
             400: OpenApiTypes.OBJECT,  # Error response for bad request
             404: OpenApiTypes.OBJECT,  # Error response when recording is not found
             500: OpenApiTypes.OBJECT,  # Error response for server error
         },
     )
     def post(self, request, recording_id):
-        summary = request.data.get("summary")
+        serializer = LectureSummarySerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        # Validate required fields
-        if not summary or not recording_id:
-            return Response(
-                {"error": "Summary and recording_id are required fields."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        summary = serializer.validated_data["summary"]
 
         # Wrap in atomic transaction to ensure consistency
         try:
             with transaction.atomic():
                 recording = InstructorRecordings.objects.get(id=recording_id)
                 lecture_summary = LectureSummary.objects.create(
-                    summary=summary, recording_id=recording
+                    summary=summary, recording=recording
                 )
-                return Response(
-                    {
-                        "id": lecture_summary.id,
-                        "recording_id": lecture_summary.recording_id.id,
-                        "created_at": lecture_summary.created_at,
-                    },
-                    status=status.HTTP_201_CREATED,
-                )
+                # Serialize the created instance for the response
+                response_serializer = LectureSummarySerializer(lecture_summary)
+
+                return Response(response_serializer.data, status=status.HTTP_201_CREATED)
         except InstructorRecordings.DoesNotExist:
             return Response({"error": "Recording not found."}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:

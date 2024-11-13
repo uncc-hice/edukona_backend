@@ -13,6 +13,7 @@ from .models import (
     InstructorRecordings,
     Settings,
     ContactMessage,
+    LectureSummary,
 )
 
 
@@ -149,6 +150,10 @@ class RecordingTitleUpdateSerializer(serializers.Serializer):
     title = serializers.CharField(required=True, allow_blank=False)
 
 
+class RecordingDurationUpdateSerializer(serializers.Serializer):
+    duration = serializers.IntegerField(required=True, min_value=0, help_text="Duration in seconds")
+
+
 class ContactMessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ContactMessage
@@ -233,6 +238,8 @@ class SignUpInstructorSerializer(serializers.Serializer):
         return instructor
 
 
-class LectureSummarySerializer(serializers.Serializer):
-    summary = serializers.CharField(required=True)
-    recording_id = serializers.IntegerField(required=True)
+class LectureSummarySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LectureSummary
+        fields = ["id", "summary", "recording_id", "created_at"]
+        read_only_fields = ["id", "recording_id", "created_at"]
