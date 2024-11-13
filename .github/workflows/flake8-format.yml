@@ -1,6 +1,5 @@
 name: Flake8 Format and Test
 
-
 on:
   pull_request:
     types: [ opened, synchronize ]
@@ -15,10 +14,10 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.9.6'  # Align with local Python version
+          python-version: '3.9'  # Use the latest available 3.9.x version
 
       - name: Install dependencies
-        run: pip install -r requirements-dev.txt  # Use a requirements file
+        run: pip install flake8
 
       - name: Format code with Flake8
         run: flake8
