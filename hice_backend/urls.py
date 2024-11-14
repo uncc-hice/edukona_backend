@@ -138,6 +138,11 @@ urlpatterns = [
         name="delete-recording",
     ),
     path(
+        "instructor-recordings/<uuid:recording_id>/update-duration/",
+        UpdateRecordingDurationView.as_view(),
+        name="update-recording-duration",
+    ),
+    path(
         "instructor-recordings/",
         RecordingsView.as_view(),
         name="instructor-recording",
@@ -175,5 +180,10 @@ urlpatterns = [
         "recordings/<uuid:recording_id>/summary/",
         LectureSummaryView.as_view(),
         name="lecture_summary",
+    ),
+    path(
+        "token/verify/",
+        TokenVerificationView.as_view(),
+        name="verify-token",
     ),
 ]

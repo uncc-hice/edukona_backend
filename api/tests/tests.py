@@ -758,6 +758,58 @@ class RecordingTitleChangeTest(BaseTest):
         self.assertEqual(unchanged_recording.title, "Initial Title")
 
 
+class RecordingDurationChangeTest(BaseTest):
+    def setUp(self):
+        super().setUp()
+        self.recording = InstructorRecordings.objects.create(
+            title="Initial Title",
+            instructor=self.instructor,
+            # duration defaults to 0
+        )
+
+        # confirm duration defaults to 0
+        self.assertEqual(self.recording.duration, 0)
+
+        # Create another instructor user to act as a non-owner
+        self.other_user_instructor = User.objects.create_user(
+            username="other_instructor@gmail.com",
+            email="other_instructor@gmail.com",
+            password="password",
+            first_name="Other",
+            last_name="Instructor",
+        )
+        self.other_instructor = Instructor.objects.create(user=self.other_user_instructor)
+        other_token, _ = Token.objects.get_or_create(user=self.other_user_instructor)
+        self.client_other_instructor = APIClient()
+        self.client_other_instructor.credentials(HTTP_AUTHORIZATION="Token " + other_token.key)
+        self.url = reverse("update-recording-duration", kwargs={"recording_id": self.recording.id})
+
+    def test_change_recording_duration_by_owner(self):
+        data = {"duration": 10}
+
+        response = self.client_instructor.patch(self.url, data, format="json")
+
+        # Assert HTTP 200 OK and duration change
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["duration"], data["duration"])
+
+        # Verify the recording duration in the database was changed
+        changed_recording = InstructorRecordings.objects.get(id=self.recording.id)
+        self.assertEqual(changed_recording.duration, data["duration"])
+
+    def test_change_recording_duration_by_non_owner(self):
+        data = {"duration": "100"}
+
+        response = self.client_other_instructor.patch(self.url, data, format="json")
+
+        # Assert forbidden response
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        # Verify the duration remains unchanged in the database
+        unchanged_recording = InstructorRecordings.objects.get(id=self.recording.id)
+        self.assertEqual(unchanged_recording.duration, 0)
+
+
 class QuizTitleChangeTest(BaseTest):
     def setUp(self):
         super().setUp()
@@ -803,7 +855,6 @@ class QuizTitleChangeTest(BaseTest):
 
 
 class UserAuthTests(BaseTest):
-
     def setUp(self):
         super().setUp()
         self.login_url = reverse("login")
