@@ -40,7 +40,11 @@ class CreateMultipleQuestionsViewTest(APITestCase):
         data = [
             {
                 "question_text": "What is the capital of France?",
-                "incorrect_answer_list": ["Berlin", "London", "Madrid"],
+                "incorrect_answer_list": [
+                    {"answer": "Berlin", "feedback": "Correct answer is Paris."},
+                    {"answer": "London", "feedback": "Correct answer is Paris."},
+                    {"answer": "Madrid", "feedback": "Correct answer is Paris."},
+                ],
                 "correct_answer": "Paris",
                 "points": 5,
                 "quiz_id": self.quiz.id,
@@ -48,7 +52,11 @@ class CreateMultipleQuestionsViewTest(APITestCase):
             },
             {
                 "question_text": "What is 2 + 2?",
-                "incorrect_answer_list": ["3", "5", "6"],
+                "incorrect_answer_list": [
+                    {"answer": "3", "feedback": "The correct answer is 4"},
+                    {"answer": "5", "feedback": "The correct answer is 4"},
+                    {"answer": "6", "feedback": "The correct answer is 4"},
+                ],
                 "correct_answer": "4",
                 "points": 3,
                 "quiz_id": self.quiz.id,
@@ -74,7 +82,11 @@ class CreateMultipleQuestionsViewTest(APITestCase):
         data = [
             {
                 "question_text": "What is the capital of France?",
-                "incorrect_answer_list": ["Berlin", "London", "Madrid"],
+                "incorrect_answer_list": [
+                    {"answer": "Berlin", "feedback": "Correct answer is Paris."},
+                    {"answer": "London", "feedback": "Correct answer is Paris."},
+                    {"answer": "Madrid", "feedback": "Correct answer is Paris."},
+                ],
                 "correct_answer": "Paris",
                 "points": 5,
                 "quiz_id": 9999,  # Invalid quiz_id
@@ -98,7 +110,11 @@ class CreateMultipleQuestionsViewTest(APITestCase):
         data = [
             {
                 "question_text": "What is the capital of France?",
-                "incorrect_answer_list": ["Berlin", "London", "Madrid"],
+                "incorrect_answer_list": [
+                    {"answer": "Berlin", "feedback": "Correct answer is Paris."},
+                    {"answer": "London", "feedback": "Correct answer is Paris."},
+                    {"answer": "Madrid", "feedback": "Correct answer is Paris."},
+                ],
                 "correct_answer": "Paris",
                 "points": 5,
                 "quiz_id": self.quiz.id,
@@ -132,7 +148,11 @@ class CreateMultipleQuestionsViewTest(APITestCase):
         data = [
             {
                 "question_text": "What is the capital of France?",
-                "incorrect_answer_list": ["Berlin", "London", "Madrid"],
+                "incorrect_answer_list": [
+                    {"answer": "Berlin", "feedback": "Correct answer is Paris."},
+                    {"answer": "London", "feedback": "Correct answer is Paris."},
+                    {"answer": "Madrid", "feedback": "Correct answer is Paris."},
+                ],
                 "correct_answer": "Paris",
                 "points": 5,
                 # 'quiz_id' is missing
@@ -155,7 +175,11 @@ class CreateMultipleQuestionsViewTest(APITestCase):
         data = [
             {
                 "question_text": "Question for first quiz?",
-                "incorrect_answer_list": ["Option 1", "Option 2", "Option 3"],
+                "incorrect_answer_list": [
+                    {"answer": "Option 1", "feedback": "The correct answer is Option 4."},
+                    {"answer": "Option 2", "feedback": "The correct answer is Option 4."},
+                    {"answer": "Option 3", "feedback": "The correct answer is Option 4."},
+                ],
                 "correct_answer": "Option 4",
                 "points": 5,
                 "quiz_id": self.quiz.id,
@@ -163,7 +187,11 @@ class CreateMultipleQuestionsViewTest(APITestCase):
             },
             {
                 "question_text": "Question for second quiz?",
-                "incorrect_answer_list": ["Option A", "Option B", "Option C"],
+                "incorrect_answer_list": [
+                    {"answer": "Option A", "feedback": "The correct answer is Option D."},
+                    {"answer": "Option B", "feedback": "The correct answer is Option D."},
+                    {"answer": "Option C", "feedback": "The correct answer is Option D."},
+                ],
                 "correct_answer": "Option D",
                 "points": 3,
                 "quiz_id": another_quiz.id,
@@ -198,7 +226,11 @@ class CreateMultipleQuestionsViewTest(APITestCase):
         data = [
             {
                 "question_text": "Question for own quiz?",
-                "incorrect_answer_list": ["Option 1", "Option 2", "Option 3"],
+                "incorrect_answer_list": [
+                    {"answer": "Option 1", "feedback": "The correct answer is Option 4."},
+                    {"answer": "Option 2", "feedback": "The correct answer is Option 4."},
+                    {"answer": "Option 3", "feedback": "The correct answer is Option 4."},
+                ],
                 "correct_answer": "Option 4",
                 "points": 5,
                 "quiz_id": self.quiz.id,
@@ -206,7 +238,11 @@ class CreateMultipleQuestionsViewTest(APITestCase):
             },
             {
                 "question_text": "Question for another quiz?",
-                "incorrect_answer_list": ["Option A", "Option B", "Option C"],
+                "incorrect_answer_list": [
+                    {"answer": "Option A", "feedback": "The correct answer is Option D."},
+                    {"answer": "Option B", "feedback": "The correct answer is Option D."},
+                    {"answer": "Option C", "feedback": "The correct answer is Option D."},
+                ],
                 "correct_answer": "Option D",
                 "points": 3,
                 "quiz_id": another_quiz.id,

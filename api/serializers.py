@@ -1,3 +1,5 @@
+import json
+
 from django.contrib.auth.password_validation import validate_password
 from django.core.validators import EmailValidator
 from rest_framework import serializers
@@ -43,7 +45,6 @@ class IncorrectAnswerSerializer(serializers.Serializer):
 class QuestionMultipleChoiceSerializer(serializers.ModelSerializer):
     quiz_id = serializers.PrimaryKeyRelatedField(queryset=Quiz.objects.all(), source="quiz")
     duration = serializers.IntegerField(required=False, default=20)
-    incorrect_answer_list = IncorrectAnswerSerializer(many=True)
 
     class Meta:
         model = QuestionMultipleChoice
