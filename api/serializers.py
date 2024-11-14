@@ -35,10 +35,15 @@ class InstructorSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
+class IncorrectAnswerSerializer(serializers.Serializer):
+    answer = serializers.CharField()
+    feedback = serializers.CharField()
+
+
 class QuestionMultipleChoiceSerializer(serializers.ModelSerializer):
     quiz_id = serializers.PrimaryKeyRelatedField(queryset=Quiz.objects.all(), source="quiz")
     duration = serializers.IntegerField(required=False, default=20)
-    incorrect_answer_list = serializers.ListField(child=serializers.CharField())
+    incorrect_answer_list = IncorrectAnswerSerializer(many=True)
 
     class Meta:
         model = QuestionMultipleChoice
