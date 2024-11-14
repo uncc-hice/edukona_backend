@@ -327,22 +327,10 @@ class LectureSummaryView(APIView):
         responses={
             200: OpenApiTypes.OBJECT,  # Successful retrieval of data.
             403: OpenApiTypes.OBJECT,  # Response when the user is not authorized to proceed with the request.
-            404: OpenApiTypes.OBJECT,  # Response when the lecture summary is not found.
             500: OpenApiTypes.OBJECT,  # Response when there is an error from the server side.
         },
     )
     def get(self, request, recording_id):
-        try:
-            lecture_summary = LectureSummary.objects.filter(recording=recording_id)
-            serializer = LectureSummarySerializer(lecture_summary, many=True)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        except LectureSummary.DoesNotExist:
-            return Response(
-                {"error": "The lecture summary was not found."}, status=status.HTTP_404_NOT_FOUND
-            )
-        except PermissionDenied:
-            return Response(
-                {"error: Permission denied for the recording"}, status=status.HTTP_403_FORBIDDEN
-            )
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        lecture_summary = LectureSummary.objects.filter(recording=recording_id)
+        serializer = LectureSummarySerializer(lecture_summary, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
