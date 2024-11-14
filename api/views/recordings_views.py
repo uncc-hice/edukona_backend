@@ -13,7 +13,6 @@ from django.conf import settings
 from django.shortcuts import get_object_or_404
 
 from api.models import Instructor, InstructorRecordings
-from api.permissions import IsRecordingOwner
 import boto3
 import json
 
