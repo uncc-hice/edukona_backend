@@ -38,6 +38,7 @@ class InstructorSerializer(serializers.ModelSerializer):
 class QuestionMultipleChoiceSerializer(serializers.ModelSerializer):
     quiz_id = serializers.PrimaryKeyRelatedField(queryset=Quiz.objects.all(), source="quiz")
     duration = serializers.IntegerField(required=False, default=20)
+    incorrect_answer_list = serializers.ListField(child=serializers.CharField())
 
     class Meta:
         model = QuestionMultipleChoice
