@@ -2,9 +2,20 @@ from dotenv import load_dotenv
 import os
 import sys
 from pathlib import Path
+import boto3
 
 load_dotenv()
 
+AWS_CLOUDWATCH_LOGGER_ACCESS_KEY = os.getenv("AWS_CLOUDWATCH_LOGGER_ACCESS_KEY")
+AWS_CLOUDWATCH_LOGGER_SECRET_KEY = os.getenv("AWS_CLOUDWATCH_LOGGER_SECRET_KEY")
+AWS_CLOUDWATCH_LOGGER_REGION_NAME = os.getenv("AWS_CLOUDWATCH_LOGGER_REGION_NAME")
+
+boto3_logs_client = boto3.client(
+    "logs",
+    region_name=AWS_CLOUDWATCH_LOGGER_REGION_NAME,
+    aws_access_key_id=AWS_CLOUDWATCH_LOGGER_ACCESS_KEY,
+    aws_secret_access_key=AWS_CLOUDWATCH_LOGGER_SECRET_KEY,
+)
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -13,10 +24,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
 
-if os.getenv("DJANGO_ENV") == "development":
-    DEBUG = True
-else:
-    DEBUG = False
+ENVIRONMENT = os.getenv("DJANGO_ENV")
+if not ENVIRONMENT:
+    ENVIRONMENT = "production"
+
+DEBUG = ENVIRONMENT == "development"
 
 ALLOWED_HOSTS = [
     "127.0.0.1",
@@ -205,6 +217,11 @@ REST_FRAMEWORK = {
     ],
 }
 
+logging_level = "INFO" if ENVIRONMENT == "production" else "DEBUG"
+handlers = ["console", "file"]
+if ENVIRONMENT == "production" and TESTING is False:
+    handlers.append("watchtower")
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -220,7 +237,7 @@ LOGGING = {
     },
     "handlers": {
         "console": {
-            "level": "DEBUG",
+            "level": "INFO",  # if DEBUG logs are needed look at the debug.log file
             "class": "logging.StreamHandler",
             "formatter": "verbose",
         },
@@ -230,21 +247,27 @@ LOGGING = {
             "filename": os.path.join(BASE_DIR, "debug.log"),
             "formatter": "verbose",
         },
+        "watchtower": {
+            "class": "watchtower.CloudWatchLogHandler",
+            "boto3_client": boto3_logs_client,
+            "log_group": f"app-{ENVIRONMENT}",
+            "level": "INFO",
+        },
     },
     "loggers": {
         "django": {
-            "handlers": ["console", "file"],
-            "level": "INFO",  # Set a higher level for general Django logs
+            "handlers": handlers,
+            "level": logging_level,
             "propagate": True,
         },
         "channels": {
-            "handlers": ["console", "file"],
-            "level": "INFO",  # Set a higher level for general Channels logs
+            "handlers": handlers,
+            "level": logging_level,
             "propagate": True,
         },
-        "api.consumers": {  # Specific logger for your consumers
-            "handlers": ["console", "file"],
-            "level": "DEBUG",
+        "api.consumers": {
+            "handlers": handlers,
+            "level": logging_level,
             "propagate": True,
         },
     },
