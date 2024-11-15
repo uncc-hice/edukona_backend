@@ -215,14 +215,17 @@ if ENVIRONMENT == "production" and TESTING is False:
     AWS_CLOUDWATCH_LOGGER_ACCESS_KEY = os.getenv("AWS_CLOUDWATCH_LOGGER_ACCESS_KEY")
     AWS_CLOUDWATCH_LOGGER_SECRET_KEY = os.getenv("AWS_CLOUDWATCH_LOGGER_SECRET_KEY")
     AWS_CLOUDWATCH_LOGGER_REGION_NAME = os.getenv("AWS_CLOUDWATCH_LOGGER_REGION_NAME")
-    boto3_logs_client = boto3.client(
-        "logs",
-        region_name=AWS_CLOUDWATCH_LOGGER_REGION_NAME,
-        aws_access_key_id=AWS_CLOUDWATCH_LOGGER_ACCESS_KEY,
-        aws_secret_access_key=AWS_CLOUDWATCH_LOGGER_SECRET_KEY,
-    )
 
-    handlers.append("watchtower")
+    if AWS_CLOUDWATCH_LOGGER_ACCESS_KEY and AWS_CLOUDWATCH_LOGGER_SECRET_KEY and AWS_CLOUDWATCH_LOGGER_REGION_NAME:
+        boto3_logs_client = boto3.client(
+            "logs",
+            region_name=AWS_CLOUDWATCH_LOGGER_REGION_NAME,
+            aws_access_key_id=AWS_CLOUDWATCH_LOGGER_ACCESS_KEY,
+            aws_secret_access_key=AWS_CLOUDWATCH_LOGGER_SECRET_KEY,
+        )
+        handlers.append("watchtower")
+    else:
+        raise ValueError("AWS CloudWatch logger environment variables are not set properly.")
 
 LOGGING = {
     "version": 1,
@@ -269,7 +272,7 @@ LOGGING = {
     },
 }
 
-if ENVIRONMENT == "production" and TESTING is False:
+if boto3_logs_client:
     LOGGING["handlers"]["watchtower"] = {
         "class": "watchtower.CloudWatchLogHandler",
         "boto3_client": boto3_logs_client,
