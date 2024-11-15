@@ -47,6 +47,8 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+from ..permissions import IsRecordingOwner
+
 
 def mailInstructor(email):
     message = Mail(from_email="edukona.team@gmail.com", to_emails=email)
@@ -142,6 +144,8 @@ class SignUpInstructor(APIView):
 
 @extend_schema(tags=["Profile and User Management"])
 class ProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def get(self, request):
         user = request.user
         return Response(
@@ -430,6 +434,7 @@ class UploadAudioView(APIView):
 
 @extend_schema(tags=["Recordings"])
 class UpdateTranscriptView(APIView):
+    permission_classes = [IsRecordingOwner]
 
     @extend_schema(
         operation_id="update_transcript",
@@ -498,6 +503,8 @@ class RecordingsView(APIView):
 
 @extend_schema(tags=["Recordings"])
 class DeleteRecordingView(APIView):
+    permission_classes = [IsRecordingOwner]
+
     @extend_schema(
         operation_id="delete_recording",
         summary="Delete recording",
@@ -541,6 +548,8 @@ class DeleteRecordingView(APIView):
 
 @extend_schema(tags=["Recordings"])
 class GetTranscriptView(APIView):
+    permission_classes = [IsRecordingOwner]
+
     @extend_schema(
         operation_id="get_transcript",
         summary="Get transcript of a recording",
@@ -712,6 +721,8 @@ class DeleteUserView(APIView):
 
 @extend_schema(tags=["Recordings"])
 class QuizByRecordingView(APIView):
+    permission_classes = [IsRecordingOwner]
+
     @extend_schema(
         operation_id="get_quizzes_by_recording",
         summary="Get quizzes by recording ID",

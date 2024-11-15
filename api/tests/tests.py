@@ -749,8 +749,8 @@ class RecordingTitleChangeTest(BaseTest):
         # Assert forbidden response and no title change
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertEqual(
-            response.data["error"],
-            "You do not have permission to modify this recording.",
+            response.data["detail"],
+            "You do not have permission to perform this action.",
         )
 
         # Verify the title remains unchanged in the database
