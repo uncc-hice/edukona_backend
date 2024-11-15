@@ -741,3 +741,11 @@ class QuizByRecordingView(APIView):
 
         serializer = QuizSerializer(quizzes, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class TokenVerificationView(APIView):
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [UserRateThrottle]
+
+    def get(self, request):
+        return Response({"message": "Token is valid"}, status=status.HTTP_200_OK)

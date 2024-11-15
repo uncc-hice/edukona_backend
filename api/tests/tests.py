@@ -855,7 +855,6 @@ class QuizTitleChangeTest(BaseTest):
 
 
 class UserAuthTests(BaseTest):
-
     def setUp(self):
         super().setUp()
         self.login_url = reverse("login")
