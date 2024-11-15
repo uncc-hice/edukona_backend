@@ -6,16 +6,6 @@ import boto3
 
 load_dotenv()
 
-AWS_CLOUDWATCH_LOGGER_ACCESS_KEY = os.getenv("AWS_CLOUDWATCH_LOGGER_ACCESS_KEY")
-AWS_CLOUDWATCH_LOGGER_SECRET_KEY = os.getenv("AWS_CLOUDWATCH_LOGGER_SECRET_KEY")
-AWS_CLOUDWATCH_LOGGER_REGION_NAME = os.getenv("AWS_CLOUDWATCH_LOGGER_REGION_NAME")
-
-boto3_logs_client = boto3.client(
-    "logs",
-    region_name=AWS_CLOUDWATCH_LOGGER_REGION_NAME,
-    aws_access_key_id=AWS_CLOUDWATCH_LOGGER_ACCESS_KEY,
-    aws_secret_access_key=AWS_CLOUDWATCH_LOGGER_SECRET_KEY,
-)
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -217,9 +207,21 @@ REST_FRAMEWORK = {
     ],
 }
 
+
 logging_level = "INFO" if ENVIRONMENT == "production" else "DEBUG"
 handlers = ["console", "file"]
+boto3_logs_client = None
 if ENVIRONMENT == "production" and TESTING is False:
+    AWS_CLOUDWATCH_LOGGER_ACCESS_KEY = os.getenv("AWS_CLOUDWATCH_LOGGER_ACCESS_KEY")
+    AWS_CLOUDWATCH_LOGGER_SECRET_KEY = os.getenv("AWS_CLOUDWATCH_LOGGER_SECRET_KEY")
+    AWS_CLOUDWATCH_LOGGER_REGION_NAME = os.getenv("AWS_CLOUDWATCH_LOGGER_REGION_NAME")
+    boto3_logs_client = boto3.client(
+        "logs",
+        region_name=AWS_CLOUDWATCH_LOGGER_REGION_NAME,
+        aws_access_key_id=AWS_CLOUDWATCH_LOGGER_ACCESS_KEY,
+        aws_secret_access_key=AWS_CLOUDWATCH_LOGGER_SECRET_KEY,
+    )
+
     handlers.append("watchtower")
 
 LOGGING = {
@@ -247,13 +249,6 @@ LOGGING = {
             "filename": os.path.join(BASE_DIR, "debug.log"),
             "formatter": "verbose",
         },
-        "watchtower": {
-            "class": "watchtower.CloudWatchLogHandler",
-            "boto3_client": boto3_logs_client,
-            "log_group": f"app-{ENVIRONMENT}",
-            "level": "INFO",
-            "stream_name": f"{ENVIRONMENT}-log-stream",
-        },
     },
     "loggers": {
         "django": {
@@ -273,6 +268,15 @@ LOGGING = {
         },
     },
 }
+
+if ENVIRONMENT == "production" and TESTING is False:
+    LOGGING["handlers"]["watchtower"] = {
+        "class": "watchtower.CloudWatchLogHandler",
+        "boto3_client": boto3_logs_client,
+        "log_group": f"app-{ENVIRONMENT}",
+        "level": "INFO",
+        "stream_name": f"{ENVIRONMENT}-log-stream",
+    }
 
 AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
