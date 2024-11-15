@@ -107,7 +107,7 @@ else:
 
 # Detect if pytest is running
 TESTING = False
-if "pytest" in sys.modules or "pytest" in sys.argv[0]:
+if "pytest" in sys.modules or "pytest" in sys.argv[0] or "test" in sys.argv:
     TESTING = True
 
 if TESTING or "test" in sys.argv:
