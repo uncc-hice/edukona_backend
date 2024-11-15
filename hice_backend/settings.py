@@ -252,6 +252,7 @@ LOGGING = {
             "boto3_client": boto3_logs_client,
             "log_group": f"app-{ENVIRONMENT}",
             "level": "INFO",
+            "stream_name": f"{ENVIRONMENT}-log-stream",
         },
     },
     "loggers": {
