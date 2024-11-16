@@ -337,3 +337,19 @@ class LectureSummaryView(APIView):
             return Response({"error": "Recording not found."}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @extend_schema(
+        operation_id="get_lecture_summary",
+        summary="Get all lecture summaries from a recording id",
+        description="Get a summary for a specific recording using the recording ID.",
+        request=LectureSummarySerializer,
+        responses={
+            200: OpenApiTypes.OBJECT,  # Successful retrieval of data.
+            403: OpenApiTypes.OBJECT,  # Response when the user is not authorized to proceed with the request.
+            500: OpenApiTypes.OBJECT,  # Response when there is an error from the server side.
+        },
+    )
+    def get(self, request, recording_id):
+        lecture_summary = LectureSummary.objects.filter(recording=recording_id)
+        serializer = LectureSummarySerializer(lecture_summary, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
