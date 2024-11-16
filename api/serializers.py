@@ -1,5 +1,3 @@
-import json
-
 from django.contrib.auth.password_validation import validate_password
 from django.core.validators import EmailValidator
 from rest_framework import serializers
