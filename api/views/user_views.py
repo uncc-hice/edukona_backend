@@ -43,6 +43,11 @@ from drf_spectacular.types import OpenApiTypes
 
 import boto3
 import json
+import logging
+
+logger = logging.getLogger(__name__)
+
+from ..permissions import IsRecordingOwner
 
 
 def mailInstructor(email):
@@ -139,6 +144,8 @@ class SignUpInstructor(APIView):
 
 @extend_schema(tags=["Profile and User Management"])
 class ProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def get(self, request):
         user = request.user
         return Response(
@@ -200,6 +207,7 @@ class Login(APIView):
         if hasattr(user, "instructor"):
             response["instructor"] = user.instructor.id
 
+        logger.info(f"User {user.id} logged in.")
         return JsonResponse(response, status=status.HTTP_200_OK)
 
 
@@ -208,6 +216,7 @@ class Logout(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
+        logger.info(f"User {request.user.id} logged out.")
         request.user.auth_token.delete()
         return JsonResponse({"message": "User logged out successfully"}, status=status.HTTP_200_OK)
 
@@ -410,6 +419,7 @@ class UploadAudioView(APIView):
 
         except Exception as e:
             transaction.set_rollback(True)
+            logger.error(f"Failed to upload audio: {str(e)}")
             return JsonResponse({"error": str(e)}, status=500)
 
     @staticmethod
@@ -424,6 +434,7 @@ class UploadAudioView(APIView):
 
 @extend_schema(tags=["Recordings"])
 class UpdateTranscriptView(APIView):
+    permission_classes = [IsRecordingOwner]
 
     @extend_schema(
         operation_id="update_transcript",
@@ -492,6 +503,8 @@ class RecordingsView(APIView):
 
 @extend_schema(tags=["Recordings"])
 class DeleteRecordingView(APIView):
+    permission_classes = [IsRecordingOwner]
+
     @extend_schema(
         operation_id="delete_recording",
         summary="Delete recording",
@@ -508,6 +521,9 @@ class DeleteRecordingView(APIView):
         instructor = request.user.instructor
         recording = get_object_or_404(InstructorRecordings, id=recording_id)
         if recording.instructor != instructor:
+            logger.warning(
+                f"User {instructor.id} attempted to delete recording {recording.id} without permission"
+            )
             return JsonResponse(
                 {"message": "You do not have permission to delete this recording"},
                 status=status.HTTP_403_FORBIDDEN,
@@ -532,6 +548,8 @@ class DeleteRecordingView(APIView):
 
 @extend_schema(tags=["Recordings"])
 class GetTranscriptView(APIView):
+    permission_classes = [IsRecordingOwner]
+
     @extend_schema(
         operation_id="get_transcript",
         summary="Get transcript of a recording",
@@ -605,6 +623,7 @@ class GoogleLogin(APIView):
                 },
             }
 
+            logger.info(f"User {user.id} logged in with Google.")
             return Response(result, status=status.HTTP_200_OK)
 
         except ValueError as e:
@@ -663,7 +682,7 @@ class DeleteUserView(APIView):
     def delete(self, request):
         id = request.user.id
         user = get_object_or_404(User, id=id)
-
+        logger.info(f"User {id} requested to delete their account")
         if hasattr(user, "instructor"):
             boto3_client = boto3.client(
                 "s3",
@@ -682,19 +701,19 @@ class DeleteUserView(APIView):
                 if "Contents" in objects_to_delete:
                     delete_keys = [{"Key": obj["Key"]} for obj in objects_to_delete["Contents"]]
                     boto3_client.delete_objects(Bucket=bucket_name, Delete={"Objects": delete_keys})
-            except Exception:
-                # TODO Log the error
-                pass
+            except Exception as e:
+                logger.error(f"Failed to delete user files for user {user.id} with error: {str(e)}")
 
         try:
             with transaction.atomic():
                 user.delete()
         except Exception as e:
+            logger.error(f"Failed to delete user {user.id} with error: {str(e)}")
             return JsonResponse(
                 {"error": f"Failed to delete user: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
-
+        logger.info(f"User {id} deleted their account")
         return JsonResponse(
             {"message": "User and associated files deleted successfully"}, status=status.HTTP_200_OK
         )
@@ -702,6 +721,8 @@ class DeleteUserView(APIView):
 
 @extend_schema(tags=["Recordings"])
 class QuizByRecordingView(APIView):
+    permission_classes = [IsRecordingOwner]
+
     @extend_schema(
         operation_id="get_quizzes_by_recording",
         summary="Get quizzes by recording ID",

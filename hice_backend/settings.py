@@ -2,6 +2,7 @@ from dotenv import load_dotenv
 import os
 import sys
 from pathlib import Path
+import boto3
 
 load_dotenv()
 
@@ -13,10 +14,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
 
-if os.getenv("DJANGO_ENV") == "development":
-    DEBUG = True
-else:
-    DEBUG = False
+ENVIRONMENT = os.getenv("DJANGO_ENV")
+
+DEBUG = ENVIRONMENT == "development"
 
 ALLOWED_HOSTS = [
     "127.0.0.1",
@@ -105,7 +105,7 @@ else:
 
 # Detect if pytest is running
 TESTING = False
-if "pytest" in sys.modules or "pytest" in sys.argv[0]:
+if "pytest" in sys.modules or "pytest" in sys.argv[0] or "test" in sys.argv:
     TESTING = True
 
 if TESTING or "test" in sys.argv:
@@ -205,6 +205,30 @@ REST_FRAMEWORK = {
     ],
 }
 
+
+logging_level = "INFO" if ENVIRONMENT == "production" else "DEBUG"
+handlers = ["console", "file"]
+boto3_logs_client = None
+if ENVIRONMENT == "production" and TESTING is False:
+    AWS_CLOUDWATCH_LOGGER_ACCESS_KEY = os.getenv("AWS_CLOUDWATCH_LOGGER_ACCESS_KEY")
+    AWS_CLOUDWATCH_LOGGER_SECRET_KEY = os.getenv("AWS_CLOUDWATCH_LOGGER_SECRET_KEY")
+    AWS_CLOUDWATCH_LOGGER_REGION_NAME = os.getenv("AWS_CLOUDWATCH_LOGGER_REGION_NAME")
+
+    if (
+        AWS_CLOUDWATCH_LOGGER_ACCESS_KEY
+        and AWS_CLOUDWATCH_LOGGER_SECRET_KEY
+        and AWS_CLOUDWATCH_LOGGER_REGION_NAME
+    ):
+        boto3_logs_client = boto3.client(
+            "logs",
+            region_name=AWS_CLOUDWATCH_LOGGER_REGION_NAME,
+            aws_access_key_id=AWS_CLOUDWATCH_LOGGER_ACCESS_KEY,
+            aws_secret_access_key=AWS_CLOUDWATCH_LOGGER_SECRET_KEY,
+        )
+        handlers.append("watchtower")
+    else:
+        raise ValueError("AWS CloudWatch logger environment variables are not set properly.")
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -220,7 +244,7 @@ LOGGING = {
     },
     "handlers": {
         "console": {
-            "level": "DEBUG",
+            "level": "INFO",  # if DEBUG logs are needed look at the debug.log file
             "class": "logging.StreamHandler",
             "formatter": "verbose",
         },
@@ -233,22 +257,31 @@ LOGGING = {
     },
     "loggers": {
         "django": {
-            "handlers": ["console", "file"],
-            "level": "INFO",  # Set a higher level for general Django logs
+            "handlers": handlers,
+            "level": logging_level,
             "propagate": True,
         },
         "channels": {
-            "handlers": ["console", "file"],
-            "level": "INFO",  # Set a higher level for general Channels logs
+            "handlers": handlers,
+            "level": logging_level,
             "propagate": True,
         },
-        "api.consumers": {  # Specific logger for your consumers
-            "handlers": ["console", "file"],
-            "level": "DEBUG",
+        "api.consumers": {
+            "handlers": handlers,
+            "level": logging_level,
             "propagate": True,
         },
     },
 }
+
+if boto3_logs_client:
+    LOGGING["handlers"]["watchtower"] = {
+        "class": "watchtower.CloudWatchLogHandler",
+        "boto3_client": boto3_logs_client,
+        "log_group": f"app-{ENVIRONMENT}",
+        "level": "INFO",
+        "stream_name": f"{ENVIRONMENT}-log-stream",
+    }
 
 AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
