@@ -7,6 +7,7 @@ from rest_framework.test import APIClient
 from rest_framework.authtoken.models import Token
 from rest_framework import status
 from api.models import *
+from ..serializers import QuestionMultipleChoiceSerializer
 
 # Create your tests here.
 
@@ -64,7 +65,11 @@ class BaseTest(TestCase):
         # Create Questions
         self.new_question = QuestionMultipleChoice.objects.create(
             question_text="What is 1+1?",
-            incorrect_answer_list=["0", "1", "3"],
+            incorrect_answer_list=[
+                {"answer": "0", "feedback": "The answer is 2"},
+                {"answer": "1", "feedback": "The answer is 2"},
+                {"answer": "3", "feedback": "The answer is 2"},
+            ],
             correct_answer="2",
             points=1,
             quiz=self.new_quiz,
@@ -72,7 +77,11 @@ class BaseTest(TestCase):
 
         self.second_new_question = QuestionMultipleChoice.objects.create(
             question_text="What is 3 + 3?",
-            incorrect_answer_list=["3", "4", "5"],
+            incorrect_answer_list=[
+                {"answer": "3", "feedback": "The answer is 6"},
+                {"answer": "4", "feedback": "The answer is 6"},
+                {"answer": "5", "feedback": "The answer is 6"},
+            ],
             correct_answer="6",
             points=5,
             quiz=self.new_quiz,
@@ -237,6 +246,7 @@ class QuestionViewTest(BaseTest):
         self.assertEqual(response.status_code, 200)
 
         response_data = response.json()
+
         self.assertEqual(response_data["id"], self.new_question.id)
         self.assertEqual(response_data["question_text"], self.new_question.question_text)
         self.assertEqual(
