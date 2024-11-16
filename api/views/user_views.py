@@ -207,7 +207,7 @@ class Login(APIView):
         if hasattr(user, "instructor"):
             response["instructor"] = user.instructor.id
 
-        logger.info(f"User {user.id} logged in. Token: {token.key}")
+        logger.info(f"User {user.id} logged in.")
         return JsonResponse(response, status=status.HTTP_200_OK)
 
 
@@ -216,7 +216,7 @@ class Logout(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        logger.info(f"User {request.user.id} logged out. Previous token: {request.auth}")
+        logger.info(f"User {request.user.id} logged out.")
         request.user.auth_token.delete()
         return JsonResponse({"message": "User logged out successfully"}, status=status.HTTP_200_OK)
 
@@ -419,7 +419,7 @@ class UploadAudioView(APIView):
 
         except Exception as e:
             transaction.set_rollback(True)
-            logger.critical(f"Failed to upload audio: {str(e)}")
+            logger.error(f"Failed to upload audio: {str(e)}")
             return JsonResponse({"error": str(e)}, status=500)
 
     @staticmethod
