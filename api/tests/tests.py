@@ -8,7 +8,6 @@ from rest_framework.authtoken.models import Token
 from rest_framework import status
 from api.models import *
 
-
 # Create your tests here.
 
 
@@ -28,6 +27,18 @@ class BaseTest(TestCase):
         token, _ = Token.objects.get_or_create(user=self.new_user_instructor)
         self.client_instructor = APIClient()
         self.client_instructor.credentials(HTTP_AUTHORIZATION="Token " + token.key)
+
+        self.new_user_instructor_two = User.objects.create_user(
+            username="test_two@gmail.com",
+            email="test_two@gmail.com",
+            password="password",
+            first_name="Test",
+            last_name="Instructor",
+        )
+        self.instructor_two = Instructor.objects.create(user=self.new_user_instructor_two)
+        token, _ = Token.objects.get_or_create(user=self.new_user_instructor_two)
+        self.client_instructor_two = APIClient()
+        self.client_instructor_two.credentials(HTTP_AUTHORIZATION="Token " + token.key)
 
         # Create Student User
         self.new_user_student = User.objects.create_user(
@@ -705,6 +716,22 @@ class LectureSummaryViewTest(BaseTest):
             with transaction.atomic():
                 response = self.client_instructor.post(url, data, format="json")
                 self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def test_get_lecture_summary_successful(self):
+        url = reverse("lecture_summary", kwargs={"recording_id": str(self.recording.id)})
+        LectureSummary.objects.create(summary="Test Summary 1", recording=self.recording)
+        LectureSummary.objects.create(summary="Test Summary 2", recording=self.recording)
+
+        response = self.client_instructor.get(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)
+        self.assertEqual(response.data[0]["summary"], "Test Summary 2")
+        self.assertEqual(response.data[1]["summary"], "Test Summary 1")
+
+    def test_get_lecture_summary_forbidden(self):
+        url = reverse("lecture_summary", kwargs={"recording_id": str(self.recording.id)})
+        response = self.client_instructor_two.get(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
 
 class RecordingTitleChangeTest(BaseTest):
