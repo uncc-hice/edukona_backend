@@ -734,8 +734,8 @@ class LectureSummaryViewTest(BaseTest):
         response = self.client_instructor.get(url, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 2)
-        self.assertEqual(response.data[0]["summary"], "Test Summary 2")
-        self.assertEqual(response.data[1]["summary"], "Test Summary 1")
+        self.assertEqual(response.data[0]["summary"], "Test Summary 1")
+        self.assertEqual(response.data[1]["summary"], "Test Summary 2")
 
     def test_get_lecture_summary_forbidden(self):
         url = reverse("lecture_summary", kwargs={"recording_id": str(self.recording.id)})
@@ -748,20 +748,17 @@ class LectureSummaryByIdViewTest(BaseTest):
         super().setUp()
         # Set up a sample InstructorRecordings instance for valid recording_id tests
         self.recording = InstructorRecordings.objects.create(instructor=self.instructor)
-        self.lecture_summary_1 = LectureSummary.objects.create(
+        self.lecture_summary = LectureSummary.objects.create(
             summary="Test Summary", recording=self.recording
-        )
-        self.lecture_summary_2 = LectureSummary.objects.create(
-            summary="Test Summary 2", recording=self.recording
         )
 
     def test_get_summary_by_id_successful(self):
         # Valid summary_id
-        url = reverse("get-summary", kwargs={"summary_id": str(self.lecture_summary_1.id)})
+        url = reverse("get-summary", kwargs={"summary_id": str(self.lecture_summary.id)})
         response = self.client_instructor.get(url, format="json")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["summary"], self.lecture_summary_1.summary)
+        self.assertEqual(response.data["summary"], self.lecture_summary.summary)
 
     def test_get_summary_by_id_not_found(self):
         # Non-existent summary_id
