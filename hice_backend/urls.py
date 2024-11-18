@@ -126,7 +126,8 @@ urlpatterns = [
         name="swagger-ui",
     ),
     path("check-developer/", CheckDeveloperStatus.as_view(), name="check-developer"),
-    path("upload-audio/", UploadAudioView.as_view(), name="upload-audio"),
+    path("upload-audio/", UploadAudioView.as_view(), name="upload-audio-will-be-deprecated"),
+    path("recordings/upload-audio/", UploadAudioView.as_view(), name="upload-audio"),
     path(
         "instructor-recordings/<uuid:recording_id>/update-transcript/",
         UpdateTranscriptView.as_view(),
@@ -198,6 +199,11 @@ urlpatterns = [
     ),
     path(
         "create-recording/",
+        CreateRecordingView.as_view(),
+        name="create-recording-will-be-deprecated",
+    ),
+    path(
+        "recordings/create-recording/",
         CreateRecordingView.as_view(),
         name="create-recording",
     ),
