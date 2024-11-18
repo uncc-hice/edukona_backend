@@ -20,7 +20,7 @@ from django.http import JsonResponse
 from drf_spectacular.utils import extend_schema
 from drf_spectacular.types import OpenApiTypes
 
-from ..permissions import IsQuizOwner, AllowInstructor, IsSessionOwner
+from ..permissions import IsQuizOwner, AllowInstructor, IsSessionOwner, IsSummaryOwner
 
 
 @extend_schema(tags=["Session Activities"])
@@ -299,7 +299,7 @@ class DeleteQuizSession(APIView):
             return Response({"message": f"{str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-@extend_schema(tags=["Recordings"])
+@extend_schema(tags=["Summaries"])
 class LectureSummaryView(APIView):
     permission_classes = [IsRecordingOwner]
 
@@ -352,4 +352,26 @@ class LectureSummaryView(APIView):
     def get(self, request, recording_id):
         lecture_summary = LectureSummary.objects.filter(recording=recording_id)
         serializer = LectureSummarySerializer(lecture_summary, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@extend_schema(tags=["Summaries"])
+class LectureSummaryByIdView(APIView):
+    permission_classes = [IsSummaryOwner]
+
+    @extend_schema(
+        operation_id="get_lecture_summary",
+        summary="Get lecture summary from a summary id",
+        description="Get a summary for a specific recording using the summary ID.",
+        request=LectureSummarySerializer,
+        responses={
+            200: OpenApiTypes.OBJECT,  # Successful retrieval of data.
+            403: OpenApiTypes.OBJECT,  # Response when the user is not authorized to proceed with the request.
+            404: OpenApiTypes.OBJECT,  # Response when object is not found
+            500: OpenApiTypes.OBJECT,  # Response when there is an error from the server side.
+        },
+    )
+    def get(self, request, summary_id):
+        summary = LectureSummary.objects.get(id=summary_id)
+        serializer = LectureSummarySerializer(summary)
         return Response(serializer.data, status=status.HTTP_200_OK)

@@ -743,6 +743,35 @@ class LectureSummaryViewTest(BaseTest):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
 
+class LectureSummaryByIdViewTest(BaseTest):
+    def setUp(self):
+        super().setUp()
+        # Set up a sample InstructorRecordings instance for valid recording_id tests
+        self.recording = InstructorRecordings.objects.create(instructor=self.instructor)
+        self.lecture_summary_1 = LectureSummary.objects.create(
+            summary="Test Summary", recording=self.recording
+        )
+        self.lecture_summary_2 = LectureSummary.objects.create(
+            summary="Test Summary 2", recording=self.recording
+        )
+
+    def test_get_summary_by_id_successful(self):
+        # Valid summary_id
+        url = reverse("get-summary", kwargs={"summary_id": str(self.lecture_summary_1.id)})
+        response = self.client_instructor.get(url, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["summary"], self.lecture_summary_1.summary)
+
+    def test_get_summary_by_id_not_found(self):
+        # Non-existent summary_id
+        non_existent_id = "127ac01a-379b-44af-97e6-286bac44ff7f"
+        url = reverse("get-summary", kwargs={"summary_id": non_existent_id})
+        response = self.client_instructor.get(url, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+
 class RecordingTitleChangeTest(BaseTest):
     def setUp(self):
         super().setUp()

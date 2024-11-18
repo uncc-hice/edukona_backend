@@ -182,6 +182,11 @@ urlpatterns = [
         name="lecture_summary",
     ),
     path(
+        "summary/<uuid:summary_id>/get-summary/",
+        LectureSummaryByIdView.as_view(),
+        name="get-summary",
+    ),
+    path(
         "token/verify/",
         TokenVerificationView.as_view(),
         name="verify-token",

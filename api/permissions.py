@@ -1,5 +1,12 @@
 from rest_framework import permissions
-from .models import Instructor, Quiz, QuestionMultipleChoice, InstructorRecordings, QuizSession
+from .models import (
+    Instructor,
+    Quiz,
+    QuestionMultipleChoice,
+    InstructorRecordings,
+    QuizSession,
+    LectureSummary,
+)
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned, FieldError
 
 
@@ -101,3 +108,19 @@ class IsSessionOwner(permissions.BasePermission):
         except (ObjectDoesNotExist, MultipleObjectsReturned, FieldError):
             return False
         return request.user == session.quiz.instructor.user
+
+
+class IsSummaryOwner(permissions.BasePermission):
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+
+        # Get summary_id from the URL
+        summary_id = view.kwargs.get("summary_id")
+
+        try:
+            # Retrieve the LectureSummary and verify the ownership of the recording
+            summary = LectureSummary.objects.get(id=summary_id)
+        except (ObjectDoesNotExist, MultipleObjectsReturned, FieldError):
+            return False
+        return request.user == summary.recording.instructor.user
