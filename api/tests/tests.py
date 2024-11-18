@@ -734,8 +734,8 @@ class LectureSummaryViewTest(BaseTest):
         response = self.client_instructor.get(url, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 2)
-        self.assertEqual(response.data[0]["summary"], "Test Summary 1")
-        self.assertEqual(response.data[1]["summary"], "Test Summary 2")
+        self.assertEqual(response.data[0]["summary"], "Test Summary 2")
+        self.assertEqual(response.data[1]["summary"], "Test Summary 1")
 
     def test_get_lecture_summary_forbidden(self):
         url = reverse("lecture_summary", kwargs={"recording_id": str(self.recording.id)})
