@@ -133,7 +133,17 @@ urlpatterns = [
         name="update-transcript",
     ),
     path(
+        "recordings/<uuid:recording_id>/update-transcript/",
+        UpdateTranscriptView.as_view(),
+        name="update-transcript",
+    ),
+    path(
         "instructor-recordings/<uuid:recording_id>/delete-recording",
+        DeleteRecordingView.as_view(),
+        name="delete-recording",
+    ),
+    path(
+        "recordings/<uuid:recording_id>/delete-recording",
         DeleteRecordingView.as_view(),
         name="delete-recording",
     ),
@@ -143,7 +153,17 @@ urlpatterns = [
         name="update-recording-duration",
     ),
     path(
+        "recordings/<uuid:recording_id>/update-duration/",
+        UpdateRecordingDurationView.as_view(),
+        name="update-recording-duration",
+    ),
+    path(
         "instructor-recordings/",
+        RecordingsView.as_view(),
+        name="instructor-recording",
+    ),
+    path(
+        "recordings/",
         RecordingsView.as_view(),
         name="instructor-recording",
     ),
@@ -153,7 +173,17 @@ urlpatterns = [
         name="get-transcript",
     ),
     path(
+        "recordings/<uuid:recording_id>/get-transcript/",
+        GetTranscriptView.as_view(),
+        name="get-transcript",
+    ),
+    path(
         "instructor-recordings/<uuid:recording_id>/update-title/",
+        UpdateRecordingTitleView.as_view(),
+        name="recording-update-title",
+    ),
+    path(
+        "recordings/<uuid:recording_id>/update-title/",
         UpdateRecordingTitleView.as_view(),
         name="recording-update-title",
     ),
