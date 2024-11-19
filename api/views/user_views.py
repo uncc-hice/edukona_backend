@@ -118,7 +118,12 @@ class SignUpInstructor(APIView):
             token, created = Token.objects.get_or_create(user=user)
             mailInstructor(user.email)  # Send a welcome email to the instructor
             return Response(
-                {"token": token.key, "user": str(user.id), "instructor": str(instructor.id)},
+                {
+                    "token": token.key,
+                    "user": str(user.id),
+                    "instructor": str(instructor.id),
+                    "redirect_url": "/",
+                },
                 status=status.HTTP_201_CREATED,
             )
         else:
