@@ -768,6 +768,13 @@ class LectureSummaryByIdViewTest(BaseTest):
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
+    def test_get_summary_by_id_forbidden(self):
+        # non owner
+        url = reverse("get-summary", kwargs={"summary_id": str(self.lecture_summary.id)})
+        response = self.client_instructor_two.get(url, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
 
 class RecordingTitleChangeTest(BaseTest):
     def setUp(self):
