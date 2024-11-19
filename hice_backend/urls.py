@@ -126,34 +126,65 @@ urlpatterns = [
         name="swagger-ui",
     ),
     path("check-developer/", CheckDeveloperStatus.as_view(), name="check-developer"),
-    path("upload-audio/", UploadAudioView.as_view(), name="upload-audio"),
+    path("upload-audio/", UploadAudioView.as_view(), name="upload-audio-will-be-deprecated"),
+    path("recordings/upload-audio/", UploadAudioView.as_view(), name="upload-audio"),
     path(
         "instructor-recordings/<uuid:recording_id>/update-transcript/",
+        UpdateTranscriptView.as_view(),
+        name="update-transcript-will-be-deprecated",
+    ),
+    path(
+        "recordings/<uuid:recording_id>/update-transcript/",
         UpdateTranscriptView.as_view(),
         name="update-transcript",
     ),
     path(
         "instructor-recordings/<uuid:recording_id>/delete-recording",
         DeleteRecordingView.as_view(),
+        name="delete-recording-will-be-deprecated",
+    ),
+    path(
+        "recordings/<uuid:recording_id>/delete-recording",
+        DeleteRecordingView.as_view(),
         name="delete-recording",
     ),
     path(
         "instructor-recordings/<uuid:recording_id>/update-duration/",
+        UpdateRecordingDurationView.as_view(),
+        name="update-recording-duration-will-be-deprecated",
+    ),
+    path(
+        "recordings/<uuid:recording_id>/update-duration/",
         UpdateRecordingDurationView.as_view(),
         name="update-recording-duration",
     ),
     path(
         "instructor-recordings/",
         RecordingsView.as_view(),
+        name="instructor-recording-will-be-deprecated",
+    ),
+    path(
+        "recordings/",
+        RecordingsView.as_view(),
         name="instructor-recording",
     ),
     path(
         "instructor-recordings/<uuid:recording_id>/get-transcript/",
         GetTranscriptView.as_view(),
+        name="get-transcript-will-be-deprecated",
+    ),
+    path(
+        "recordings/<uuid:recording_id>/get-transcript/",
+        GetTranscriptView.as_view(),
         name="get-transcript",
     ),
     path(
         "instructor-recordings/<uuid:recording_id>/update-title/",
+        UpdateRecordingTitleView.as_view(),
+        name="recording-update-title-will-be-deprecated",
+    ),
+    path(
+        "recordings/<uuid:recording_id>/update-title/",
         UpdateRecordingTitleView.as_view(),
         name="recording-update-title",
     ),
@@ -168,6 +199,11 @@ urlpatterns = [
     ),
     path(
         "create-recording/",
+        CreateRecordingView.as_view(),
+        name="create-recording-will-be-deprecated",
+    ),
+    path(
+        "recordings/create-recording/",
         CreateRecordingView.as_view(),
         name="create-recording",
     ),
