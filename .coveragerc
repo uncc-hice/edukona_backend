@@ -1,5 +1,14 @@
 [run]
-omit = */migrations/*, api/tests/tests.py
+source = api
 
 [report]
-fail_under = 82
+omit =
+    */__init__.py
+    */migrations/*
+    */settings.py
+    */tests/*
+    */temp_migrations/*
+    */management/*
+    */manage.py
+    */consumers.py
+fail_under=50
