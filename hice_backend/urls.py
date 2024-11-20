@@ -223,6 +223,11 @@ urlpatterns = [
         name="get-summary",
     ),
     path(
+        "summary/<uuid:summary_id>/update-summary/",
+        UpdateLectureSummaryView.as_view(),
+        name="update-summary",
+    ),
+    path(
         "token/verify/",
         TokenVerificationView.as_view(),
         name="verify-token",
