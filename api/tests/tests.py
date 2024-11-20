@@ -766,12 +766,36 @@ class LectureSummaryByIdViewTest(BaseTest):
         url = reverse("get-summary", kwargs={"summary_id": non_existent_id})
         response = self.client_instructor.get(url, format="json")
 
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_get_summary_by_id_forbidden(self):
         # non owner
         url = reverse("get-summary", kwargs={"summary_id": str(self.lecture_summary.id)})
         response = self.client_instructor_two.get(url, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_update_summary_by_id(self):
+        data = {"summary": "This is a new summary"}
+        url = reverse("update-summary", kwargs={"summary_id": str(self.lecture_summary.id)})
+        response = self.client_instructor.patch(url, data, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["message"], "Summary updated successfully")
+        self.assertEqual(response.data["summary"], data["summary"])
+
+    def test_update_summary_by_id_not_found(self):
+        non_existent_id = "127ac01a-379b-44af-97e6-286bac44ff7f"
+        data = {"summary": "This is a new summary"}
+        url = reverse("update-summary", kwargs={"summary_id": non_existent_id})
+        response = self.client_instructor.patch(url, data, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_update_summary_by_id_forbidden(self):
+        data = {"summary": "This is a new summary"}
+        url = reverse("update-summary", kwargs={"summary_id": str(self.lecture_summary.id)})
+        response = self.client_instructor_two.patch(url, data, format="json")
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 

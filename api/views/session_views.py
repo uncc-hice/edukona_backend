@@ -375,3 +375,24 @@ class LectureSummaryByIdView(APIView):
         summary = LectureSummary.objects.get(id=summary_id)
         serializer = LectureSummarySerializer(summary)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@extend_schema(tags=["Summaries"])
+class UpdateLectureSummaryView(APIView):
+    permission_classes = [IsSummaryOwner]
+
+    @extend_schema(
+        request=LectureSummarySerializer,
+        description="Endpoint to update the summary of a lecture given summary_id",
+    )
+    def patch(self, request, summary_id):
+        summary = LectureSummary.objects.get(id=summary_id)
+        serializer = LectureSummarySerializer(data=request.data)
+        if serializer.is_valid():
+            summary.summary = serializer.validated_data["summary"]
+            summary.save()
+            return Response(
+                {"message": "Summary updated successfully", "summary": summary.summary},
+                status=status.HTTP_200_OK,
+            )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
