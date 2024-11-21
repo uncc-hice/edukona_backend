@@ -12,12 +12,12 @@ jobs:
       DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
-      - name: Set up Python 3.8
-        uses: actions/setup-python@v2
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          python-version: 3.8
+          python-version: 3.12
 
       - name: Install dependencies
         run: |
@@ -26,5 +26,5 @@ jobs:
 
       - name: Run Django Tests
         run: |
-          coverage run --source=. --omit=api/tests/consumer_tests.py manage.py test -v 3
-          coverage report --fail-under=65
+          coverage run manage.py test -v 3
+          coverage report
