@@ -8,6 +8,7 @@ from .models import (
     LectureSummary,
 )
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned, FieldError
+from django.shortcuts import get_object_or_404
 
 
 class AllowInstructor(permissions.BasePermission):
@@ -120,7 +121,7 @@ class IsSummaryOwner(permissions.BasePermission):
 
         try:
             # Retrieve the LectureSummary and verify the ownership of the recording
-            summary = LectureSummary.objects.get(id=summary_id)
+            summary = get_object_or_404(LectureSummary, id=summary_id)
         except (ObjectDoesNotExist, MultipleObjectsReturned, FieldError):
             return False
         return request.user == summary.recording.instructor.user
