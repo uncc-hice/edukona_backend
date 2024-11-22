@@ -73,6 +73,9 @@ class Quiz(models.Model):
         InstructorRecordings, on_delete=models.CASCADE, null=True
     )
 
+    class Meta:
+        ordering = ["-created_at"]
+
     def to_json(self):
         return {
             "id": self.id,

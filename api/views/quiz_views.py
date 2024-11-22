@@ -96,7 +96,7 @@ class InstructorQuizzesView(APIView):
 
     @extend_schema(responses={200: QuizListSerializer}, summary="Get all quizzes by instructor")
     def get(self, request):
-        quizzes = Quiz.objects.filter(instructor=request.user.instructor).order_by("-created_at")
+        quizzes = Quiz.objects.filter(instructor=request.user.instructor)
         return Response(QuizListSerializer({"quizzes": quizzes}).data, status=status.HTTP_200_OK)
 
 
