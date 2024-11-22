@@ -189,7 +189,9 @@ class QuizSessionLog(models.Model):
     quiz_session_code = models.CharField(max_length=6, unique=True)
     quiz_session = models.ForeignKey(QuizSession, on_delete=models.CASCADE)
     quiz_session_student = models.ForeignKey(QuizSessionStudent, on_delete=models.CASCADE)
-    question_multiple_choice = models.ForeignKey(QuestionMultipleChoice, on_delete=models.CASCADE, null = True, blank = True)
+    question_multiple_choice = models.ForeignKey(
+        QuestionMultipleChoice, on_delete=models.CASCADE, null=True, blank=True
+    )
     action = models.CharField(max_length=50)
     created_at = models.DateTimeField(auto_now_add=True)
 
