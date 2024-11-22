@@ -31,14 +31,6 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
 
         await self.accept()
 
-        settings = await self.get_settings(self.code)
-
-        uc = await self.fetch_user_count()
-
-        await self.send(
-            text_data=json.dumps({"type": "settings", "settings": settings, "user_count": uc})
-        )
-
     @database_sync_to_async
     def fetch_user_count(self):
         session = QuizSession.objects.get(code=self.code)
@@ -122,14 +114,6 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
         student = QuizSessionStudent.objects.get(quiz_session=session, username=username)
         student.delete()
         return {"status": "success", "username": username}
-
-    @database_sync_to_async
-    def get_settings(self, code):
-        session = QuizSession.objects.get(code=code)
-        if session.quiz.settings:
-            return session.quiz.settings.to_json()
-        else:
-            return {"timer": False, "live_bar_chart": False}
 
     async def send_current_question(self):
         question_data = await self.fetch_current_question()
