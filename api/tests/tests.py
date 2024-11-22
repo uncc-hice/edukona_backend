@@ -1,5 +1,5 @@
 from unittest.mock import patch
-
+from datetime import timedelta
 from django.db import transaction
 from django.test import TestCase
 from django.urls import reverse
@@ -231,10 +231,16 @@ class CreateQuizViewTest(BaseTest):
 
 class InstructorQuizzesViewTest(BaseTest):
     def test_get_quizzes(self):
+        quiz2 = Quiz.objects.create(title="Test Quiz newest", instructor=self.instructor)
+        quiz2.created_at = self.new_quiz.created_at + timedelta(days=1)
+        quiz2.save()
+
         url = reverse("instructor-quizzes")
         instructor_response = self.client_instructor.get(url)
 
         self.assertEqual(instructor_response.status_code, 200)
+        self.assertEqual(instructor_response.data["quizzes"][0]["title"], "Test Quiz newest")
+        self.assertEqual(instructor_response.data["quizzes"][1]["title"], "Test Quiz")
 
 
 class QuestionViewTest(BaseTest):
