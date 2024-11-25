@@ -2,6 +2,7 @@ from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
 from django.db import transaction
+from rest_framework.status import HTTP_200_OK
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 import os
@@ -15,6 +16,7 @@ from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework import status
 from rest_framework import serializers
+from itertools import chain
 
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
@@ -769,7 +771,28 @@ class SummariesAndQuizzesChronologically(APIView):
         },
     )
     def get(self, request, recording_id):
-        pass
+        recording = get_object_or_404(InstructorRecordings, id=recording_id)
+        if not hasattr(recording, "instructor"):
+            return Response(
+                {"message": "You are not authorized to view this resource."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        quizzes = Quiz.objects.filter(instructor_recording_id=recording_id)
+        summaries = Quiz.objects.filter(instructor_recording_id=recording_id)
+
+        if not quizzes.exists() or not summaries.exists():
+            return Response(
+                {"message": "Couldn't find any quizzes or summaries in chronological order."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        for quiz in quizzes:
+            quiz.type = "quiz"
+        for summary in summaries:
+            summary.type = "summary"
+
+        return Response(status=HTTP_200_OK)
 
 
 class TokenVerificationView(APIView):
