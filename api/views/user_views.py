@@ -758,6 +758,19 @@ class QuizByRecordingView(APIView):
 class SummariesAndQuizzesChronologically(APIView):
     permission_classes = [IsRecordingOwner]
 
+    @extend_schema(
+        operation_id="get-quizzes-and-summaries",
+        summary="Get quizzes and summaries in chronological order.",
+        description="Returns all quizzes and summaries associated with a specific recording ID.",
+        responses={
+            200: OpenApiTypes.OBJECT,
+            403: OpenApiTypes.OBJECT,
+            404: OpenApiTypes.OBJECT,
+        },
+    )
+    def get(self, request, recording_id):
+        pass
+
 
 class TokenVerificationView(APIView):
     permission_classes = [IsAuthenticated]

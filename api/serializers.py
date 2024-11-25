@@ -249,3 +249,8 @@ class LectureSummarySerializer(serializers.ModelSerializer):
         model = LectureSummary
         fields = ["id", "summary", "recording_id", "created_at"]
         read_only_fields = ["id", "recording_id", "created_at"]
+
+
+class SummariesQuizzesChronologicalSerializer(serializers.ModelSerializer):
+    class Meta:
+        pass
