@@ -754,6 +754,11 @@ class QuizByRecordingView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+@extend_schema(tags=["Recordings"])
+class SummariesAndQuizzesChronologically(APIView):
+    permission_classes = [IsRecordingOwner]
+
+
 class TokenVerificationView(APIView):
     permission_classes = [IsAuthenticated]
     throttle_classes = [UserRateThrottle]
