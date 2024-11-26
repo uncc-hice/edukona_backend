@@ -15,8 +15,6 @@ from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework import status
 from rest_framework import serializers
-from itertools import chain
-from operator import attrgetter
 
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
@@ -29,6 +27,7 @@ from api.models import (
     QuizSession,
     InstructorRecordings,
     Quiz,
+    LectureSummary,
 )
 from api.serializers import (
     InstructorRecordingsSerializer,
@@ -41,7 +40,7 @@ from api.serializers import (
     QuizSerializer,
     LectureSummarySerializer,
 )
-from drf_spectacular.utils import extend_schema, OpenApiExample
+from drf_spectacular.utils import extend_schema, OpenApiExample, inline_serializer
 from drf_spectacular.types import OpenApiTypes
 
 import boto3
@@ -766,50 +765,26 @@ class SummariesAndQuizzesChronologically(APIView):
         summary="Get quizzes and summaries in chronological order.",
         description="Returns all quizzes and summaries associated with a specific recording ID.",
         responses={
-            200: OpenApiTypes.OBJECT,
-            403: OpenApiTypes.OBJECT,
-            404: OpenApiTypes.OBJECT,
+            200: inline_serializer(
+                "Quizzes and Summaries",
+                {"quiz": QuizSerializer(many=True), "summary": LectureSummarySerializer(many=True)},
+            ),
+            401: inline_serializer("detail_response", {"detail": serializers.CharField()}),
+            403: inline_serializer("detail_response", {"detail": serializers.CharField()}),
         },
     )
     def get(self, request, recording_id):
-        recording = get_object_or_404(InstructorRecordings, id=recording_id)
-        if not hasattr(recording, "instructor"):
-            return Response(
-                {"message": "You are not authorized to view this resource."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
 
-        quizzes = Quiz.objects.filter(instructor_recording_id=recording_id)
-        summaries = Quiz.objects.filter(instructor_recording_id=recording_id)
+        quizzes = Quiz.objects.filter(instructor_recording_id=recording_id).order_by("created_at")
+        summaries = LectureSummary.objects.filter(recording_id=recording_id).order_by("created_at")
 
-        if not quizzes.exists() or not summaries.exists():
-            return Response(
-                {"message": "Couldn't find any quizzes or summaries in chronological order."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+        quizzes_serializer = QuizSerializer(quizzes, many=True)
+        summaries_serializer = LectureSummarySerializer(summaries, many=True)
 
-        for quiz in quizzes:
-            quiz.type = "quiz"
-        for summary in summaries:
-            summary.type = "summary"
-
-        combined_items = sorted(
-            chain(quizzes, summaries),
-            key=attrgetter("created_at"),
+        return Response(
+            {"quizzes": quizzes_serializer.data, "summaries": summaries_serializer.data},
+            status=status.HTTP_200_OK,
         )
-
-        # Serialization starts here.
-        result = []
-        for item in combined_items:
-            if item.type == "quiz":
-                serializer = QuizSerializer(item)
-            else:
-                serializer = LectureSummarySerializer(item)
-            serialized_data = serializer.data
-            serialized_data["type"] = item.type
-            result.append(serialized_data)
-
-        return Response(result, status=status.HTTP_200_OK)
 
 
 class TokenVerificationView(APIView):

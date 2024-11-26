@@ -993,3 +993,23 @@ class UserAuthTests(BaseTest):
     def test_logout_without_token(self):
         response = self.client.post(self.logout_url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class SummariesQuizzesChronologicallyTests(BaseTest):
+    def setUp(self):
+        super().setUp()
+        self.recording = InstructorRecordings.objects.create(instructor=self.instructor)
+        self.summary = LectureSummary.objects.create(recording_id=self.recording.id)
+        self.url = reverse("get-quizzes-and-summaries", kwargs={"recording_id": self.recording.id})
+
+    def test_get_summaries_quizzes_successfully(self):
+        response = self.client_instructor.get(self.url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_get_summaries_quizzes_forbidden(self):
+        response = self.client_instructor_two.get(self.url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_get_summaries_quizzes_unauthorized(self):
+        response = self.client.get(self.url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
