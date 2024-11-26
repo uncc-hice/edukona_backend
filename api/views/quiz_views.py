@@ -53,6 +53,7 @@ class CreateQuizView(APIView):
         """
         Create a new Quiz.
         """
+        # TODO: Resolve Timing out when creating a quiz.
         serializer = QuizSerializer(data=request.data, context={"request": request})
         if serializer.is_valid():
             quiz = serializer.save()
