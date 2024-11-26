@@ -2,7 +2,6 @@ from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
 from django.db import transaction
-from rest_framework.status import HTTP_200_OK
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 import os
@@ -17,6 +16,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework import status
 from rest_framework import serializers
 from itertools import chain
+from operator import attrgetter
 
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
@@ -39,6 +39,7 @@ from api.serializers import (
     SignUpInstructorSerializer,
     ContactMessageSerializer,
     QuizSerializer,
+    LectureSummarySerializer,
 )
 from drf_spectacular.utils import extend_schema, OpenApiExample
 from drf_spectacular.types import OpenApiTypes
@@ -792,7 +793,23 @@ class SummariesAndQuizzesChronologically(APIView):
         for summary in summaries:
             summary.type = "summary"
 
-        return Response(status=HTTP_200_OK)
+        combined_items = sorted(
+            chain(quizzes, summaries),
+            key=attrgetter("created_at"),
+        )
+
+        # Serialization starts here.
+        result = []
+        for item in combined_items:
+            if item.type == "quiz":
+                serializer = QuizSerializer(item)
+            else:
+                serializer = LectureSummarySerializer(item)
+            serialized_data = serializer.data
+            serialized_data["type"] = item.type
+            result.append(serialized_data)
+
+        return Response(result, status=status.HTTP_200_OK)
 
 
 class TokenVerificationView(APIView):
