@@ -995,21 +995,39 @@ class UserAuthTests(BaseTest):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
-class SummariesQuizzesChronologicallyTests(BaseTest):
+class GetQuizzesAndSummariesTests(BaseTest):
     def setUp(self):
         super().setUp()
         self.recording = InstructorRecordings.objects.create(instructor=self.instructor)
-        self.summary = LectureSummary.objects.create(recording_id=self.recording.id)
+        self.summary = LectureSummary.objects.create(
+            summary="The first summary of the tests.", recording_id=self.recording.id
+        )
+        self.summary_two = LectureSummary.objects.create(
+            summary="The second summary of the tests.", recording_id=self.recording.id
+        )
+        self.quiz = Quiz.objects.create(
+            title="Quizzes and Summaries Sample Quiz", instructor=self.instructor
+        )
+        self.quiz_two = Quiz.objects.create(
+            title="Quizzes and Summaries Sample Quiz 2", instructor=self.instructor
+        )
         self.url = reverse("get-quizzes-and-summaries", kwargs={"recording_id": self.recording.id})
 
     def test_get_summaries_quizzes_successfully(self):
         response = self.client_instructor.get(self.url, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_data = response.json()
+        self.assertIn("quizzes", response_data)
+        self.assertIn("summaries", response_data)
 
     def test_get_summaries_quizzes_forbidden(self):
         response = self.client_instructor_two.get(self.url, format="json")
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        response_data = response.json()
+        self.assertIn(response_data["detail"], "You do not have permission to perform this action.")
 
     def test_get_summaries_quizzes_unauthorized(self):
         response = self.client.get(self.url, format="json")
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        response_data = response.json()
+        self.assertIn(response_data["detail"], "Authentication credentials were not provided.")
