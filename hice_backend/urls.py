@@ -129,7 +129,7 @@ urlpatterns = [
     path("recordings/upload-audio/", UploadAudioView.as_view(), name="upload-audio"),
     path(
         "recordings/<uuid:recording_id>/get-quizzes-and-summaries",
-        SummariesAndQuizzesChronologically.as_view(),
+        GetQuizzesAndSummaries.as_view(),
         name="get-quizzes-and-summaries",
     ),
     path(

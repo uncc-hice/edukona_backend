@@ -757,7 +757,7 @@ class QuizByRecordingView(APIView):
 
 
 @extend_schema(tags=["Recordings"])
-class SummariesAndQuizzesChronologically(APIView):
+class GetQuizzesAndSummaries(APIView):
     permission_classes = [IsRecordingOwner]
 
     @extend_schema(
