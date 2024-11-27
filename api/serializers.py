@@ -249,3 +249,8 @@ class LectureSummarySerializer(serializers.ModelSerializer):
         model = LectureSummary
         fields = ["id", "summary", "recording_id", "created_at"]
         read_only_fields = ["id", "recording_id", "created_at"]
+
+
+class GetQuizzesAndSummariesSerializer(serializers.Serializer):
+    lecture_summaries = LectureSummarySerializer(many=True)
+    quizzes = QuizSerializer(many=True)

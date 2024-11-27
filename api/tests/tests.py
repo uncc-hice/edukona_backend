@@ -1018,7 +1018,7 @@ class GetQuizzesAndSummariesTests(BaseTest):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         response_data = response.json()
         self.assertIn("quizzes", response_data)
-        self.assertIn("summaries", response_data)
+        self.assertIn("lecture_summaries", response_data)
 
     def test_get_summaries_quizzes_forbidden(self):
         response = self.client_instructor_two.get(self.url, format="json")

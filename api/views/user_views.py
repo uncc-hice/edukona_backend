@@ -38,7 +38,7 @@ from api.serializers import (
     SignUpInstructorSerializer,
     ContactMessageSerializer,
     QuizSerializer,
-    LectureSummarySerializer,
+    GetQuizzesAndSummariesSerializer,
 )
 from drf_spectacular.utils import extend_schema, OpenApiExample, inline_serializer
 from drf_spectacular.types import OpenApiTypes
@@ -762,13 +762,11 @@ class GetQuizzesAndSummaries(APIView):
 
     @extend_schema(
         operation_id="get-quizzes-and-summaries",
+        request=GetQuizzesAndSummariesSerializer,
         summary="Get quizzes and summaries in chronological order.",
         description="Returns all quizzes and summaries associated with a specific recording ID.",
         responses={
-            200: inline_serializer(
-                "Quizzes and Summaries",
-                {"quiz": QuizSerializer(many=True), "summary": LectureSummarySerializer(many=True)},
-            ),
+            200: GetQuizzesAndSummariesSerializer(many=True),
             401: inline_serializer("detail_response", {"detail": serializers.CharField()}),
             403: inline_serializer("detail_response", {"detail": serializers.CharField()}),
         },
@@ -778,13 +776,10 @@ class GetQuizzesAndSummaries(APIView):
         quizzes = Quiz.objects.filter(instructor_recording_id=recording_id).order_by("created_at")
         summaries = LectureSummary.objects.filter(recording_id=recording_id).order_by("created_at")
 
-        quizzes_serializer = QuizSerializer(quizzes, many=True)
-        summaries_serializer = LectureSummarySerializer(summaries, many=True)
+        data = {"quizzes": quizzes, "lecture_summaries": summaries}
 
-        return Response(
-            {"quizzes": quizzes_serializer.data, "summaries": summaries_serializer.data},
-            status=status.HTTP_200_OK,
-        )
+        serializer = GetQuizzesAndSummariesSerializer(data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class TokenVerificationView(APIView):
