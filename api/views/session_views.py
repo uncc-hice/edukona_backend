@@ -9,15 +9,20 @@ from api.models import (
     QuestionMultipleChoice,
     InstructorRecordings,
     LectureSummary,
+    QuizSessionLog,
 )
 from django.shortcuts import get_object_or_404
 from rest_framework.permissions import AllowAny
 from rest_framework import status
 
 from api.permissions import IsRecordingOwner
-from api.serializers import QuizSessionStudentSerializer, LectureSummarySerializer
+from api.serializers import (
+    QuizSessionStudentSerializer,
+    AddQuizSessionLogSerializer,
+    LectureSummarySerializer,
+)
 from django.http import JsonResponse
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, OpenApiResponse
 from drf_spectacular.types import OpenApiTypes
 
 from ..permissions import IsQuizOwner, AllowInstructor, IsSessionOwner, IsSummaryOwner
@@ -222,6 +227,39 @@ class QuizSessionsByQuizView(APIView):
         ]
 
         return JsonResponse({"quiz_sessions": quiz_sessions_data})
+
+
+@extend_schema(tags=["Session Management"])
+class QuizSessionLogView(APIView):
+    permission_classes = []
+
+    @extend_schema(
+        request=AddQuizSessionLogSerializer(),
+        responses={
+            201: OpenApiResponse(description="Log created and added successfully"),
+            400: OpenApiResponse(description="Bad Request"),
+            404: OpenApiResponse(description="Object not found"),
+        },
+    )
+    def post(self, request):
+        serializer = AddQuizSessionLogSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                {"message": "Log entry successfully created."}, status=status.HTTP_201_CREATED
+            )
+
+        if "quiz_session_code" in serializer.errors:
+            return Response("Quiz session not found.", status=status.HTTP_404_NOT_FOUND)
+
+        if "quiz_session_student_id" in serializer.errors:
+            return Response("Student not found.", status=status.HTTP_404_NOT_FOUND)
+
+        if "question_multiple_choice_id" in request.data:
+            if "question_multiple_choice_id" in serializer.errors:
+                return Response("Question not found.", status=status.HTTP_404_NOT_FOUND)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @extend_schema(tags=["Session Activities"])
