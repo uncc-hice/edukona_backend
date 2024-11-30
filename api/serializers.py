@@ -11,7 +11,6 @@ from .models import (
     QuizSession,
     QuizSessionStudent,
     InstructorRecordings,
-    Settings,
     ContactMessage,
     LectureSummary,
 )
