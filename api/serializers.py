@@ -254,3 +254,19 @@ class LectureSummarySerializer(serializers.ModelSerializer):
 class GetQuizzesAndSummariesSerializer(serializers.Serializer):
     lecture_summaries = LectureSummarySerializer(many=True)
     quizzes = QuizSerializer(many=True)
+
+    def to_representation(self, instance):
+        summaries = LectureSummarySerializer(instance.lecture_summaries, many=True)
+        quizzes = QuizSerializer(instance.quizzes, many=True)
+
+        json_data = []
+
+        for summary in summaries:
+            json_data.append({"type": "summary", **summary})
+
+        for quiz in quizzes:
+            json_data.append({"type": "quiz", **quiz})
+
+        json_data.sort(key=lambda item: item["created_at"])
+
+        return json_data
