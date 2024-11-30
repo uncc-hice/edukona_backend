@@ -252,5 +252,14 @@ class LectureSummarySerializer(serializers.ModelSerializer):
 
 
 class GetQuizzesAndSummariesSerializer(serializers.Serializer):
-    lecture_summaries = LectureSummarySerializer(many=True)
-    quizzes = QuizSerializer(many=True)
+    def to_representation(self, instance):
+        if isinstance(instance, Quiz):
+            res = QuizSerializer(instance).data
+            res["type"] = "quiz"
+            return res
+        elif isinstance(instance, LectureSummary):
+            res = LectureSummarySerializer(instance).data
+            res["type"] = "summary"
+            return res
+        else:
+            return {}
