@@ -244,9 +244,7 @@ class QuizSessionLogView(APIView):
         serializer = AddQuizSessionLogSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            return Response(
-                {"message": "Log entry successfully created."}, status=status.HTTP_201_CREATED
-            )
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         if "quiz_session_code" in serializer.errors:
             return Response("Quiz session not found.", status=status.HTTP_404_NOT_FOUND)

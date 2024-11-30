@@ -153,20 +153,11 @@ class QuizTitleUpdateSerializer(serializers.Serializer):
     title = serializers.CharField(required=True, allow_blank=False)
 
 
-class AddQuizSessionLogSerializer(serializers.ModelSerializer):
+class AddQuizSessionLogSerializer(serializers.Serializer):
     quiz_session_code = serializers.CharField(required=True, allow_blank=False)
     quiz_session_student_id = serializers.IntegerField(required=True, min_value=0)
     question_multiple_choice_id = serializers.UUIDField(required=False)
     action = serializers.CharField(required=True)
-
-    class Meta:
-        model = QuizSessionLog
-        fields = [
-            "quiz_session_code",
-            "quiz_session_student_id",
-            "question_multiple_choice_id",
-            "action",
-        ]
 
     def validate_action(self, value):
         allowed_actions = ["connected", "disconnected", "reconnected"]
@@ -204,7 +195,6 @@ class AddQuizSessionLogSerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
-        validated_data.pop("quiz_session_code")
         validated_data.pop("quiz_session_student_id")
         validated_data.pop("question_multiple_choice_id", None)
 

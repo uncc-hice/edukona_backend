@@ -443,8 +443,13 @@ class AddQuizSessionLogTest(BaseTest):
 
     def test_create_log_entry_success(self):
         response = self.client.post(self.url, self.valid_payload, format="json")
+        self.assertEqual(response.data["quiz_session_code"], self.new_quiz_session.code)
+        self.assertEqual(response.data["quiz_session_student_id"], self.new_quiz_session_student.id)
+        self.assertEqual(response.data["question_multiple_choice_id"], str(self.new_question.id))
+        self.assertEqual(response.data["action"], "connected")
+
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(response.data["message"], "Log entry successfully created.")
+
         self.assertEqual(QuizSessionLog.objects.count(), 1)
 
     def test_create_log_entry_invalid_code(self):
