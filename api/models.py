@@ -17,27 +17,6 @@ class Instructor(models.Model):
     )
 
 
-class Settings(models.Model):
-    timer = models.BooleanField(default=False)
-    live_bar_chart = models.BooleanField(default=True)
-    skip_question = models.BooleanField(default=False)
-    skip_count_per_student = models.IntegerField(default=1)
-    skip_question_logic = models.TextField(default="random")
-    skip_question_streak_count = models.IntegerField(default=1)
-    skip_question_percentage = models.FloatField(default=0.0)
-
-    def to_json(self):
-        return {
-            "id": self.id,
-            "timer": self.timer,
-            "live_bar_chart": self.live_bar_chart,
-            "skip_question": self.skip_question,
-            "skip_count_per_student": self.skip_count_per_student,
-            "skip_question_logic": self.skip_question_logic,
-            "skip_question_streak_count": self.skip_question_streak_count,
-        }
-
-
 class InstructorRecordings(models.Model):
     id = models.UUIDField(
         primary_key=True, default=uuid.uuid4, editable=False
@@ -59,7 +38,6 @@ class Quiz(models.Model):
     created_at = models.DateTimeField(default=timezone.now)
     start_time = models.DateTimeField(null=True, blank=True)
     end_time = models.DateTimeField(null=True, blank=True)
-    settings = models.ForeignKey(Settings, on_delete=models.CASCADE, null=True, related_name="quiz")
     # Settings starts here
     timer = models.BooleanField(default=False)
     live_bar_chart = models.BooleanField(default=True)
