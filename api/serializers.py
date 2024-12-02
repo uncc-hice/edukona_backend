@@ -253,13 +253,33 @@ class LectureSummarySerializer(serializers.ModelSerializer):
 
 class GetQuizzesAndSummariesSerializer(serializers.Serializer):
     def to_representation(self, instance):
-        if isinstance(instance, Quiz):
-            res = QuizSerializer(instance).data
-            res["type"] = "quiz"
-            return res
-        elif isinstance(instance, LectureSummary):
-            res = LectureSummarySerializer(instance).data
-            res["type"] = "summary"
-            return res
-        else:
-            return {}
+        data = []
+        for entry in instance:
+            if isinstance(entry, Quiz):
+                res = QuizSerializer(entry).data
+                res["type"] = "quiz"
+                data.append(res)
+            elif isinstance(entry, LectureSummary):
+                res = LectureSummarySerializer(entry).data
+                res["type"] = "summary"
+                data.append(res)
+            else:
+                print("Skipping")
+
+        return data
+
+
+class LectureSummaryTypedSerializer(LectureSummarySerializer):
+    type = serializers.CharField(required=True, allow_blank=False)
+
+    class Meta:
+        model = LectureSummary
+        fields = "__all__"
+
+
+class QuizTypedSerializer(QuizSerializer):
+    type = serializers.CharField(required=True, allow_blank=False)
+
+    class Meta:
+        model = Quiz
+        fields = "__all__"

@@ -39,8 +39,16 @@ from api.serializers import (
     ContactMessageSerializer,
     QuizSerializer,
     GetQuizzesAndSummariesSerializer,
+    LectureSummarySerializer,
+    QuizTypedSerializer,
+    LectureSummaryTypedSerializer,
 )
-from drf_spectacular.utils import extend_schema, OpenApiExample, inline_serializer
+from drf_spectacular.utils import (
+    extend_schema,
+    OpenApiExample,
+    inline_serializer,
+    PolymorphicProxySerializer,
+)
 from drf_spectacular.types import OpenApiTypes
 
 import boto3
@@ -762,11 +770,15 @@ class GetQuizzesAndSummaries(APIView):
 
     @extend_schema(
         operation_id="get-quizzes-and-summaries",
-        request=GetQuizzesAndSummariesSerializer,
         summary="Get quizzes and summaries in chronological order.",
         description="Returns all quizzes and summaries associated with a specific recording ID.",
         responses={
-            200: GetQuizzesAndSummariesSerializer(many=True),
+            200: PolymorphicProxySerializer(
+                component_name="QuizzesAndSummaries",
+                serializers=[QuizTypedSerializer, LectureSummaryTypedSerializer],
+                resource_type_field_name="type",
+                many=True,
+            ),
             401: inline_serializer("detail_response", {"detail": serializers.CharField()}),
             403: inline_serializer("detail_response", {"detail": serializers.CharField()}),
         },
@@ -776,8 +788,8 @@ class GetQuizzesAndSummaries(APIView):
         quizzes = Quiz.objects.filter(instructor_recording_id=recording_id).order_by("created_at")
         summaries = LectureSummary.objects.filter(recording_id=recording_id).order_by("created_at")
 
-        data = {"quizzes": quizzes, "lecture_summaries": summaries}
-
+        data = list(quizzes) + list(summaries)
+        print(f"Data: {data}")
         serializer = GetQuizzesAndSummariesSerializer(data)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
