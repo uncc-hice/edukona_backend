@@ -159,6 +159,12 @@ class AddQuizSessionLogSerializer(serializers.Serializer):
     question_multiple_choice_id = serializers.UUIDField(required=False)
     action = serializers.CharField(required=True)
 
+    id = serializers.UUIDField(read_only=True)
+    created_at = serializers.DateTimeField(read_only=True)
+    quiz_session = serializers.PrimaryKeyRelatedField(read_only=True)
+    quiz_session_student = serializers.PrimaryKeyRelatedField(read_only=True)
+    question_multiple_choice = serializers.PrimaryKeyRelatedField(read_only=True)
+
     def validate_action(self, value):
         allowed_actions = ["connected", "disconnected", "reconnected"]
         if value not in allowed_actions:

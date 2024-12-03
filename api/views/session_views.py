@@ -235,7 +235,7 @@ class QuizSessionLogView(APIView):
     @extend_schema(
         request=AddQuizSessionLogSerializer(),
         responses={
-            201: OpenApiResponse(description="Log created and added successfully"),
+            201: AddQuizSessionLogSerializer,
             400: OpenApiResponse(description="Bad Request"),
             404: OpenApiResponse(description="Object not found"),
         },
