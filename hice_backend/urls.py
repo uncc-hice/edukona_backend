@@ -123,7 +123,6 @@ urlpatterns = [
         StudentResponseCountView.as_view(),
         name="quiz-session-responses",
     ),
-    path("quiz/<int:quiz_id>/settings", SettingsView.as_view(), name="quiz-settings"),
     path("quiz/create/", CreateQuizView.as_view(), name="create-quiz"),
     path(
         "schema/swagger-ui/",
