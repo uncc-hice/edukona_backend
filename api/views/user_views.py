@@ -1,3 +1,5 @@
+from ..permissions import IsRecordingOwner
+
 from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
@@ -6,7 +8,6 @@ from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 import os
 from rest_framework.throttling import UserRateThrottle
-
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.contrib.auth.models import User
@@ -27,7 +28,6 @@ from api.models import (
     QuizSession,
     InstructorRecordings,
     Quiz,
-    LectureSummary,
 )
 from api.serializers import (
     InstructorRecordingsSerializer,
@@ -38,16 +38,10 @@ from api.serializers import (
     SignUpInstructorSerializer,
     ContactMessageSerializer,
     QuizSerializer,
-    GetQuizzesAndSummariesSerializer,
-    LectureSummarySerializer,
-    QuizTypedSerializer,
-    LectureSummaryTypedSerializer,
 )
 from drf_spectacular.utils import (
     extend_schema,
     OpenApiExample,
-    inline_serializer,
-    PolymorphicProxySerializer,
 )
 from drf_spectacular.types import OpenApiTypes
 
@@ -56,8 +50,6 @@ import json
 import logging
 
 logger = logging.getLogger(__name__)
-
-from ..permissions import IsRecordingOwner
 
 
 def mailInstructor(email):
@@ -761,36 +753,6 @@ class QuizByRecordingView(APIView):
             return Response([], status=status.HTTP_200_OK)
 
         serializer = QuizSerializer(quizzes, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-
-@extend_schema(tags=["Recordings"])
-class GetQuizzesAndSummaries(APIView):
-    permission_classes = [IsRecordingOwner]
-
-    @extend_schema(
-        operation_id="get-quizzes-and-summaries",
-        summary="Get quizzes and summaries in chronological order.",
-        description="Returns all quizzes and summaries associated with a specific recording ID.",
-        responses={
-            200: PolymorphicProxySerializer(
-                component_name="QuizzesAndSummaries",
-                serializers=[QuizTypedSerializer, LectureSummaryTypedSerializer],
-                resource_type_field_name="type",
-                many=True,
-            ),
-            401: inline_serializer("detail_response", {"detail": serializers.CharField()}),
-            403: inline_serializer("detail_response", {"detail": serializers.CharField()}),
-        },
-    )
-    def get(self, request, recording_id):
-
-        quizzes = Quiz.objects.filter(instructor_recording_id=recording_id).order_by("created_at")
-        summaries = LectureSummary.objects.filter(recording_id=recording_id).order_by("created_at")
-
-        data = list(quizzes) + list(summaries)
-        print(f"Data: {data}")
-        serializer = GetQuizzesAndSummariesSerializer(data)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 

@@ -999,17 +999,23 @@ class GetQuizzesAndSummariesTests(BaseTest):
     def setUp(self):
         super().setUp()
         self.recording = InstructorRecordings.objects.create(instructor=self.instructor)
+        self.quiz = Quiz.objects.create(
+            title="Quizzes and Summaries Sample Quiz",
+            instructor=self.instructor,
+            instructor_recording=self.recording,
+        )
         self.summary = LectureSummary.objects.create(
             summary="The first summary of the tests.", recording_id=self.recording.id
         )
+
+        self.quiz_two = Quiz.objects.create(
+            title="Quizzes and Summaries Sample Quiz 2",
+            instructor=self.instructor,
+            instructor_recording=self.recording,
+        )
+
         self.summary_two = LectureSummary.objects.create(
             summary="The second summary of the tests.", recording_id=self.recording.id
-        )
-        self.quiz = Quiz.objects.create(
-            title="Quizzes and Summaries Sample Quiz", instructor=self.instructor
-        )
-        self.quiz_two = Quiz.objects.create(
-            title="Quizzes and Summaries Sample Quiz 2", instructor=self.instructor
         )
         self.url = reverse("get-quizzes-and-summaries", kwargs={"recording_id": self.recording.id})
 
@@ -1017,8 +1023,18 @@ class GetQuizzesAndSummariesTests(BaseTest):
         response = self.client_instructor.get(self.url, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         response_data = response.json()
-        self.assertIn("quizzes", response_data)
-        self.assertIn("lecture_summaries", response_data)
+        self.assertEqual(len(response_data), 4)
+        self.assertEqual(
+            response_data, sorted(response_data, key=lambda obj: obj["created_at"], reverse=True)
+        )
+        self.assertEqual(response_data[0]["type"], "summary")
+        self.assertEqual(response_data[0]["summary"], "The second summary of the tests.")
+        self.assertEqual(response_data[1]["type"], "quiz")
+        self.assertEqual(response_data[1]["title"], "Quizzes and Summaries Sample Quiz 2")
+        self.assertEqual(response_data[2]["type"], "summary")
+        self.assertEqual(response_data[2]["summary"], "The first summary of the tests.")
+        self.assertEqual(response_data[3]["type"], "quiz")
+        self.assertEqual(response_data[3]["title"], "Quizzes and Summaries Sample Quiz")
 
     def test_get_summaries_quizzes_forbidden(self):
         response = self.client_instructor_two.get(self.url, format="json")

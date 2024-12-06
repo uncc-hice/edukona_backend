@@ -251,24 +251,6 @@ class LectureSummarySerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "recording_id", "created_at"]
 
 
-class GetQuizzesAndSummariesSerializer(serializers.Serializer):
-    def to_representation(self, instance):
-        data = []
-        for entry in instance:
-            if isinstance(entry, Quiz):
-                res = QuizSerializer(entry).data
-                res["type"] = "quiz"
-                data.append(res)
-            elif isinstance(entry, LectureSummary):
-                res = LectureSummarySerializer(entry).data
-                res["type"] = "summary"
-                data.append(res)
-            else:
-                print("Skipping")
-
-        return data
-
-
 class LectureSummaryTypedSerializer(LectureSummarySerializer):
     type = serializers.CharField(required=True, allow_blank=False)
 
@@ -283,3 +265,14 @@ class QuizTypedSerializer(QuizSerializer):
     class Meta:
         model = Quiz
         fields = "__all__"
+
+
+class QuizAndSummarySerializer(serializers.Serializer):
+    def to_representation(self, instance):
+        print(instance)
+        if isinstance(instance, Quiz):
+            return QuizTypedSerializer(instance).data
+        elif isinstance(instance, LectureSummary):
+            return LectureSummaryTypedSerializer(instance).data
+        else:
+            print("Skipping")
