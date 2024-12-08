@@ -1,18 +1,24 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from drf_spectacular.utils import extend_schema
-from rest_framework import status
+from drf_spectacular.utils import extend_schema, PolymorphicProxySerializer, inline_serializer
+from rest_framework import status, serializers
 
 from api.serializers import (
     InstructorRecordingsSerializer,
     RecordingTitleUpdateSerializer,
     RecordingDurationUpdateSerializer,
+    QuizTypedSerializer,
+    LectureSummaryTypedSerializer,
+    QuizAndSummarySerializer,
 )
 from django.conf import settings
 from django.shortcuts import get_object_or_404
+from itertools import chain
+from django.db.models import CharField, Value
 
-from api.models import Instructor, InstructorRecordings
+
+from api.models import Instructor, InstructorRecordings, Quiz, LectureSummary
 import boto3
 import json
 
@@ -190,3 +196,37 @@ class CreateRecordingView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@extend_schema(tags=["Recordings"])
+class GetQuizzesAndSummaries(APIView):
+    permission_classes = [IsRecordingOwner]
+
+    @extend_schema(
+        operation_id="get-quizzes-and-summaries",
+        summary="Get quizzes and summaries in chronological order.",
+        description="Returns all quizzes and summaries associated with a specific recording ID.",
+        responses={
+            200: PolymorphicProxySerializer(
+                component_name="QuizzesAndSummaries",
+                serializers=[QuizTypedSerializer, LectureSummaryTypedSerializer],
+                resource_type_field_name="type",
+                many=True,
+            ),
+            401: inline_serializer("detail_response", {"detail": serializers.CharField()}),
+            403: inline_serializer("detail_response", {"detail": serializers.CharField()}),
+        },
+    )
+    def get(self, request, recording_id):
+
+        quizzes = Quiz.objects.filter(instructor_recording_id=recording_id).annotate(
+            type=Value("quiz", output_field=CharField())
+        )
+        summaries = LectureSummary.objects.filter(recording_id=recording_id).annotate(
+            type=Value("summary", output_field=CharField())
+        )
+
+        data = sorted(chain(quizzes, summaries), key=lambda obj: obj.created_at, reverse=True)
+        print(data)
+        serializer = QuizAndSummarySerializer(data, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
