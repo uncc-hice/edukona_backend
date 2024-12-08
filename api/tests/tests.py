@@ -404,6 +404,75 @@ class QuizSessionsByInstructorViewTest(TestCase):
         self.assertIn(self.quiz.title, str(response.content))
 
 
+class AddQuizSessionLogTest(BaseTest):
+    def setUp(self):
+        super().setUp()
+        self.valid_payload = {
+            "quiz_session_code": self.new_quiz_session.code,
+            "quiz_session_student_id": self.new_quiz_session_student.id,
+            "question_multiple_choice_id": self.new_question.id,
+            "action": "connected",
+        }
+
+        self.invalid_code_payload = {
+            "quiz_session_code": "INVALID CODE",
+            "quiz_session_student_id": self.new_quiz_session_student.id,
+            "action": "connected",
+        }
+
+        self.invalid_student_payload = {
+            "quiz_session_code": self.new_quiz_session.code,
+            "quiz_session_student_id": 999,
+            "action": "connected",
+        }
+
+        self.invalid_question_payload = {
+            "quiz_session_code": self.new_quiz_session.code,
+            "quiz_session_student_id": self.new_quiz_session_student.id,
+            "question_multiple_choice_id": 999,
+            "action": "connected",
+        }
+
+        self.invalid_action_payload = {
+            "quiz_session_code": self.new_quiz_session.code,
+            "quiz_session_student_id": self.new_quiz_session_student.id,
+            "action": "Invalid Option",
+        }
+
+        self.url = reverse("add-quiz-session-log")
+
+    def test_create_log_entry_success(self):
+        response = self.client.post(self.url, self.valid_payload, format="json")
+        self.assertEqual(response.data["quiz_session_code"], self.new_quiz_session.code)
+        self.assertEqual(response.data["quiz_session_student_id"], self.new_quiz_session_student.id)
+        self.assertEqual(response.data["question_multiple_choice_id"], str(self.new_question.id))
+        self.assertEqual(response.data["action"], "connected")
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        self.assertEqual(QuizSessionLog.objects.count(), 1)
+
+    def test_create_log_entry_invalid_code(self):
+        response = self.client.post(self.url, self.invalid_code_payload, format="json")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+        self.assertEqual(response.data, "Quiz session not found.")
+
+    def test_create_log_entry_invalid_student(self):
+        response = self.client.post(self.url, self.invalid_student_payload, format="json")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data, "Student not found.")
+
+    def test_create_log_entry_invalid_question(self):
+        response = self.client.post(self.url, self.invalid_question_payload, format="json")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data, "Question not found.")
+
+    def test_create_log_entry_invalid_action(self):
+        response = self.client.post(self.url, self.invalid_action_payload, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
 class LoginViewTest(BaseTest):
 
     def test_post_login(self):

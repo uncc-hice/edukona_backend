@@ -14,6 +14,7 @@ from .models import (
     Settings,
     ContactMessage,
     LectureSummary,
+    QuizSessionLog,
 )
 
 
@@ -150,6 +151,60 @@ class QuizListSerializer(serializers.Serializer):
 
 class QuizTitleUpdateSerializer(serializers.Serializer):
     title = serializers.CharField(required=True, allow_blank=False)
+
+
+class AddQuizSessionLogSerializer(serializers.Serializer):
+    quiz_session_code = serializers.CharField(required=True, allow_blank=False)
+    quiz_session_student_id = serializers.IntegerField(required=True, min_value=0)
+    question_multiple_choice_id = serializers.UUIDField(required=False)
+    action = serializers.CharField(required=True)
+
+    id = serializers.UUIDField(read_only=True)
+    created_at = serializers.DateTimeField(read_only=True)
+    quiz_session = serializers.PrimaryKeyRelatedField(read_only=True)
+    quiz_session_student = serializers.PrimaryKeyRelatedField(read_only=True)
+    question_multiple_choice = serializers.PrimaryKeyRelatedField(read_only=True)
+
+    def validate_action(self, value):
+        allowed_actions = ["connected", "disconnected", "reconnected"]
+        if value not in allowed_actions:
+            raise serializers.ValidationError("Invalid action")
+        return value
+
+    def validate(self, data):
+        # resolve objects
+        try:
+            data["quiz_session"] = QuizSession.objects.get(code=data["quiz_session_code"])
+        except QuizSession.DoesNotExist:
+            raise serializers.ValidationError({"quiz_session_code": "Quiz session not found."})
+
+        try:
+            data["quiz_session_student"] = QuizSessionStudent.objects.get(
+                id=data["quiz_session_student_id"]
+            )
+        except QuizSessionStudent.DoesNotExist:
+            raise serializers.ValidationError({"quiz_session_student_id": "Student not found."})
+
+        question_multiple_choice_id = data.get("question_multiple_choice_id")
+        if question_multiple_choice_id:
+            try:
+                data["question_multiple_choice"] = QuestionMultipleChoice.objects.get(
+                    id=question_multiple_choice_id
+                )
+            except QuestionMultipleChoice.DoesNotExist:
+                raise serializers.ValidationError(
+                    {"question_multiple_choice_id": "Question not found."}
+                )
+        else:
+            data["question_multiple_choice"] = None
+
+        return data
+
+    def create(self, validated_data):
+        validated_data.pop("quiz_session_student_id")
+        validated_data.pop("question_multiple_choice_id", None)
+
+        return QuizSessionLog.objects.create(**validated_data)
 
 
 class RecordingTitleUpdateSerializer(serializers.Serializer):
