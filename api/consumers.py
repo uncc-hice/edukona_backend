@@ -31,14 +31,6 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
 
         await self.accept()
 
-        settings = await self.get_settings(self.code)
-
-        uc = await self.fetch_user_count()
-
-        await self.send(
-            text_data=json.dumps({"type": "settings", "settings": settings, "user_count": uc})
-        )
-
     @database_sync_to_async
     def fetch_user_count(self):
         session = QuizSession.objects.get(code=self.code)
@@ -122,14 +114,6 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
         student = QuizSessionStudent.objects.get(quiz_session=session, username=username)
         student.delete()
         return {"status": "success", "username": username}
-
-    @database_sync_to_async
-    def get_settings(self, code):
-        session = QuizSession.objects.get(code=code)
-        if session.quiz.settings:
-            return session.quiz.settings.to_json()
-        else:
-            return {"timer": False, "live_bar_chart": False}
 
     async def send_current_question(self):
         question_data = await self.fetch_current_question()
@@ -490,15 +474,19 @@ class StudentConsumer(AsyncWebsocketConsumer):
     def get_student(self, student_id):
         return QuizSessionStudent.objects.get(id=student_id)
 
+    @database_sync_to_async
+    def get_quiz(self):
+        return QuizSession.objects.get(code=self.code).quiz
+
     async def check_and_grant_skip_power_up(self, student_id):
-        session_settings = await self.get_session_settings()
+        quiz = await self.get_quiz(self.code)
         correct_responses = await self.get_correct_responses(student_id)
         student = await self.get_student(student_id)
-        if session_settings.get("skip_question"):
-            if session_settings.get("skip_question_logic") == "streak":
+        if quiz.skip_question:
+            if quiz.skip_question_logic == "streak":
                 if (
-                    student.skip_count < session_settings.get("skip_count_per_student")
-                    and correct_responses % session_settings.get("skip_question_streak_count") == 0
+                    student.skip_count < quiz.skip_count_per_student
+                    and correct_responses % quiz.skip_question_streak_count == 0
                 ):
                     grant_response = await self.grant_skip_power_up(student_id)
                     if grant_response.get("status") == "success":
@@ -510,12 +498,10 @@ class StudentConsumer(AsyncWebsocketConsumer):
                                 }
                             )
                         )
-            elif session_settings.get("skip_question_logic") == "random":
-                skip_percentage = session_settings.get(
-                    "skip_question_percentage", 0.2
-                )  # Default to 50% if not set
+            elif quiz.skip_question_logic == "random":
+                skip_percentage = quiz.skip_question_percentage or 0.2  # Default to 20% if not set
                 if (
-                    student.skip_count < session_settings.get("skip_count_per_student")
+                    student.skip_count < quiz.skip_count_per_student
                     and random.random() < skip_percentage
                 ):
                     grant_response = await self.grant_skip_power_up(student_id)
@@ -537,11 +523,6 @@ class StudentConsumer(AsyncWebsocketConsumer):
         return {"status": "success", "skip_count": student.skip_count}
 
     @database_sync_to_async
-    def get_session_settings(self):
-        session = QuizSession.objects.get(code=self.code)
-        return session.quiz.settings.to_json()
-
-    @database_sync_to_async
     def get_correct_responses(self, student_id):
         student = QuizSessionStudent.objects.get(id=student_id)
         responses = student.responses.all()
@@ -551,9 +532,9 @@ class StudentConsumer(AsyncWebsocketConsumer):
         student = data.get("data").get("student")
 
         skip_count = await self.get_skip_count(student.get("id"))
-        session_settings = await self.get_session_settings()
+        quiz = await self.get_quiz()
 
-        if skip_count < session_settings.get("skip_count_per_student"):
+        if skip_count < quiz.skip_count_per_student:
             question_marked = await self.mark_question_as_skipped_and_correct(data)
             print(question_marked)
             if question_marked:
