@@ -48,6 +48,11 @@ urlpatterns = [
     path("logout/", Logout.as_view(), name="logout"),
     path("quiz-session/", QuizSessionView.as_view(), name="quiz-session-list"),
     path(
+        "quiz-session/add-log-entry/",
+        QuizSessionLogView.as_view(),
+        name="add-quiz-session-log",
+    ),
+    path(
         "quiz-session/<str:code>/",
         QuizSessionStudentView.as_view(),
         name="quiz-session-detail",
