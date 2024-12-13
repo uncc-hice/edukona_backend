@@ -227,6 +227,5 @@ class GetQuizzesAndSummaries(APIView):
         )
 
         data = sorted(chain(quizzes, summaries), key=lambda obj: obj.created_at, reverse=True)
-        print(data)
         serializer = QuizAndSummarySerializer(data, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
