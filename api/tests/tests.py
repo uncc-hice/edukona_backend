@@ -1062,3 +1062,57 @@ class UserAuthTests(BaseTest):
     def test_logout_without_token(self):
         response = self.client.post(self.logout_url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class GetQuizzesAndSummariesTests(BaseTest):
+    def setUp(self):
+        super().setUp()
+        self.recording = InstructorRecordings.objects.create(instructor=self.instructor)
+        self.quiz = Quiz.objects.create(
+            title="Quizzes and Summaries Sample Quiz",
+            instructor=self.instructor,
+            instructor_recording=self.recording,
+        )
+        self.summary = LectureSummary.objects.create(
+            summary="The first summary of the tests.", recording_id=self.recording.id
+        )
+
+        self.quiz_two = Quiz.objects.create(
+            title="Quizzes and Summaries Sample Quiz 2",
+            instructor=self.instructor,
+            instructor_recording=self.recording,
+        )
+
+        self.summary_two = LectureSummary.objects.create(
+            summary="The second summary of the tests.", recording_id=self.recording.id
+        )
+        self.url = reverse("get-quizzes-and-summaries", kwargs={"recording_id": self.recording.id})
+
+    def test_get_summaries_quizzes_successfully(self):
+        response = self.client_instructor.get(self.url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_data = response.json()
+        self.assertEqual(len(response_data), 4)
+        self.assertEqual(
+            response_data, sorted(response_data, key=lambda obj: obj["created_at"], reverse=True)
+        )
+        self.assertEqual(response_data[0]["type"], "summary")
+        self.assertEqual(response_data[0]["summary"], "The second summary of the tests.")
+        self.assertEqual(response_data[1]["type"], "quiz")
+        self.assertEqual(response_data[1]["title"], "Quizzes and Summaries Sample Quiz 2")
+        self.assertEqual(response_data[2]["type"], "summary")
+        self.assertEqual(response_data[2]["summary"], "The first summary of the tests.")
+        self.assertEqual(response_data[3]["type"], "quiz")
+        self.assertEqual(response_data[3]["title"], "Quizzes and Summaries Sample Quiz")
+
+    def test_get_summaries_quizzes_forbidden(self):
+        response = self.client_instructor_two.get(self.url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        response_data = response.json()
+        self.assertIn(response_data["detail"], "You do not have permission to perform this action.")
+
+    def test_get_summaries_quizzes_unauthorized(self):
+        response = self.client.get(self.url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        response_data = response.json()
+        self.assertIn(response_data["detail"], "Authentication credentials were not provided.")
