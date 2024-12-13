@@ -324,10 +324,10 @@ class QuizTypedSerializer(QuizSerializer):
 
 class QuizAndSummarySerializer(serializers.Serializer):
     def to_representation(self, instance):
-        print(instance)
         if isinstance(instance, Quiz):
             return QuizTypedSerializer(instance).data
         elif isinstance(instance, LectureSummary):
             return LectureSummaryTypedSerializer(instance).data
         else:
-            print("Skipping")
+            # TODO: Add a logging statement once logging is configured
+            pass
