@@ -1,3 +1,5 @@
+from ..permissions import IsRecordingOwner
+
 from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
@@ -6,7 +8,6 @@ from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 import os
 from rest_framework.throttling import UserRateThrottle
-
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.contrib.auth.models import User
@@ -38,7 +39,10 @@ from api.serializers import (
     ContactMessageSerializer,
     QuizSerializer,
 )
-from drf_spectacular.utils import extend_schema, OpenApiExample
+from drf_spectacular.utils import (
+    extend_schema,
+    OpenApiExample,
+)
 from drf_spectacular.types import OpenApiTypes
 
 import boto3
@@ -46,8 +50,6 @@ import json
 import logging
 
 logger = logging.getLogger(__name__)
-
-from ..permissions import IsRecordingOwner
 
 
 def mailInstructor(email):

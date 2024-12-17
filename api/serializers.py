@@ -291,3 +291,30 @@ class LectureSummarySerializer(serializers.ModelSerializer):
         model = LectureSummary
         fields = ["id", "summary", "recording_id", "created_at"]
         read_only_fields = ["id", "recording_id", "created_at"]
+
+
+class LectureSummaryTypedSerializer(LectureSummarySerializer):
+    type = serializers.CharField(required=True, allow_blank=False)
+
+    class Meta:
+        model = LectureSummary
+        fields = "__all__"
+
+
+class QuizTypedSerializer(QuizSerializer):
+    type = serializers.CharField(required=True, allow_blank=False)
+
+    class Meta:
+        model = Quiz
+        fields = "__all__"
+
+
+class QuizAndSummarySerializer(serializers.Serializer):
+    def to_representation(self, instance):
+        if isinstance(instance, Quiz):
+            return QuizTypedSerializer(instance).data
+        elif isinstance(instance, LectureSummary):
+            return LectureSummaryTypedSerializer(instance).data
+        else:
+            # TODO: Add a logging statement once logging is configured
+            pass
