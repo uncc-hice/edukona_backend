@@ -109,7 +109,6 @@ class QuizSerializer(serializers.ModelSerializer):
             "title",
             "start_time",
             "end_time",
-            "settings",
             "instructor_recording",
             "created_at",
             "num_questions",
