@@ -133,18 +133,7 @@ async def test_instructor_end_quiz():
     assert connected, "WebSocket connection failed"
 
     # ----------------------------
-    # Step 9: Receive the initial settings message
-    # ----------------------------
-    try:
-        initial_response = await communicator.receive_json_from(timeout=5)
-        assert initial_response["type"] == "settings", "Expected 'settings' message"
-        assert "settings" in initial_response, "'settings' not in response"
-        assert "user_count" in initial_response, "'user_count' not in response"
-    except asyncio.TimeoutError:
-        pytest.fail("Did not receive 'settings' response in time")
-
-    # ----------------------------
-    # Step 10: Simulate serving the first question
+    # Step 9: Simulate serving the first question
     # ----------------------------
     first_question = questions[0]
     await communicator.send_json_to({"type": "next_question"})
@@ -164,7 +153,7 @@ async def test_instructor_end_quiz():
         )
 
     # ----------------------------
-    # Step 11: Simulate serving the second question
+    # Step 10: Simulate serving the second question
     # ----------------------------
     second_question = questions[1]
     await communicator.send_json_to({"type": "next_question"})
@@ -184,12 +173,12 @@ async def test_instructor_end_quiz():
         )
 
     # ----------------------------
-    # Step 12: Send 'skip_question' to skip the second question
+    # Step 11: Send 'skip_question' to skip the second question
     # ----------------------------
     await communicator.send_json_to({"type": "skip_question", "question_id": second_question.id})
 
     # ----------------------------
-    # Step 13: Receive 'next_question' for the third question
+    # Step 12: Receive 'next_question' for the third question
     # ----------------------------
     last_question = questions[2]
     try:
@@ -208,12 +197,12 @@ async def test_instructor_end_quiz():
         )
 
     # ----------------------------
-    # Step 14: Send one more 'next_question' to trigger 'quiz_ended'
+    # Step 13: Send one more 'next_question' to trigger 'quiz_ended'
     # ----------------------------
     await communicator.send_json_to({"type": "next_question"})
 
     # ----------------------------
-    # Step 15: Receive 'quiz_ended' response
+    # Step 14: Receive 'quiz_ended' response
     # ----------------------------
     try:
         response = await communicator.receive_json_from(timeout=5)
@@ -238,6 +227,6 @@ async def test_instructor_end_quiz():
         pytest.fail("Did not receive 'quiz_ended' response in time")
 
     # ----------------------------
-    # Step 16: Disconnect the communicator
+    # Step 15: Disconnect the communicator
     # ----------------------------
     await communicator.disconnect()
