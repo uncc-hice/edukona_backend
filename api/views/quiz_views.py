@@ -136,3 +136,11 @@ class SettingsView(APIView):
 
         settings.save()
         return JsonResponse({"message": "Settings updated successfully"})
+
+
+@extend_schema(tags=["Quiz Creation and Modification"])
+class CreateQuizFromTranscript(APIView):
+    permission_classes = [IsQuizOwner]
+
+    def post(self, request, quiz_id):
+        pass

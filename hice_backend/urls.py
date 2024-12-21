@@ -126,6 +126,11 @@ urlpatterns = [
     path("quiz/<int:quiz_id>/settings", SettingsView.as_view(), name="quiz-settings"),
     path("quiz/create/", CreateQuizView.as_view(), name="create-quiz"),
     path(
+        "quiz/create-from-transcript/",
+        CreateQuizFromTranscript.as_view(),
+        name="create-quiz-from-transcript",
+    ),
+    path(
         "schema/swagger-ui/",
         SpectacularSwaggerView.as_view(url_name="schema"),
         name="swagger-ui",
