@@ -8,7 +8,6 @@ from django.contrib.auth.models import User
 from api.models import (
     Quiz,
     Instructor,
-    Settings,
     QuizSession,
     QuizSessionStudent,
     UserResponse,
@@ -37,23 +36,17 @@ async def test_instructor_end_quiz():
     )
 
     # ----------------------------
-    # Step 3: Create Settings (if required by your application logic)
-    # ----------------------------
-    settings = await sync_to_async(Settings.objects.create)()
-
-    # ----------------------------
-    # Step 4: Create a Quiz
+    # Step 3: Create a Quiz
     # ----------------------------
     quiz = await sync_to_async(Quiz.objects.create)(
         title="Sample Quiz",
         instructor=instructor,
         created_at=timezone.now(),
-        settings=settings,
         instructor_recording=None,  # Or set to an existing InstructorRecordings instance
     )
 
     # ----------------------------
-    # Step 5: Create a QuizSession associated with the Quiz
+    # Step 4: Create a QuizSession associated with the Quiz
     # ----------------------------
     session = await sync_to_async(QuizSession.objects.create)(
         code="TEST01",
@@ -63,7 +56,7 @@ async def test_instructor_end_quiz():
     )
 
     # ----------------------------
-    # Step 6: Create multiple QuizSessionStudents associated with the QuizSession
+    # Step 5: Create multiple QuizSessionStudents associated with the QuizSession
     # ----------------------------
     students = []
     num_students = 5  # Number of students to create
@@ -75,7 +68,7 @@ async def test_instructor_end_quiz():
         students.append(student)
 
     # ----------------------------
-    # Step 7: Create multiple QuestionMultipleChoice associated with the Quiz
+    # Step 6: Create multiple QuestionMultipleChoice associated with the Quiz
     # ----------------------------
     questions = []
     question_texts = [
@@ -95,7 +88,7 @@ async def test_instructor_end_quiz():
         questions.append(question)
 
     # ----------------------------
-    # Step 9: Create UserResponses associated with the Students, QuizSession, and Questions
+    # Step 7: Create UserResponses associated with the Students, QuizSession, and Questions
     # Introduce variance in student responses
     # ----------------------------
     # Variance Setup:
@@ -130,7 +123,7 @@ async def test_instructor_end_quiz():
             )
 
     # ----------------------------
-    # Step 10: Initialize WebSocket communicator for the instructor consumer
+    # Step 8: Initialize WebSocket communicator for the instructor consumer
     # Corrected WebSocket path to "/ws/quiz-session-instructor/{session.code}/"
     # ----------------------------
     communicator = WebsocketCommunicator(
@@ -140,18 +133,7 @@ async def test_instructor_end_quiz():
     assert connected, "WebSocket connection failed"
 
     # ----------------------------
-    # Step 11: Receive the initial settings message
-    # ----------------------------
-    try:
-        initial_response = await communicator.receive_json_from(timeout=5)
-        assert initial_response["type"] == "settings", "Expected 'settings' message"
-        assert "settings" in initial_response, "'settings' not in response"
-        assert "user_count" in initial_response, "'user_count' not in response"
-    except asyncio.TimeoutError:
-        pytest.fail("Did not receive 'settings' response in time")
-
-    # ----------------------------
-    # Step 12: Simulate serving the first question
+    # Step 9: Simulate serving the first question
     # ----------------------------
     first_question = questions[0]
     await communicator.send_json_to({"type": "next_question"})
@@ -171,7 +153,7 @@ async def test_instructor_end_quiz():
         )
 
     # ----------------------------
-    # Step 13: Simulate serving the second question
+    # Step 10: Simulate serving the second question
     # ----------------------------
     second_question = questions[1]
     await communicator.send_json_to({"type": "next_question"})
@@ -191,12 +173,12 @@ async def test_instructor_end_quiz():
         )
 
     # ----------------------------
-    # Step 14: Send 'skip_question' to skip the second question
+    # Step 11: Send 'skip_question' to skip the second question
     # ----------------------------
     await communicator.send_json_to({"type": "skip_question", "question_id": second_question.id})
 
     # ----------------------------
-    # Step 15: Receive 'next_question' for the third question
+    # Step 12: Receive 'next_question' for the third question
     # ----------------------------
     last_question = questions[2]
     try:
@@ -215,12 +197,12 @@ async def test_instructor_end_quiz():
         )
 
     # ----------------------------
-    # Step 16: Send one more 'next_question' to trigger 'quiz_ended'
+    # Step 13: Send one more 'next_question' to trigger 'quiz_ended'
     # ----------------------------
     await communicator.send_json_to({"type": "next_question"})
 
     # ----------------------------
-    # Step 17: Receive 'quiz_ended' response
+    # Step 14: Receive 'quiz_ended' response
     # ----------------------------
     try:
         response = await communicator.receive_json_from(timeout=5)
@@ -245,6 +227,6 @@ async def test_instructor_end_quiz():
         pytest.fail("Did not receive 'quiz_ended' response in time")
 
     # ----------------------------
-    # Step 18: Disconnect the communicator
+    # Step 15: Disconnect the communicator
     # ----------------------------
     await communicator.disconnect()

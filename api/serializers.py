@@ -11,7 +11,6 @@ from .models import (
     QuizSession,
     QuizSessionStudent,
     InstructorRecordings,
-    Settings,
     ContactMessage,
     LectureSummary,
     QuizSessionLog,
@@ -96,14 +95,7 @@ class GoogleLoginRequestSerializer(serializers.Serializer):
     token = serializers.CharField()
 
 
-class SettingsSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Settings
-        fields = "__all__"
-
-
 class QuizSerializer(serializers.ModelSerializer):
-    settings = SettingsSerializer(required=False, allow_null=True)
     instructor_recording = serializers.PrimaryKeyRelatedField(
         queryset=InstructorRecordings.objects.all(), required=False, allow_null=True
     )
@@ -117,7 +109,6 @@ class QuizSerializer(serializers.ModelSerializer):
             "title",
             "start_time",
             "end_time",
-            "settings",
             "instructor_recording",
             "created_at",
             "num_questions",
@@ -126,16 +117,11 @@ class QuizSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "created_at"]
 
     def create(self, validated_data):
-        settings_data = validated_data.pop("settings", {})
-        settings = Settings.objects.create(**settings_data)
         instructor = self.context["request"].user.instructor
-        quiz = Quiz.objects.create(instructor=instructor, settings=settings, **validated_data)
+        quiz = Quiz.objects.create(instructor=instructor, **validated_data)
         return quiz
 
     def update(self, instance, validated_data):
-        settings_data = validated_data.pop("settings", None)
-        if settings_data:
-            SettingsSerializer().update(instance.settings, settings_data)
         return super().update(instance, validated_data)
 
     def get_num_questions(self, obj):
