@@ -239,3 +239,28 @@ class LectureSummary(models.Model):
     class Meta:
         db_table = "api_lecture_summary"
         ordering = ["-created_at"]
+
+
+class Course(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    instructor = models.ForeignKey(Instructor)
+    title = models.CharField(blank=False)
+    description = models.CharField(blank=True)
+    code = models.CharField(blank=False, unique=True)
+    created_at = models.DateField(auto_now_add=True)
+    allow_joining_until = models.DateField(auto_now_add=True)
+    start_date = models.DateField(null=True)
+    end_date = models.DateField(null=True)
+
+    class Meta:
+        db_table = "api_course"
+
+    def generate_code(self):
+        hex_chars = string.digits + 'abcdef'
+        ins_initial = self.instructor.user.first_name[:1]
+        ins_last_name = self.instructor.user.last_name
+        code = f"{ins_initial}{ins_last_name}{self.title}"
+        fin_code = code
+        while Course.objects.filter(code=fin_code).exists():
+            fin_code = code.join(random.choices(hex_chars, k=2))
+        return fin_code
