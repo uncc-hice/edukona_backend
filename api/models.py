@@ -243,7 +243,7 @@ class LectureSummary(models.Model):
 
 class Course(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    instructor = models.ForeignKey(Instructor)
+    instructor = models.ForeignKey(Instructor, on_delete=models.CASCADE)
     title = models.CharField(blank=False)
     description = models.CharField(blank=True)
     code = models.CharField(blank=False, unique=True)
