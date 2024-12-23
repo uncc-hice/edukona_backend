@@ -30,6 +30,6 @@ jobs:
     - name: Run WebSocket Tests
       env:
         DJANGO_SETTINGS_MODULE: hice_backend.settings
-        SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
+        DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
       run: |
         pytest api/tests/consumer_tests.py -v

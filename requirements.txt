@@ -72,3 +72,4 @@ uritemplate==4.1.1
 urllib3==1.26.20
 watchtower==3.3.1
 zope.interface==6.4.post2
+djangorestframework-simplejwt==5.3.1
