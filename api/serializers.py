@@ -331,3 +331,7 @@ class QuizAndSummarySerializer(serializers.Serializer):
         else:
             # TODO: Add a logging statement once logging is configured
             pass
+
+
+class CreateQuizFromTrackSerializer(serializers.Serializer):
+    title = serializers.CharField(required=True, allow_blank=False)

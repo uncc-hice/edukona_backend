@@ -3,7 +3,12 @@ from rest_framework import status
 from rest_framework.response import Response
 
 from api.models import Quiz, Settings
-from api.serializers import QuizSerializer, QuizListSerializer, QuizTitleUpdateSerializer
+from api.serializers import (
+    QuizSerializer,
+    QuizListSerializer,
+    QuizTitleUpdateSerializer,
+    CreateQuizFromTrackSerializer,
+)
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
 
@@ -142,5 +147,15 @@ class SettingsView(APIView):
 class CreateQuizFromTranscript(APIView):
     permission_classes = [IsQuizOwner]
 
+    @extend_schema(
+        operation_id="create-quiz-from-transcript",
+        summary="Creates a new quiz from a transcript",
+        description="Created a new quiz for a user given a transcript",
+        responses={
+            201: CreateQuizFromTrackSerializer,
+            400: "Bad Request",
+            401: "Unauthorized",
+        },
+    )
     def post(self, request, quiz_id):
         pass
