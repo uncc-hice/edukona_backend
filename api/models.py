@@ -256,7 +256,7 @@ class Course(models.Model):
         db_table = "api_course"
 
     def generate_code(self):
-        hex_chars = string.digits + 'abcdef'
+        hex_chars = string.digits + "abcdef"
         ins_initial = self.instructor.user.first_name[:1]
         ins_last_name = self.instructor.user.last_name
         code = f"{ins_initial}{ins_last_name}{self.title}"
