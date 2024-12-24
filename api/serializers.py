@@ -333,5 +333,5 @@ class QuizAndSummarySerializer(serializers.Serializer):
             pass
 
 
-class CreateQuizFromTrackSerializer(serializers.Serializer):
+class CreateQuizFromTranscriptSerializer(serializers.Serializer):
     title = serializers.CharField(required=True, allow_blank=False)

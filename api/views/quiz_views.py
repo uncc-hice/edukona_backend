@@ -7,7 +7,7 @@ from api.serializers import (
     QuizSerializer,
     QuizListSerializer,
     QuizTitleUpdateSerializer,
-    CreateQuizFromTrackSerializer,
+    CreateQuizFromTranscriptSerializer,
 )
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
@@ -152,7 +152,7 @@ class CreateQuizFromTranscript(APIView):
         summary="Creates a new quiz from a transcript",
         description="Created a new quiz for a user given a transcript",
         responses={
-            201: CreateQuizFromTrackSerializer,
+            201: CreateQuizFromTranscriptSerializer,
             400: "Bad Request",
             401: "Unauthorized",
         },
