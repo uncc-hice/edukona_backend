@@ -244,9 +244,9 @@ class LectureSummary(models.Model):
 class Course(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     instructor = models.ForeignKey(Instructor, on_delete=models.CASCADE)
-    title = models.TextField(blank=False)
+    title = models.CharField(blank=False, max_length=60)
     description = models.TextField(blank=True)
-    code = models.TextField(blank=False, unique=True)
+    code = models.TextField(blank=False, unique=True, max_length=75)
     created_at = models.DateField(auto_now_add=True)
     allow_joining_until = models.DateField(auto_now_add=True)
     start_date = models.DateField(null=True)
@@ -259,8 +259,8 @@ class Course(models.Model):
         hex_chars = string.digits + "abcdef"
         ins_initial = self.instructor.user.first_name[:1]
         ins_last_name = self.instructor.user.last_name
-        code = f"{ins_initial}{ins_last_name}{self.title}"
+        code = f"{ins_initial}{ins_last_name[:10]}{self.title.replace(' ', '-')}"
         fin_code = code
         while Course.objects.filter(code=fin_code).exists():
-            fin_code = code.join(random.choices(hex_chars, k=2))
+            fin_code = f"{code}-{''.join(random.choices(hex_chars, k=2))}"
         return fin_code
