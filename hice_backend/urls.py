@@ -6,6 +6,11 @@ from api.views.session_views import *
 from api.views.user_views import *
 from api.views.recordings_views import *
 from api.consumers import *
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView,
+    TokenRefreshView,
+    TokenVerifyView,
+)
 
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
@@ -205,4 +210,7 @@ urlpatterns = [
         TokenVerificationView.as_view(),
         name="verify-token",
     ),
+    path("jwt-token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
+    path("jwt-token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
+    path("jwt-token/verify/", TokenVerifyView.as_view(), name="token_verify"),
 ]
