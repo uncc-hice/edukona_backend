@@ -1,3 +1,5 @@
+import json
+
 from botocore.exceptions import ClientError
 from rest_framework.views import APIView
 from rest_framework import status
@@ -144,7 +146,11 @@ class CreateQuizFromTranscript(APIView):
                     "quiz_id": str(new_quiz.id),
                 }
 
-                lambda_client.invoke()
+                lambda_client.invoke(
+                    FunctionName="TranslateTranscript",
+                    InvocationType="RequestResponse",
+                    Payload=json.dumps(payload),
+                )
             except Exception as e:
                 return Response(
                     {"error": f"Failed to invoke lambda for creating the quiz {str(e)}"},
