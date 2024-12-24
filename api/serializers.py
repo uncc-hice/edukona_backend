@@ -14,6 +14,7 @@ from .models import (
     ContactMessage,
     LectureSummary,
     QuizSessionLog,
+    Course,
 )
 
 
@@ -317,3 +318,19 @@ class QuizAndSummarySerializer(serializers.Serializer):
         else:
             # TODO: Add a logging statement once logging is configured
             pass
+
+
+class CourseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Course
+        fields = [
+            "id",
+            "instructor",
+            "title",
+            "description",
+            "code",
+            "created_at",
+            "allow_joining_until",
+            "start_date",
+            "end_date",
+        ]
