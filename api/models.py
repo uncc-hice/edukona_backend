@@ -246,7 +246,7 @@ class Course(models.Model):
     instructor = models.ForeignKey(Instructor, on_delete=models.CASCADE)
     title = models.CharField(blank=False, max_length=60)
     description = models.TextField(blank=True)
-    code = models.TextField(blank=False, unique=True, max_length=75)
+    code = models.CharField(blank=False, unique=True, max_length=75)
     created_at = models.DateField(auto_now_add=True)
     allow_joining_until = models.DateField(auto_now_add=True)
     start_date = models.DateField(null=True)
