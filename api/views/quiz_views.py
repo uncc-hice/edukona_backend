@@ -1,15 +1,23 @@
+from botocore.exceptions import ClientError
 from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.response import Response
 
 from api.models import Quiz
-from api.serializers import QuizSerializer, QuizListSerializer, QuizTitleUpdateSerializer, CreateQuizFromTranscriptSerializer
+from api.serializers import (
+    QuizSerializer,
+    QuizListSerializer,
+    QuizTitleUpdateSerializer,
+    CreateQuizFromTranscriptSerializer,
+)
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
 
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 
 from ..permissions import IsQuizOwner, AllowInstructor
+import boto3
+from django.conf import settings
 
 
 @extend_schema(tags=["Quiz Creation and Modification"])
@@ -99,6 +107,7 @@ class InstructorQuizzesView(APIView):
         quizzes = Quiz.objects.filter(instructor=request.user.instructor)
         return Response(QuizListSerializer({"quizzes": quizzes}).data, status=status.HTTP_200_OK)
 
+
 @extend_schema(tags=["Quiz Creation and Modification"])
 class CreateQuizFromTranscript(APIView):
     permission_classes = [IsQuizOwner]
@@ -108,10 +117,40 @@ class CreateQuizFromTranscript(APIView):
         summary="Creates a new quiz from a transcript",
         description="Created a new quiz for a user given a transcript",
         responses={
-            201: CreateQuizFromTranscriptSerializer,
+            201: QuizSerializer,
             400: "Bad Request",
             401: "Unauthorized",
         },
     )
-    def post(self, request, quiz_id):
-        pass
+    def post(self, request):
+        data = request.data.copy()
+        serializer = QuizSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            new_quiz = serializer.instance
+            try:
+                lambda_client = boto3.client(
+                    "lambda",
+                    aws_access_key_id=settings.AWS_LAMBDA_INVOKER_ACCESS_KEY_ID,
+                    aws_secret_access_key=settings.AWS_LAMBDA_INVOKER_SECRET_ACCESS_KEY,
+                    region_name=settings.AWS_LAMBDA_INVOKER_REGION_NAME,
+                )
+
+                token = request.META.get("HTTP_AUTHORIZATION").split(" ")[1]
+
+                payload = {
+                    "s3_key": new_quiz.s3_path,
+                    "token": token,
+                    "quiz_id": str(new_quiz.id),
+                }
+
+                lambda_client.invoke()
+            except Exception as e:
+                return Response(
+                    {"error": f"Failed to invoke lambda for creating the quiz {str(e)}"},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                )
+
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
