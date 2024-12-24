@@ -2,13 +2,8 @@ from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.response import Response
 
-from api.models import Quiz, Settings
-from api.serializers import (
-    QuizSerializer,
-    QuizListSerializer,
-    QuizTitleUpdateSerializer,
-    CreateQuizFromTranscriptSerializer,
-)
+from api.models import Quiz
+from api.serializers import QuizSerializer, QuizListSerializer, QuizTitleUpdateSerializer, CreateQuizFromTranscriptSerializer
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
 
@@ -103,45 +98,6 @@ class InstructorQuizzesView(APIView):
     def get(self, request):
         quizzes = Quiz.objects.filter(instructor=request.user.instructor)
         return Response(QuizListSerializer({"quizzes": quizzes}).data, status=status.HTTP_200_OK)
-
-
-@extend_schema(tags=["Quiz Creation and Modification"])
-class SettingsView(APIView):
-    permission_classes = [IsQuizOwner]
-
-    def get(self, request, quiz_id):
-        quiz = get_object_or_404(Quiz, id=quiz_id)
-        if not hasattr(quiz, "settings"):
-            return JsonResponse({"error": "Quiz has no settings"}, status=404)
-        return JsonResponse({"settings": quiz.settings.to_json()})
-
-    def post(self, request, quiz_id):
-        print(request.data)
-        settings = request.data.pop("settings", {})
-        new_settings = Settings.objects.create(**settings)
-        quiz = get_object_or_404(Quiz, id=quiz_id)
-        quiz.settings = new_settings
-        quiz.save()
-        return JsonResponse(
-            {"message": "Settings created successfully", "settings_id": new_settings.id}
-        )
-
-    def patch(self, request, quiz_id):
-        print(request.data)
-        settings_data = request.data.get("settings", {})
-        quiz = get_object_or_404(Quiz, id=quiz_id)
-
-        if not hasattr(quiz, "settings"):
-            return JsonResponse({"error": "Quiz has no settings to update"}, status=400)
-
-        settings = quiz.settings
-
-        for field, value in settings_data.items():
-            setattr(settings, field, value)
-
-        settings.save()
-        return JsonResponse({"message": "Settings updated successfully"})
-
 
 @extend_schema(tags=["Quiz Creation and Modification"])
 class CreateQuizFromTranscript(APIView):

@@ -3,6 +3,7 @@ import os
 import sys
 from pathlib import Path
 import boto3
+from datetime import timedelta
 
 load_dotenv()
 
@@ -39,6 +40,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "drf_spectacular",
     "channels",
+    "rest_framework_simplejwt",
 ]
 
 MIDDLEWARE = [
@@ -202,6 +204,7 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework.authentication.TokenAuthentication",
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
     ],
 }
 
@@ -294,3 +297,14 @@ AWS_LAMBDA_INVOKER_SECRET_ACCESS_KEY = os.getenv("AWS_LAMBDA_INVOKER_SECRET_ACCE
 AWS_LAMBDA_INVOKER_REGION_NAME = os.getenv("AWS_LAMBDA_INVOKER_REGION_NAME", default="us-east-1")
 
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(
+        seconds=int(os.getenv("ACCESS_TOKEN_LIFETIME", default=3600))
+    ),
+    "REFRESH_TOKEN_LIFETIME": timedelta(
+        seconds=int(os.getenv("REFRESH_TOKEN_LIFETIME", default=86400))
+    ),
+    "SIGNING_KEY": SECRET_KEY,
+    "AUTH_HEADER_TYPES": ("Token",),
+}
