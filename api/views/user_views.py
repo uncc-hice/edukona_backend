@@ -281,6 +281,14 @@ class JWTLogoutView(APIView):
                 )
 
             token = RefreshToken(refresh_token)
+
+            # Ensure the token belongs to the authenticated user
+            if token["user_id"] != request.user.id:
+                logger.warning(f"User {request.user.id} attempted to log out with a token not belonging to them")
+                return Response(
+                    {"detail": "Invalid token for the authenticated user"}, status=status.HTTP_403_FORBIDDEN
+                )
+
             token.blacklist()
 
             logger.info(f"User {request.user.id} logged out successfully.")
