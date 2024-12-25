@@ -215,4 +215,6 @@ urlpatterns = [
     path("jwt-token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("jwt-token/verify/", TokenVerifyView.as_view(), name="token_verify"),
     path("jwt-token/blacklist/", TokenBlacklistView.as_view(), name="token_blacklist"),
+    path("jwt-login/", JWTLoginView.as_view(), name="jwt-login"),
+    path("jwt-logout/", JWTLogoutView.as_view(), name="jwt-logout"),
 ]
