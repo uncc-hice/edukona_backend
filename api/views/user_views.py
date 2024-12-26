@@ -289,7 +289,7 @@ class JWTLogoutView(APIView):
                     f"User {request.user.id} attempted to log out with a token not belonging to them"
                 )
                 return Response(
-                    {"detail": "Invalid token for the authenticated user"},
+                    {"detail": "An error occurred while logging out."},
                     status=status.HTTP_403_FORBIDDEN,
                 )
 
