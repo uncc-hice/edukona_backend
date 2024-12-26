@@ -317,7 +317,3 @@ class QuizAndSummarySerializer(serializers.Serializer):
         else:
             # TODO: Add a logging statement once logging is configured
             pass
-
-
-class CreateQuizFromTranscriptSerializer(serializers.Serializer):
-    pass

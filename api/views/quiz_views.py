@@ -158,7 +158,7 @@ class CreateQuizFromTranscript(APIView):
             except ClientError as e:
                 return Response(
                     {f"error: Quiz saved, but couldn't invoke Lambda: {str(e)}"},
-                    status=HTTP_500_INTERNAL_SERVER_ERROR
+                    status=HTTP_500_INTERNAL_SERVER_ERROR,
                 )
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         else:
