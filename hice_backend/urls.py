@@ -10,6 +10,7 @@ from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
     TokenVerifyView,
+    TokenBlacklistView,
 )
 
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
@@ -213,4 +214,5 @@ urlpatterns = [
     path("jwt-token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("jwt-token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("jwt-token/verify/", TokenVerifyView.as_view(), name="token_verify"),
+    path("jwt-token/blacklist/", TokenBlacklistView.as_view(), name="token_blacklist"),
 ]
