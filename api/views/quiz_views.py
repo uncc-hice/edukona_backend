@@ -1,16 +1,16 @@
 import json
 
 from botocore.exceptions import ClientError
+from rest_framework.status import HTTP_500_INTERNAL_SERVER_ERROR
 from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.response import Response
 
-from api.models import Quiz
+from api.models import Quiz, InstructorRecordings
 from api.serializers import (
     QuizSerializer,
     QuizListSerializer,
     QuizTitleUpdateSerializer,
-    CreateQuizFromTranscriptSerializer,
 )
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
@@ -125,11 +125,15 @@ class CreateQuizFromTranscript(APIView):
         },
     )
     def post(self, request):
+        instructor_recording = get_object_or_404(InstructorRecordings, request=request.user)
         data = request.data.copy()
+        data["id"] = instructor_recording.id
+
         serializer = QuizSerializer(data=data)
         if serializer.is_valid():
             serializer.save()
             new_quiz = serializer.instance
+
             try:
                 lambda_client = boto3.client(
                     "lambda",
@@ -147,16 +151,15 @@ class CreateQuizFromTranscript(APIView):
                 }
 
                 lambda_client.invoke(
-                    FunctionName="TranslateTranscript",
-                    InvocationType="RequestResponse",
+                    FunctionName="CreateQuizFromTranscript",
+                    InvocationType="Event",
                     Payload=json.dumps(payload),
                 )
-            except Exception as e:
+            except ClientError as e:
                 return Response(
-                    {"error": f"Failed to invoke lambda for creating the quiz {str(e)}"},
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    {f"error: Quiz saved, but couldn't invoke Lambda: {str(e)}"},
+                    status=HTTP_500_INTERNAL_SERVER_ERROR
                 )
-
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
