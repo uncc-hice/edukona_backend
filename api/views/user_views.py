@@ -16,6 +16,7 @@ from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework import status
 from rest_framework import serializers
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
@@ -38,6 +39,7 @@ from api.serializers import (
     SignUpInstructorSerializer,
     ContactMessageSerializer,
     QuizSerializer,
+    LogoutSerializer,
 )
 from drf_spectacular.utils import (
     extend_schema,
@@ -201,8 +203,48 @@ class Login(APIView):
 
         token = Token.objects.create(user=user)
 
+        # JWT section
+        refresh = RefreshToken.for_user(user)
+
         response = {
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
             "token": token.key,
+            "user": user.id,
+        }
+
+        if hasattr(user, "instructor"):
+            response["instructor"] = user.instructor.id
+
+        logger.info(f"User {user.id} logged in.")
+        return JsonResponse(response, status=status.HTTP_200_OK)
+
+
+@extend_schema(tags=["Authentication Endpoint"])
+class JWTLoginView(APIView):
+    serializer_class = LoginSerializer
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        try:
+            user = User.objects.get(email=request.data["email"])
+        except User.DoesNotExist:
+            return JsonResponse(
+                {"detail": "Invalid email or password!"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        if not user.check_password(request.data["password"]):
+            return JsonResponse(
+                {"detail": "Invalid email or password!"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        refresh = RefreshToken.for_user(user)
+
+        response = {
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
             "user": user.id,
         }
 
@@ -221,6 +263,47 @@ class Logout(APIView):
         logger.info(f"User {request.user.id} logged out.")
         request.user.auth_token.delete()
         return JsonResponse({"message": "User logged out successfully"}, status=status.HTTP_200_OK)
+
+
+@extend_schema(tags=["Authentication Endpoint"])
+class JWTLogoutView(APIView):
+    serializer_class = LogoutSerializer
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        logger.info(f"Received logout request from user {request.user.id}")
+
+        try:
+            refresh_token = request.data.get("refresh")
+            if not refresh_token:
+                logger.warning("Refresh token is missing in the request")
+                return Response(
+                    {"detail": "Refresh token is required"}, status=status.HTTP_400_BAD_REQUEST
+                )
+
+            token = RefreshToken(refresh_token)
+
+            # Ensure the token belongs to the authenticated user
+            if token["user_id"] != request.user.id:
+                logger.warning(
+                    f"User {request.user.id} attempted to log out with a token not belonging to them"
+                )
+                return Response(
+                    {"detail": "An error occurred while logging out."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
+            token.blacklist()
+
+            logger.info(f"User {request.user.id} logged out successfully.")
+            return Response({"detail": "Logout successful"}, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            logger.error(f"Failed to log out user: {str(e)}")
+            return Response(
+                {"detail": "An error occurred while logging out."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
 
 @extend_schema(tags=["Profile and User Management"])
