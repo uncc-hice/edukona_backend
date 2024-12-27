@@ -15,7 +15,6 @@ from rest_framework.authtoken.models import Token
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework import status
-from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from google.oauth2 import id_token
@@ -162,9 +161,6 @@ class ProfileView(APIView):
                 "last_name": user.last_name,
             }
         )
-
-
-
 
 
 @extend_schema(tags=["Profile and User Management"])
@@ -768,7 +764,7 @@ class JWTGoogleLogin(APIView):
         except ValueError as e:
             logger.error(f"Invalid token: {str(e)}")
             return Response(
-                {"message": f"Google login failed."},
+                {"message": "Google login failed."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
