@@ -1133,11 +1133,9 @@ class CreateQuizFromTranscriptTests(BaseTest):
         mock_lambda_client = mock_boto_client.return_value
         mock_lambda_client.invoke.return_value = {}
 
-        self.client.force_login(self.instructor.user)
+        data = {"recording_id": self.recording.id}
 
-        data = {"transcript": self.recording.transcript, "id": self.recording.id}
-
-        response = self.client.post(self.url, data, format="json")
+        response = self.client_instructor.post(self.url, data, format="json")
 
         print(f"Response data: {response.json()}")
 
@@ -1147,8 +1145,28 @@ class CreateQuizFromTranscriptTests(BaseTest):
 
     @patch("boto3.client")
     def test_create_quiz_unauthorized(self, mock_boto_client):
-        pass
+        mock_lambda_client = mock_boto_client.return_value
+        mock_lambda_client.invoke.return_value = {}
+
+        data = {"recording_id": self.recording.id}
+
+        response = self.client.post(self.url, data, format="json")
+
+        print(f"Response data: {response.json()}")
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(Quiz.objects.count(), 1)
 
     @patch("boto3.client")
-    def test_create_quiz_invalid_data(self, mock_boto_client):
-        pass
+    def test_create_quiz_forbidden(self, mock_boto_client):
+        mock_lambda_client = mock_boto_client.return_value
+        mock_lambda_client.invoke.return_value = {}
+
+        data = {"recording_id": self.recording.id}
+
+        response = self.client_instructor_two.post(self.url, data, format="json")
+
+        print(f"Response data: {response.json()}")
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(Quiz.objects.count(), 1)
