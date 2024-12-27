@@ -3,7 +3,6 @@ from django.core.validators import EmailValidator
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from .models import (
-    Student,
     Instructor,
     Quiz,
     QuestionMultipleChoice,
@@ -26,7 +25,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 class StudentSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Student
+        # model = Student
         fields = "__all__"
 
 
