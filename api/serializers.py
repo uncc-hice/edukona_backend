@@ -334,7 +334,9 @@ class CourseSerializer(serializers.ModelSerializer):
             "start_date",
             "end_date",
         ]
-
+class LoginSerializer(serializers.Serializer):
+    email = serializers.EmailField(max_length=128)
+    password = serializers.CharField(max_length=128, style={"input_type": "password"})
 
 class LogoutSerializer(serializers.Serializer):
     refresh = serializers.CharField()

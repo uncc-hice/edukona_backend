@@ -39,6 +39,7 @@ from api.serializers import (
     SignUpInstructorSerializer,
     ContactMessageSerializer,
     QuizSerializer,
+    LoginSerializer,
     LogoutSerializer,
 )
 from drf_spectacular.utils import (
@@ -163,9 +164,7 @@ class ProfileView(APIView):
         )
 
 
-class LoginSerializer(serializers.Serializer):
-    email = serializers.EmailField(max_length=128)
-    password = serializers.CharField(max_length=128, style={"input_type": "password"})
+
 
 
 @extend_schema(tags=["Profile and User Management"])
