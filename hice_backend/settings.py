@@ -301,7 +301,7 @@ GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(
-        seconds=int(os.getenv("ACCESS_TOKEN_LIFETIME", default=3600))
+        seconds=int(os.getenv("ACCESS_TOKEN_LIFETIME", default=600))
     ),
     "REFRESH_TOKEN_LIFETIME": timedelta(
         seconds=int(os.getenv("REFRESH_TOKEN_LIFETIME", default=86400))
@@ -309,5 +309,4 @@ SIMPLE_JWT = {
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
     "SIGNING_KEY": SECRET_KEY,
-    "AUTH_HEADER_TYPES": ("Token",),
 }

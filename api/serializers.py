@@ -334,3 +334,7 @@ class CourseSerializer(serializers.ModelSerializer):
             "start_date",
             "end_date",
         ]
+
+
+class LogoutSerializer(serializers.Serializer):
+    refresh = serializers.CharField()
