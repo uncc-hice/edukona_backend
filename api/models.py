@@ -7,10 +7,6 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 
 
-class Student(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, related_name="student")
-
-
 class Instructor(models.Model):
     user = models.OneToOneField(
         User, on_delete=models.CASCADE, null=True, related_name="instructor"
