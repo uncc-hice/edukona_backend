@@ -15,7 +15,6 @@ from rest_framework.authtoken.models import Token
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework import status
-from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from google.oauth2 import id_token
@@ -39,6 +38,7 @@ from api.serializers import (
     SignUpInstructorSerializer,
     ContactMessageSerializer,
     QuizSerializer,
+    LoginSerializer,
     LogoutSerializer,
 )
 from drf_spectacular.utils import (
@@ -161,11 +161,6 @@ class ProfileView(APIView):
                 "last_name": user.last_name,
             }
         )
-
-
-class LoginSerializer(serializers.Serializer):
-    email = serializers.EmailField(max_length=128)
-    password = serializers.CharField(max_length=128, style={"input_type": "password"})
 
 
 @extend_schema(tags=["Profile and User Management"])
@@ -714,6 +709,62 @@ class GoogleLogin(APIView):
         except ValueError as e:
             return Response(
                 {"message": f"Invalid token: {str(e)}"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+
+class JWTGoogleLogin(APIView):
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        request=GoogleLoginRequestSerializer,
+        responses={
+            200: GoogleLoginResponseSerializer,
+            400: OpenApiTypes.OBJECT,
+        },
+        tags=["Authentication Endpoint"],
+    )
+    def post(self, request):
+        token = request.data.get("token")
+
+        if not token:
+            return Response({"message": "Token not provided"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            id_info = id_token.verify_oauth2_token(
+                token, google_requests.Request(), settings.GOOGLE_CLIENT_ID
+            )
+
+            # Get the user info from the token
+            email = id_info.get("email")
+
+            # Try to get the user based on the email
+            try:
+                user = User.objects.get(email=email)
+            except User.DoesNotExist:
+                return Response(
+                    {"message": "Account does not exist. Please sign up first."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            refresh = RefreshToken.for_user(user)
+
+            response = {
+                "access": str(refresh.access_token),
+                "refresh": str(refresh),
+                "user": user.id,
+            }
+
+            if hasattr(user, "instructor"):
+                response["instructor"] = user.instructor.id
+
+            logger.info(f"User {user.id} logged in with Google.")
+            return JsonResponse(response, status=status.HTTP_200_OK)
+
+        except ValueError as e:
+            logger.error(f"Invalid token: {str(e)}")
+            return Response(
+                {"message": "Google login failed."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
