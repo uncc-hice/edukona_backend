@@ -272,3 +272,6 @@ class CourseStudent(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE, null=False)
     student = models.ForeignKey(Student, on_delete=models.CASCADE, null=False)
     joined_at = models.DateField(null=False)
+
+    class Meta:
+        db_table = "api_coursestudent"
