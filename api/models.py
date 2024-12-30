@@ -267,6 +267,7 @@ class Course(models.Model):
             fin_code = f"{code}-{''.join(random.choices(hex_chars, k=2))}"
         return fin_code
 
+
 class CourseStudent(models.Model):
     course = models.ForeignKey(Course, null=False)
     student = models.ForeignKey(Student, null=False)
