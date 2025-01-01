@@ -1,15 +1,23 @@
+from botocore.exceptions import ClientError
+from rest_framework.status import HTTP_500_INTERNAL_SERVER_ERROR
 from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.response import Response
 
 from api.models import Quiz
-from api.serializers import QuizSerializer, QuizListSerializer, QuizTitleUpdateSerializer
+from api.serializers import (
+    QuizSerializer,
+    QuizListSerializer,
+    QuizTitleUpdateSerializer,
+)
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
 
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 
-from ..permissions import IsQuizOwner, AllowInstructor
+from ..permissions import IsQuizOwner, AllowInstructor, IsRecordingOwner
+import boto3
+from django.conf import settings
 
 
 @extend_schema(tags=["Quiz Creation and Modification"])
@@ -98,3 +106,39 @@ class InstructorQuizzesView(APIView):
     def get(self, request):
         quizzes = Quiz.objects.filter(instructor=request.user.instructor)
         return Response(QuizListSerializer({"quizzes": quizzes}).data, status=status.HTTP_200_OK)
+
+
+@extend_schema(tags=["Quiz Creation and Modification"])
+class CreateQuizFromTranscript(APIView):
+    permission_classes = [IsRecordingOwner]
+
+    @extend_schema(
+        operation_id="create-quiz-from-transcript",
+        summary="Creates a new quiz from a transcript",
+        description="Created a new quiz for a user given a transcript",
+        responses={
+            201: QuizSerializer,
+            400: "Bad Request",
+            401: "Unauthorized",
+        },
+    )
+    def post(self, request):
+        try:
+            lambda_client = boto3.client(
+                "lambda",
+                aws_access_key_id=settings.AWS_LAMBDA_INVOKER_ACCESS_KEY_ID,
+                aws_secret_access_key=settings.AWS_LAMBDA_INVOKER_SECRET_ACCESS_KEY,
+                region_name=settings.AWS_LAMBDA_INVOKER_REGION_NAME,
+            )
+
+            lambda_client.invoke(
+                FunctionName="CreateQuizFromTranscript",
+                InvocationType="Event",
+                Payload=request.data,
+            )
+        except ClientError as e:
+            return Response(
+                {f"error: Quiz saved, but couldn't invoke Lambda: {str(e)}"},
+                status=HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+        return Response(request.data, status=status.HTTP_201_CREATED)
