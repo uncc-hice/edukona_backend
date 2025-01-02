@@ -42,8 +42,6 @@ class CourseModelTests(BaseCourseTest):
         recording2 = InstructorRecordings.objects.create(
             instructor=self.instructor, title="test 2", course=self.course
         )
-        recording1.save()
-        recording2.save()
         retrieved1 = InstructorRecordings.objects.filter(id=recording1.id).first()
         retrieved2 = InstructorRecordings.objects.filter(id=recording2.id).first()
         self.assertEqual(retrieved1.course, self.course)
@@ -56,13 +54,10 @@ class CourseModelTests(BaseCourseTest):
         recording = InstructorRecordings.objects.create(
             instructor=self.instructor, title="test", course=self.course
         )
-        recording.save()
         summary1 = LectureSummary.objects.create(
             recording=recording, course=self.course, published=True
         )
         summary2 = LectureSummary.objects.create(recording=recording, course=self.course)
-        summary1.save()
-        summary2.save()
         retrieved1 = LectureSummary.objects.filter(id=summary1.id).first()
         retrieved2 = LectureSummary.objects.filter(id=summary2.id).first()
         self.assertEqual(retrieved1.course, self.course)
@@ -76,8 +71,6 @@ class CourseModelTests(BaseCourseTest):
             instructor=self.instructor, title="test", course=self.course, published=True
         )
         quiz2 = Quiz.objects.create(instructor=self.instructor, title="test", course=self.course)
-        quiz1.save()
-        quiz2.save()
         retrieved1 = Quiz.objects.filter(id=quiz1.id).first()
         retrieved2 = Quiz.objects.filter(id=quiz2.id).first()
         self.assertEqual(retrieved1.course, self.course)
