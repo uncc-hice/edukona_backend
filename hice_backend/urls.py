@@ -4,6 +4,7 @@ from api.views.question_views import *
 from api.views.quiz_views import *
 from api.views.session_views import *
 from api.views.user_views import *
+from api.views.course_views import *
 from api.views.recordings_views import *
 from api.consumers import *
 from rest_framework_simplejwt.views import (
@@ -205,6 +206,11 @@ urlpatterns = [
         "summary/<uuid:summary_id>/update-summary/",
         UpdateLectureSummaryView.as_view(),
         name="update-summary",
+    ),
+    path(
+        "course/<uuid:course_id>/get-recordings/",
+        GetRecordingsByCourse.as_view(),
+        name="get-course-recordings",
     ),
     path(
         "token/verify/",
