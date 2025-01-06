@@ -21,7 +21,9 @@ class GetRecordingsByCourse(APIView):
         }
     )
     def get(self, request, course_id):
-        recordings = InstructorRecordings.objects.filter(course=course_id).order_by("-uploaded_at")
+        recordings = InstructorRecordings.objects.filter(
+            instructor=request.user.instructor, course=course_id
+        ).order_by("-uploaded_at")
         return Response(
             InstructorRecordingsSerializer(recordings, many=True).data, status=status.HTTP_200_OK
         )
