@@ -150,49 +150,6 @@ class SignUpInstructor(APIView):
 class JWTSignUpInstructor(APIView):
     permission_classes = [AllowAny]
 
-    @extend_schema(
-        operation_id="sign_up_instructor",
-        summary="Sign up as an Instructor",
-        description="Allows a new user to sign up as an instructor by "
-        "providing first name, last name (optional), email, and password.",
-        request=SignUpInstructorSerializer,
-        responses={
-            201: {
-                "description": "Instructor created successfully.",
-                "content": {
-                    "application/json": {
-                        "example": {
-                            "access": "abc123def456ghi789",
-                            "refresh": "abc123def456ghi789",
-                            "user": "user-uuid-string",
-                            "instructor": "instructor-uuid-string",
-                        }
-                    }
-                },
-            },
-            400: {
-                "description": "Bad Request. Input data is invalid.",
-                "content": {
-                    "application/json": {
-                        "example": {"message": "A user with this email already exists."}
-                    }
-                },
-            },
-        },
-        examples=[
-            OpenApiExample(
-                "Valid Input",
-                value={
-                    "first_name": "John",
-                    "last_name": "Doe",
-                    "email": "john.doe@example.com",
-                    "password": "StrongPassword123!",
-                },
-                request_only=True,
-                response_only=False,
-            ),
-        ],
-    )
     def post(self, request):
         serializer = SignUpInstructorSerializer(data=request.data)
         if serializer.is_valid():
@@ -315,46 +272,6 @@ class JWTLoginView(APIView):
     serializer_class = LoginSerializer
     permission_classes = [AllowAny]
 
-    @extend_schema(
-        operation_id="jwt_login",
-        summary="Login with JWT",
-        description="Allows a user to log in using email and password, and returns JWT tokens.",
-        request=LoginSerializer,
-        responses={
-            200: {
-                "description": "Login successful",
-                "content": {
-                    "application/json": {
-                        "example": {
-                            "access": "abc123def456ghi789",
-                            "refresh": "abc123def456ghi789",
-                            "user": "user-uuid-string",
-                            "instructor": "instructor-uuid-string",
-                        }
-                    }
-                },
-            },
-            401: {
-                "description": "Invalid email or password",
-                "content": {
-                    "application/json": {
-                        "example": {"detail": "Invalid email or password!"}
-                    }
-                },
-            },
-        },
-        examples=[
-            OpenApiExample(
-                "Valid Input",
-                value={
-                    "email": "john.doe@example.com",
-                    "password": "StrongPassword123!",
-                },
-                request_only=True,
-                response_only=False,
-            ),
-        ],
-    )
     def post(self, request):
         try:
             user = User.objects.get(email=request.data["email"])
@@ -403,35 +320,23 @@ class Logout(APIView):
     responses={
         200: {
             "description": "Logout successful",
-            "content": {
-                "application/json": {
-                    "example": {"detail": "Logout successful"}
-                }
-            }
+            "content": {"application/json": {"example": {"detail": "Logout successful"}}},
         },
         400: {
             "description": "Bad Request. Refresh token is required.",
-            "content": {
-                "application/json": {
-                    "example": {"detail": "Refresh token is required"}
-                }
-            }
+            "content": {"application/json": {"example": {"detail": "Refresh token is required"}}},
         },
         403: {
             "description": "Forbidden. An error occurred while logging out.",
             "content": {
-                "application/json": {
-                    "example": {"detail": "An error occurred while logging out."}
-                }
-            }
+                "application/json": {"example": {"detail": "An error occurred while logging out."}}
+            },
         },
         500: {
             "description": "Internal Server Error. An error occurred while logging out.",
             "content": {
-                "application/json": {
-                    "example": {"detail": "An error occurred while logging out."}
-                }
-            }
+                "application/json": {"example": {"detail": "An error occurred while logging out."}}
+            },
         },
     },
     examples=[
@@ -900,57 +805,6 @@ class JWTGoogleLogin(APIView):
     permission_classes = [AllowAny]
 
     @extend_schema(
-        operation_id="jwt_google_login",
-        summary="Login with Google using JWT",
-        description="Allows a user to log in using Google OAuth token and returns JWT tokens.",
-        request=GoogleLoginRequestSerializer,
-        responses={
-            200: {
-                "description": "Login successful",
-                "content": {
-                    "application/json": {
-                        "example": {
-                            "access": "abc123def456ghi789",
-                            "refresh": "abc123def456ghi789",
-                            "user": "user-uuid-string",
-                            "instructor": "instructor-uuid-string",
-                        }
-                    }
-                },
-            },
-            400: {
-                "description": "Bad Request. Token not provided or invalid.",
-                "content": {
-                    "application/json": {
-                        "example": {"message": "Token not provided"}
-                    }
-                },
-            },
-            403: {
-                "description": "Forbidden. Account does not exist.",
-                "content": {
-                    "application/json": {
-                        "example": {"message": "Account does not exist. Please sign up first."}
-                    }
-                },
-            },
-            500: {
-                "description": "Internal Server Error. An error occurred during login.",
-                "content": {
-                    "application/json": {
-                        "example": {"message": "Google login failed."}
-                    }
-                },
-            },
-        },
-        examples=[
-            OpenApiExample(
-                "Valid Input",
-                value={"token": "valid-google-oauth-token"},
-                request_only=True,
-                response_only=False,
-            ),
-        ],
         tags=["Authentication Endpoint"],
     )
     def post(self, request):
