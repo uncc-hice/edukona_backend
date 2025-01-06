@@ -900,11 +900,57 @@ class JWTGoogleLogin(APIView):
     permission_classes = [AllowAny]
 
     @extend_schema(
+        operation_id="jwt_google_login",
+        summary="Login with Google using JWT",
+        description="Allows a user to log in using Google OAuth token and returns JWT tokens.",
         request=GoogleLoginRequestSerializer,
         responses={
-            200: GoogleLoginResponseSerializer,
-            400: OpenApiTypes.OBJECT,
+            200: {
+                "description": "Login successful",
+                "content": {
+                    "application/json": {
+                        "example": {
+                            "access": "abc123def456ghi789",
+                            "refresh": "abc123def456ghi789",
+                            "user": "user-uuid-string",
+                            "instructor": "instructor-uuid-string",
+                        }
+                    }
+                },
+            },
+            400: {
+                "description": "Bad Request. Token not provided or invalid.",
+                "content": {
+                    "application/json": {
+                        "example": {"message": "Token not provided"}
+                    }
+                },
+            },
+            403: {
+                "description": "Forbidden. Account does not exist.",
+                "content": {
+                    "application/json": {
+                        "example": {"message": "Account does not exist. Please sign up first."}
+                    }
+                },
+            },
+            500: {
+                "description": "Internal Server Error. An error occurred during login.",
+                "content": {
+                    "application/json": {
+                        "example": {"message": "Google login failed."}
+                    }
+                },
+            },
         },
+        examples=[
+            OpenApiExample(
+                "Valid Input",
+                value={"token": "valid-google-oauth-token"},
+                request_only=True,
+                response_only=False,
+            ),
+        ],
         tags=["Authentication Endpoint"],
     )
     def post(self, request):
@@ -927,7 +973,7 @@ class JWTGoogleLogin(APIView):
             except User.DoesNotExist:
                 return Response(
                     {"message": "Account does not exist. Please sign up first."},
-                    status=status.HTTP_400_BAD_REQUEST,
+                    status=status.HTTP_403_FORBIDDEN,
                 )
 
             refresh = RefreshToken.for_user(user)
@@ -948,7 +994,7 @@ class JWTGoogleLogin(APIView):
             logger.error(f"Invalid token: {str(e)}")
             return Response(
                 {"message": "Google login failed."},
-                status=status.HTTP_400_BAD_REQUEST,
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
 
