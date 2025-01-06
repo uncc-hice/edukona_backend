@@ -65,7 +65,7 @@ def mailInstructor(email):
         print(response.body)
         print(response.headers)
     except Exception as e:
-        print(e.message)
+        logger.error(f"Failed to send email to {email} with error: {str(e)}")
 
 
 @extend_schema(tags=["Authentication Endpoint"])
@@ -141,6 +141,101 @@ class SignUpInstructor(APIView):
                 )
             else:
                 # Generic error message for other validation errors
+                return Response(
+                    {"message": "Invalid data provided."}, status=status.HTTP_400_BAD_REQUEST
+                )
+
+
+@extend_schema(tags=["Authentication Endpoint"])
+class JWTSignUpInstructor(APIView):
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        operation_id="sign_up_instructor",
+        summary="Sign up as an Instructor",
+        description="Allows a new user to sign up as an instructor by "
+        "providing first name, last name (optional), email, and password.",
+        request=SignUpInstructorSerializer,
+        responses={
+            201: {
+                "description": "Instructor created successfully.",
+                "content": {
+                    "application/json": {
+                        "example": {
+                            "access": "abc123def456ghi789",
+                            "refresh": "abc123def456ghi789",
+                            "user": "user-uuid-string",
+                            "instructor": "instructor-uuid-string",
+                        }
+                    }
+                },
+            },
+            400: {
+                "description": "Bad Request. Input data is invalid.",
+                "content": {
+                    "application/json": {
+                        "example": {"message": "A user with this email already exists."}
+                    }
+                },
+            },
+        },
+        examples=[
+            OpenApiExample(
+                "Valid Input",
+                value={
+                    "first_name": "John",
+                    "last_name": "Doe",
+                    "email": "john.doe@example.com",
+                    "password": "StrongPassword123!",
+                },
+                request_only=True,
+                response_only=False,
+            ),
+        ],
+    )
+    def post(self, request):
+        serializer = SignUpInstructorSerializer(data=request.data)
+        if serializer.is_valid():
+            instructor = serializer.save()
+            user = instructor.user
+            refresh = RefreshToken.for_user(user)
+
+            response = {
+                "access": str(refresh.access_token),
+                "refresh": str(refresh),
+                "user": user.id,
+                "instructor": instructor.id,
+            }
+
+            mailInstructor(user.email)  # Send a welcome email to the instructor
+            logger.info(f"Instructor {user.id} signed up successfully.")
+            return Response(response, status=status.HTTP_201_CREATED)
+        else:
+            errors = serializer.errors
+            if "email" in errors:
+                logger.warning(
+                    f"Sign up failed for email {request.data.get('email')}: {errors['email'][0]}"
+                )
+                return Response({"message": errors["email"][0]}, status=status.HTTP_400_BAD_REQUEST)
+            elif "password" in errors:
+                logger.warning(
+                    f"Sign up failed for email {request.data.get('email')}: {errors['password'][0]}"
+                )
+                return Response(
+                    {"message": errors["password"][0]}, status=status.HTTP_400_BAD_REQUEST
+                )
+            elif "first_name" in errors:
+                logger.warning(
+                    f"Sign up failed for email {request.data.get('email')}: Missing first name"
+                )
+                return Response(
+                    {"message": "Please provide all required fields."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            else:
+                logger.warning(
+                    f"Sign up failed for email {request.data.get('email')}: Invalid data provided"
+                )
                 return Response(
                     {"message": "Invalid data provided."}, status=status.HTTP_400_BAD_REQUEST
                 )
