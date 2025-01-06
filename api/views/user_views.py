@@ -395,7 +395,55 @@ class Logout(APIView):
         return JsonResponse({"message": "User logged out successfully"}, status=status.HTTP_200_OK)
 
 
-@extend_schema(tags=["Authentication Endpoint"])
+@extend_schema(
+    operation_id="jwt_logout",
+    summary="Logout with JWT",
+    description="Allows a user to log out using a refresh token, and blacklists the token.",
+    request=LogoutSerializer,
+    responses={
+        200: {
+            "description": "Logout successful",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Logout successful"}
+                }
+            }
+        },
+        400: {
+            "description": "Bad Request. Refresh token is required.",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Refresh token is required"}
+                }
+            }
+        },
+        403: {
+            "description": "Forbidden. An error occurred while logging out.",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "An error occurred while logging out."}
+                }
+            }
+        },
+        500: {
+            "description": "Internal Server Error. An error occurred while logging out.",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "An error occurred while logging out."}
+                }
+            }
+        },
+    },
+    examples=[
+        OpenApiExample(
+            "Valid Input",
+            value={"refresh": "abc123def456ghi789"},
+            request_only=True,
+            response_only=False,
+        ),
+    ],
+    tags=["Authentication Endpoint"],
+)
 class JWTLogoutView(APIView):
     serializer_class = LogoutSerializer
     permission_classes = [IsAuthenticated]
