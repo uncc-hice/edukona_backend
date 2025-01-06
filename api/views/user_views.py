@@ -315,6 +315,46 @@ class JWTLoginView(APIView):
     serializer_class = LoginSerializer
     permission_classes = [AllowAny]
 
+    @extend_schema(
+        operation_id="jwt_login",
+        summary="Login with JWT",
+        description="Allows a user to log in using email and password, and returns JWT tokens.",
+        request=LoginSerializer,
+        responses={
+            200: {
+                "description": "Login successful",
+                "content": {
+                    "application/json": {
+                        "example": {
+                            "access": "abc123def456ghi789",
+                            "refresh": "abc123def456ghi789",
+                            "user": "user-uuid-string",
+                            "instructor": "instructor-uuid-string",
+                        }
+                    }
+                },
+            },
+            401: {
+                "description": "Invalid email or password",
+                "content": {
+                    "application/json": {
+                        "example": {"detail": "Invalid email or password!"}
+                    }
+                },
+            },
+        },
+        examples=[
+            OpenApiExample(
+                "Valid Input",
+                value={
+                    "email": "john.doe@example.com",
+                    "password": "StrongPassword123!",
+                },
+                request_only=True,
+                response_only=False,
+            ),
+        ],
+    )
     def post(self, request):
         try:
             user = User.objects.get(email=request.data["email"])
