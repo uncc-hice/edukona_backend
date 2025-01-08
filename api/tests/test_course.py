@@ -1,8 +1,4 @@
-from rest_framework.test import APIClient, APITestCase
-from django.urls import reverse
-from rest_framework import status
-from rest_framework.authtoken.models import Token
-from datetime import timedelta
+from django.test import TestCase
 from api.models import (
     Course,
     Instructor,
@@ -13,16 +9,25 @@ from api.models import (
     Student,
     CourseStudent,
 )
+from django.urls import reverse
+from rest_framework import status
+from rest_framework.authtoken.models import Token
+from rest_framework.test import APIClient
+from datetime import timedelta
+from rest_framework.authtoken.models import Token
+from rest_framework.test import APIClient, APITestCase
+from api.models import Course, Instructor, User, Quiz, LectureSummary, InstructorRecordings
+from django.urls import reverse
 
 
 class BaseCourseTest(APITestCase):
     def setUp(self):
         # Create Instructor User
         self.user_instructor = User.objects.create_user(
-            username="test@gmail.com",
-            email="test@gmail.com",
+            username="test_one@gmail.com",
+            email="test_one@gmail.com",
             password="password",
-            first_name="Test",
+            first_name="TestFirst",
             last_name="Instructor",
         )
         self.instructor = Instructor.objects.create(user=self.user_instructor)
@@ -32,7 +37,7 @@ class BaseCourseTest(APITestCase):
             username="test_two@gmail.com",
             email="test_two@gmail.com",
             password="password",
-            first_name="Test",
+            first_name="Test Two",
             last_name="Instructor",
         )
         self.instructor_two = Instructor.objects.create(user=self.new_user_instructor)
@@ -94,6 +99,23 @@ class BaseCourseTest(APITestCase):
 class CourseViewsTest(BaseCourseTest):
     def setUp(self):
         super().setUp()
+        self.user = User.objects.create_user(
+            username="test@gmail.com",
+            email="test@gmail.com",
+            password="password",
+            first_name="Test",
+            last_name="Instructor",
+        )
+
+        self.instructor = Instructor.objects.create(user=self.user)
+
+        # print(f"Current Instructor: {self.course.instructor.user.get_full_name()}")
+
+        self.course.instructor = self.instructor
+        self.course.save()
+
+        # print(f"New Current Instructor: {self.course.instructor.user.get_full_name()}")
+
         # Create an alternative Instructor User
         self.alt_user = User.objects.create_user(
             username="secondtest@gmail.com",
@@ -104,11 +126,13 @@ class CourseViewsTest(BaseCourseTest):
         )
         self.alt_instructor = Instructor.objects.create(user=self.alt_user)
 
+
         self.alt_course = Course.objects.create(
             title="Example Course",
             instructor=self.alt_instructor,
             description="A course used for tests.",
         )
+
 
         self.alt_course.code = self.alt_course.generate_code()
         self.alt_course.save()
@@ -265,8 +289,7 @@ class FetchQuizzesByCourseTests(BaseCourseTest):
         }
         for quiz in quizzes:
             self.assertTrue(expected_keys.issubset(quiz.keys()))
-
-
+            
 class CourseRecordingsTests(CourseViewsTest):
     def setUp(self):
         super().setUp()
@@ -274,6 +297,12 @@ class CourseRecordingsTests(CourseViewsTest):
         self.alt_url = reverse("get-course-recordings", kwargs={"course_id": self.alt_course.id})
 
     def test_get_recordings_by_course(self):
+
+
+        # print(f"course instructor user: \n {self.course.instructor.user} \n")
+        # print(f"client user: {self.user} \n")
+        # print(f"token user: {self.prim_instructor_token.user}")
+
         prim_response = self.prim_instructor_client.get(self.prim_url)
         alt_response = self.alt_instructor_client.get(self.alt_url)
         prim_data = prim_response.json()
@@ -289,6 +318,10 @@ class CourseRecordingsTests(CourseViewsTest):
         alt_response = self.alt_instructor_client.get(self.alt_url)
         prim_data = prim_response.json()
         alt_data = alt_response.json()
+        # print(f"\n Primary Data:  {prim_data}\n")
+
+        # print(f"\n Primary Recordings:  {self.prim_recordings}\n")
+
         self.assertEqual(prim_data[0]["id"], self.prim_recordings[-1].id.__str__())
         self.assertEqual(alt_data[0]["id"], self.alt_recordings[-1].id.__str__())
 
