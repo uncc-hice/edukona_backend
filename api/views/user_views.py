@@ -860,10 +860,7 @@ class JWTGoogleLogin(APIView):
     permission_classes = [AllowAny]
     serializer_class = GoogleLoginRequestSerializer
 
-    @extend_schema(
-        tags=["Authentication Endpoint"],
-        request=GoogleLoginRequestSerializer
-    )
+    @extend_schema(tags=["Authentication Endpoint"], request=GoogleLoginRequestSerializer)
     def post(self, request):
         token = request.data.get("token")
 
