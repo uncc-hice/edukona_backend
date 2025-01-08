@@ -14,7 +14,8 @@ from django.http import JsonResponse
 
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 
-from ..permissions import IsQuizOwner, AllowInstructor
+from ..permissions import IsQuizOwner, AllowInstructor, IsCourseOwner, IsEnrolledInCourse
+from rest_framework import status
 
 
 @extend_schema(tags=["Quiz Creation and Modification"])
@@ -107,37 +108,28 @@ class InstructorQuizzesView(APIView):
 
 @extend_schema(tags=["Quiz Creation and Modification"])
 class QuizzesByCourseView(APIView):
-    permission_classes = []
+    permission_classes = [IsCourseOwner | IsEnrolledInCourse]
 
     @extend_schema(responses={200: CourseQuizListSerializer}, summary="Get all quizzes by course")
     def get(self, request, course_id):
-        # Validate course existence
+        # check whether request user is student or instructor
+        is_instructor = True if hasattr(request.user, "instructor") else False
+
         course = Course.objects.filter(id=course_id).first()
-        if not course:
-            return Response({"error": "Course not found."}, status=404)
 
-        # Check if the user is the instructor of the course
-        if hasattr(request.user, "instructor") and course.instructor == request.user.instructor:
-            # Return all quizzes for this course
-            quizzes = Quiz.objects.filter(course=course)
-            return Response(
-                CourseQuizListSerializer({"quizzes": quizzes}).data, status=status.HTTP_200_OK
-            )
-
-        # Check if the user is a student in the course
-        if hasattr(request.user, "student"):
-            is_member = CourseStudent.objects.filter(
-                course=course, student=request.user.student
-            ).exists()
-            if is_member:
-                # Return only published quizzes
-                quizzes = Quiz.objects.filter(published=True, course=course)
+        if is_instructor:
+            if course.instructor.user != request.user:
                 return Response(
-                    CourseQuizListSerializer({"quizzes": quizzes}).data, status=status.HTTP_200_OK
+                    {"error": "You do not have permission to access quizzes for this course."},
+                    status=status.HTTP_403_FORBIDDEN,
                 )
 
-        # If user is neither the instructor nor a student in the course
-        return Response(
-            {"error": "You do not have permission to access quizzes for this course."},
-            status=status.HTTP_403_FORBIDDEN,
-        )
+            # return all quizes for course
+            quizzes = Quiz.objects.filter(course_id=course_id)
+            return_response = CourseQuizListSerializer({"quizzes": quizzes}).data
+            return Response(return_response["quizzes"], status=status.HTTP_200_OK)
+        else:
+            # Return only published quizzes
+            quizzes = Quiz.objects.filter(published=True, course_id=course_id)
+            return_response = CourseQuizListSerializer({"quizzes": quizzes}).data
+            return Response(return_response["quizzes"], status=status.HTTP_200_OK)

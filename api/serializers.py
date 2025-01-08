@@ -194,24 +194,12 @@ class AddQuizSessionLogSerializer(serializers.Serializer):
         return QuizSessionLog.objects.create(**validated_data)
 
 
-class QuizSettingsSerializer(serializers.Serializer):
-    id = serializers.UUIDField(read_only=True)
-    timer = serializers.BooleanField()
-    live_bar_chart = serializers.BooleanField()
-    skip_question = serializers.BooleanField()
-    skip_count_per_student = serializers.IntegerField()
-    skip_question_logic = serializers.CharField()
-    skip_question_streak_count = serializers.IntegerField()
-    skip_question_percentage = serializers.FloatField()
-
-
 class FetchCourseQuizzesSerializer(serializers.ModelSerializer):
     instructor_recording = serializers.PrimaryKeyRelatedField(
         queryset=InstructorRecordings.objects.all(), required=False, allow_null=True
     )
     num_questions = serializers.SerializerMethodField()
     num_sessions = serializers.SerializerMethodField()
-    settings = QuizSettingsSerializer(source="*")  # Use SettingsSerializer for settings fields
 
     class Meta:
         model = Quiz
@@ -220,7 +208,14 @@ class FetchCourseQuizzesSerializer(serializers.ModelSerializer):
             "title",
             "start_time",
             "end_time",
-            "settings",
+            # Settings
+            "timer",
+            "live_bar_chart",
+            "skip_question",
+            "skip_count_per_student",
+            "skip_question_logic",
+            "skip_question_streak_count",
+            "skip_question_percentage",
             "instructor_recording",
             "created_at",
             "num_questions",

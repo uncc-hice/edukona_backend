@@ -23,7 +23,9 @@ urlpatterns = [
         "quiz/<int:quiz_id>/update-title/", UpdateQuizTitleView.as_view(), name="quiz-update-title"
     ),
     path(
-        "course/<uuid:course_id>/quizzes", QuizzesByCourseView.as_view(), name="quizzes-by-course"
+        "course/<uuid:course_id>/get-quizzes/",
+        QuizzesByCourseView.as_view(),
+        name="quizzes-by-course",
     ),
     path("question/", QuestionView.as_view(), name="question-list"),
     path("question/<int:question_id>/", QuestionView.as_view(), name="question-detail"),

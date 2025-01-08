@@ -235,8 +235,7 @@ class FetchQuizzesByCourseTests(BaseCourseTest):
         response = self.client_instructor_1.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        response_data = response.json()
-        quizzes = response_data["quizzes"]
+        quizzes = response.json()
 
         self.assertEqual(quizzes[0]["title"], "Quiz Newest")
         self.assertEqual(quizzes[1]["title"], "Quiz Oldest")
@@ -248,8 +247,7 @@ class FetchQuizzesByCourseTests(BaseCourseTest):
         response = self.client_student_1.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        response_data = response.json()
-        quizzes = response_data["quizzes"]
+        quizzes = response.json()
         self.assertEqual(len(quizzes), 1)
         # Only oldest should show since its the only published one
         self.assertEqual(quizzes[0]["title"], "Quiz Oldest")
@@ -267,14 +265,20 @@ class FetchQuizzesByCourseTests(BaseCourseTest):
         response = self.client_instructor_1.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        response_data = response.json()
-        quizzes = response_data["quizzes"]
+        quizzes = response.json()
         expected_keys = {
             "id",
             "title",
             "start_time",
             "end_time",
-            "settings",
+            # settings
+            "timer",
+            "live_bar_chart",
+            "skip_question",
+            "skip_count_per_student",
+            "skip_question_logic",
+            "skip_question_streak_count",
+            "skip_question_percentage",
             "instructor_recording",
             "created_at",
             "num_questions",
