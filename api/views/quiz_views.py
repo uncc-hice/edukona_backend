@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.response import Response
 
-from api.models import Quiz, Course, CourseStudent
+from api.models import Quiz, Course
 from api.serializers import (
     QuizSerializer,
     QuizListSerializer,
@@ -15,7 +15,6 @@ from django.http import JsonResponse
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 
 from ..permissions import IsQuizOwner, AllowInstructor, IsCourseOwner, IsEnrolledInCourse
-from rest_framework import status
 
 
 @extend_schema(tags=["Quiz Creation and Modification"])
