@@ -126,13 +126,11 @@ class CourseViewsTest(BaseCourseTest):
         )
         self.alt_instructor = Instructor.objects.create(user=self.alt_user)
 
-
         self.alt_course = Course.objects.create(
             title="Example Course",
             instructor=self.alt_instructor,
             description="A course used for tests.",
         )
-
 
         self.alt_course.code = self.alt_course.generate_code()
         self.alt_course.save()
@@ -289,7 +287,8 @@ class FetchQuizzesByCourseTests(BaseCourseTest):
         }
         for quiz in quizzes:
             self.assertTrue(expected_keys.issubset(quiz.keys()))
-            
+
+
 class CourseRecordingsTests(CourseViewsTest):
     def setUp(self):
         super().setUp()
@@ -297,7 +296,6 @@ class CourseRecordingsTests(CourseViewsTest):
         self.alt_url = reverse("get-course-recordings", kwargs={"course_id": self.alt_course.id})
 
     def test_get_recordings_by_course(self):
-
 
         # print(f"course instructor user: \n {self.course.instructor.user} \n")
         # print(f"client user: {self.user} \n")
