@@ -213,7 +213,7 @@ urlpatterns = [
         GetRecordingsByCourse.as_view(),
         name="get-course-recordings",
     ),
-    path("instructor/get-courses", GetCoursesByInstructor.as_view(), name="get-instructor-courses"),
+    path("instructor/get-courses/", GetCoursesByInstructor.as_view(), name="get-instructor-courses"),
     path(
         "token/verify/",
         TokenVerificationView.as_view(),
