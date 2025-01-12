@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.response import Response
 
-from api.models import Quiz, Course
+from api.models import Quiz
 from api.serializers import (
     QuizSerializer,
     QuizListSerializer,
