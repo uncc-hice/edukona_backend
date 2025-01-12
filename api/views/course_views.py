@@ -29,6 +29,7 @@ class GetRecordingsByCourse(APIView):
             InstructorRecordingsSerializer(recordings, many=True).data, status=status.HTTP_200_OK
         )
 
+
 @extend_schema(tags=["Instructor Course Management"])
 class GetCoursesByInstructor(APIView):
     permission_classes = [AllowInstructor]
