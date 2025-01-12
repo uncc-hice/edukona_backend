@@ -1,13 +1,14 @@
 from rest_framework.views import APIView
-from api.models import InstructorRecordings
+from api.models import InstructorRecordings, Course
 from rest_framework import status
 from rest_framework.response import Response
-from api.serializers import InstructorRecordingsSerializer
+from api.serializers import InstructorRecordingsSerializer, CourseSerializer
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 
 from api.permissions import AllowInstructor, IsCourseOwner
 
 
+@extend_schema(tags=["Instructor Course Management"])
 class GetRecordingsByCourse(APIView):
     permission_classes = [AllowInstructor & IsCourseOwner]
 
@@ -27,3 +28,18 @@ class GetRecordingsByCourse(APIView):
         return Response(
             InstructorRecordingsSerializer(recordings, many=True).data, status=status.HTTP_200_OK
         )
+
+
+@extend_schema(tags=["Instructor Course Management"])
+class GetCoursesByInstructor(APIView):
+    permission_classes = [AllowInstructor]
+
+    @extend_schema(
+        responses={
+            200: CourseSerializer(many=True),
+            401: OpenApiResponse(description="Unauthorized"),
+        }
+    )
+    def get(self, request):
+        courses = Course.objects.filter(instructor=request.user.instructor).order_by("-created_at")
+        return Response(CourseSerializer(courses, many=True).data, status=status.HTTP_200_OK)
