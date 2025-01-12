@@ -25,8 +25,8 @@ class Course(models.Model):
     title = models.CharField(blank=False, max_length=60)
     description = models.TextField(blank=True)
     code = models.CharField(blank=False, unique=True, max_length=75)
-    created_at = models.DateField(auto_now_add=True)
-    allow_joining_until = models.DateField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    allow_joining_until = models.DateTimeField(auto_now_add=True)
     start_date = models.DateField(null=True)
     end_date = models.DateField(null=True)
 
@@ -42,6 +42,10 @@ class Course(models.Model):
         while Course.objects.filter(code=fin_code).exists():
             fin_code = f"{code}-{''.join(random.choices(hex_chars, k=2))}"
         return fin_code
+
+    def save(self, *args, **kwargs):
+        self.code = self.generate_code()
+        super().save(*args, **kwargs)
 
 
 class InstructorRecordings(models.Model):

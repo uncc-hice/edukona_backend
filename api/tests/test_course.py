@@ -23,9 +23,6 @@ class BaseCourseTest(APITestCase):
             description="A course used for tests.",
         )
 
-        self.course.code = self.course.generate_code()
-        self.course.save()
-
 
 class CourseViewsTest(BaseCourseTest):
     def setUp(self):
@@ -45,9 +42,6 @@ class CourseViewsTest(BaseCourseTest):
             instructor=self.alt_instructor,
             description="A course used for tests.",
         )
-
-        self.alt_course.code = self.alt_course.generate_code()
-        self.alt_course.save()
 
         # Setup instructor client
         self.prim_instructor_token = Token.objects.create(user=self.user)
@@ -175,3 +169,51 @@ class CourseRecordingsTests(CourseViewsTest):
 
         self.assertEqual(prim_response.status_code, 403)
         self.assertEqual(alt_response.status_code, 403)
+
+
+class InstructorCoursesTests(CourseViewsTest):
+    def setUp(self):
+        super().setUp()
+        # Add 9 more courses for the primary instructor for a total of 10
+        self.prim_courses = [
+            Course.objects.create(instructor=self.instructor, title=f"Prim Course {x}")
+            for x in range(9)
+        ]
+
+        # Add the existing course to the start of the list of courses
+        self.prim_courses.insert(0, self.course)
+
+        # Add 9 more courses for the alternative instructor for a toal of 10
+        self.alt_courses = [
+            Course.objects.create(instructor=self.alt_instructor, title=f"Alt Course {x}")
+            for x in range(9)
+        ]
+
+        self.alt_courses.insert(0, self.alt_course)
+        self.url = reverse("get-instructor-courses")
+
+    def test_get_courses(self):
+        prim_response = self.prim_instructor_client.get(self.url)
+        alt_response = self.alt_instructor_client.get(self.url)
+        prim_data = prim_response.json()
+        alt_data = alt_response.json()
+
+        self.assertEqual(prim_response.status_code, 200)
+        self.assertEqual(alt_response.status_code, 200)
+        self.assertEqual(len(prim_data), 10)
+        self.assertEqual(len(alt_data), 10)
+
+    def test_get_courses_sorted(self):
+        prim_response = self.prim_instructor_client.get(self.url)
+        alt_response = self.alt_instructor_client.get(self.url)
+        prim_data = prim_response.json()
+        alt_data = alt_response.json()
+
+        self.assertEqual(prim_data[0]["id"], self.prim_courses[-1].id.__str__())
+        self.assertEqual(alt_data[0]["id"], self.alt_courses[-1].id.__str__())
+
+    def test_get_courses_unauthorized(self):
+        tmp_client = APIClient()
+        response = tmp_client.get(self.url)
+
+        self.assertEqual(response.status_code, 401)
