@@ -208,7 +208,6 @@ class FetchCourseQuizzesSerializer(serializers.ModelSerializer):
             "title",
             "start_time",
             "end_time",
-            # Settings
             "timer",
             "live_bar_chart",
             "skip_question",
@@ -228,10 +227,6 @@ class FetchCourseQuizzesSerializer(serializers.ModelSerializer):
 
     def get_num_sessions(self, obj):
         return QuizSession.objects.filter(quiz__id=obj.id).count()
-
-
-class CourseQuizListSerializer(serializers.Serializer):
-    quizzes = FetchCourseQuizzesSerializer(many=True)
 
 
 class RecordingTitleUpdateSerializer(serializers.Serializer):

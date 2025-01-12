@@ -101,12 +101,8 @@ class CourseViewsTest(BaseCourseTest):
 
         self.instructor = Instructor.objects.create(user=self.user)
 
-        # print(f"Current Instructor: {self.course.instructor.user.get_full_name()}")
-
         self.course.instructor = self.instructor
         self.course.save()
-
-        # print(f"New Current Instructor: {self.course.instructor.user.get_full_name()}")
 
         # Create an alternative Instructor User
         self.alt_user = User.objects.create_user(
@@ -265,7 +261,6 @@ class FetchQuizzesByCourseTests(BaseCourseTest):
             "title",
             "start_time",
             "end_time",
-            # settings
             "timer",
             "live_bar_chart",
             "skip_question",

@@ -7,7 +7,7 @@ from api.serializers import (
     QuizSerializer,
     QuizListSerializer,
     QuizTitleUpdateSerializer,
-    CourseQuizListSerializer,
+    FetchCourseQuizzesSerializer,
 )
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
@@ -109,26 +109,19 @@ class InstructorQuizzesView(APIView):
 class QuizzesByCourseView(APIView):
     permission_classes = [IsCourseOwner | IsEnrolledInCourse]
 
-    @extend_schema(responses={200: CourseQuizListSerializer}, summary="Get all quizzes by course")
+    @extend_schema(
+        responses={200: FetchCourseQuizzesSerializer(many=True)},
+        summary="Get all quizzes by course",
+    )
     def get(self, request, course_id):
         # check whether request user is student or instructor
         is_instructor = True if hasattr(request.user, "instructor") else False
-
-        course = Course.objects.filter(id=course_id).first()
-
         if is_instructor:
-            if course.instructor.user != request.user:
-                return Response(
-                    {"error": "You do not have permission to access quizzes for this course."},
-                    status=status.HTTP_403_FORBIDDEN,
-                )
-
             # return all quizes for course
             quizzes = Quiz.objects.filter(course_id=course_id)
-            return_response = CourseQuizListSerializer({"quizzes": quizzes}).data
-            return Response(return_response["quizzes"], status=status.HTTP_200_OK)
         else:
             # Return only published quizzes
             quizzes = Quiz.objects.filter(published=True, course_id=course_id)
-            return_response = CourseQuizListSerializer({"quizzes": quizzes}).data
-            return Response(return_response["quizzes"], status=status.HTTP_200_OK)
+
+        return_response = FetchCourseQuizzesSerializer(quizzes, many=True).data
+        return Response(return_response, status=status.HTTP_200_OK)
