@@ -1,12 +1,96 @@
+from api.models import (
+    Course,
+    Instructor,
+    User,
+    Quiz,
+    LectureSummary,
+    InstructorRecordings,
+    Student,
+    CourseStudent,
+)
+from django.urls import reverse
+from rest_framework import status
+from datetime import timedelta
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient, APITestCase
-from api.models import Course, Instructor, User, Quiz, LectureSummary, InstructorRecordings
-from django.urls import reverse
 
 
 class BaseCourseTest(APITestCase):
     def setUp(self):
         # Create Instructor User
+        self.user_instructor = User.objects.create_user(
+            username="test_one@gmail.com",
+            email="test_one@gmail.com",
+            password="password",
+            first_name="TestFirst",
+            last_name="Instructor",
+        )
+        self.instructor = Instructor.objects.create(user=self.user_instructor)
+
+        # create secondary instructor
+        self.new_user_instructor = User.objects.create_user(
+            username="test_two@gmail.com",
+            email="test_two@gmail.com",
+            password="password",
+            first_name="Test Two",
+            last_name="Instructor",
+        )
+        self.instructor_two = Instructor.objects.create(user=self.new_user_instructor)
+
+        # create course and assign it to first instructor
+        self.course = Course.objects.create(
+            title="Example Course",
+            instructor=self.instructor,
+            description="A course used for tests.",
+        )
+
+        # create instructor clients
+        instructor_token_1, _ = Token.objects.get_or_create(user=self.user_instructor)
+        self.client_instructor_1 = APIClient()
+        self.client_instructor_1.credentials(HTTP_AUTHORIZATION="Token " + instructor_token_1.key)
+
+        instructor_token_2, _ = Token.objects.get_or_create(user=self.new_user_instructor)
+        self.client_instructor_2 = APIClient()
+        self.client_instructor_2.credentials(HTTP_AUTHORIZATION="Token " + instructor_token_2.key)
+
+        # Create Student User
+        self.user_student_1 = User.objects.create_user(
+            username="student@gmail.com",
+            email="student@gmail.com",
+            password="password",
+            first_name="Student",
+            last_name="User",
+        )
+        self.student_1 = Student.objects.create(user=self.user_student_1)
+
+        # create secondary student
+        self.user_student_2 = User.objects.create_user(
+            username="student2@gmail.com",
+            email="student2@gmail.com",
+            password="password2",
+            first_name="Student2",
+            last_name="User2",
+        )
+        self.student_2 = Student.objects.create(user=self.user_student_2)
+
+        # Create Student clients
+        student_token_1, _ = Token.objects.get_or_create(user=self.user_student_1)
+        self.client_student_1 = APIClient()
+        self.client_student_1.credentials(HTTP_AUTHORIZATION="Token " + student_token_1.key)
+
+        student_token_2, _ = Token.objects.get_or_create(user=self.user_student_2)
+        self.client_student_2 = APIClient()
+        self.client_student_2.credentials(HTTP_AUTHORIZATION="Token " + student_token_2.key)
+
+        # Create StudentCourse Object
+        self.course_student = CourseStudent.objects.create(
+            course=self.course, student=self.student_1
+        )
+
+
+class CourseViewsTest(BaseCourseTest):
+    def setUp(self):
+        super().setUp()
         self.user = User.objects.create_user(
             username="test@gmail.com",
             email="test@gmail.com",
@@ -17,16 +101,9 @@ class BaseCourseTest(APITestCase):
 
         self.instructor = Instructor.objects.create(user=self.user)
 
-        self.course = Course.objects.create(
-            title="Example Course",
-            instructor=self.instructor,
-            description="A course used for tests.",
-        )
+        self.course.instructor = self.instructor
+        self.course.save()
 
-
-class CourseViewsTest(BaseCourseTest):
-    def setUp(self):
-        super().setUp()
         # Create an alternative Instructor User
         self.alt_user = User.objects.create_user(
             username="secondtest@gmail.com",
@@ -129,6 +206,77 @@ class CourseModelTests(BaseCourseTest):
         self.assertEqual(Quiz.objects.filter(course=self.course).count(), 2)
 
 
+class FetchQuizzesByCourseTests(BaseCourseTest):
+    def setUp(self):
+        super().setUp()
+
+        self.quiz1 = Quiz.objects.create(
+            instructor=self.instructor, title="Quiz Oldest", course=self.course, published=True
+        )
+        self.quiz2 = Quiz.objects.create(
+            instructor=self.instructor, title="Quiz Newest", course=self.course
+        )
+        self.quiz2.created_at = self.quiz1.created_at + timedelta(days=1)
+        self.quiz2.save()
+        self.url = reverse("quizzes-by-course", kwargs={"course_id": self.course.id})
+
+    def test_instructor_can_fetch_all_quizzes(self):
+        # fetch with instructor added to course
+        response = self.client_instructor_1.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        quizzes = response.json()
+
+        self.assertEqual(quizzes[0]["title"], "Quiz Newest")
+        self.assertEqual(quizzes[1]["title"], "Quiz Oldest")
+
+        self.assertEqual(len(quizzes), 2)
+
+    def test_student_can_fetch_published_quizzes(self):
+        # test with student added to course
+        response = self.client_student_1.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        quizzes = response.json()
+        self.assertEqual(len(quizzes), 1)
+        # Only oldest should show since its the only published one
+        self.assertEqual(quizzes[0]["title"], "Quiz Oldest")
+
+    def test_non_member_cannot_fetch_quizzes(self):
+        response = self.client_student_2.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_instructor_cannot_fetch_quizzes_for_unowned_course(self):
+        # Test with unowned course
+        response = self.client_instructor_2.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_response_structure(self):
+        response = self.client_instructor_1.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        quizzes = response.json()
+        expected_keys = {
+            "id",
+            "title",
+            "start_time",
+            "end_time",
+            "timer",
+            "live_bar_chart",
+            "skip_question",
+            "skip_count_per_student",
+            "skip_question_logic",
+            "skip_question_streak_count",
+            "skip_question_percentage",
+            "instructor_recording",
+            "created_at",
+            "num_questions",
+            "num_sessions",
+        }
+        for quiz in quizzes:
+            self.assertTrue(expected_keys.issubset(quiz.keys()))
+
+
 class CourseRecordingsTests(CourseViewsTest):
     def setUp(self):
         super().setUp()
@@ -151,6 +299,7 @@ class CourseRecordingsTests(CourseViewsTest):
         alt_response = self.alt_instructor_client.get(self.alt_url)
         prim_data = prim_response.json()
         alt_data = alt_response.json()
+
         self.assertEqual(prim_data[0]["id"], self.prim_recordings[-1].id.__str__())
         self.assertEqual(alt_data[0]["id"], self.alt_recordings[-1].id.__str__())
 

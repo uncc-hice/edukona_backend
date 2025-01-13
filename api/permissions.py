@@ -7,6 +7,7 @@ from .models import (
     QuizSession,
     LectureSummary,
     Course,
+    CourseStudent,
 )
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned, FieldError
 from django.shortcuts import get_object_or_404
@@ -140,3 +141,22 @@ class IsCourseOwner(permissions.BasePermission):
         except (ObjectDoesNotExist, MultipleObjectsReturned, FieldError):
             return False
         return request.user == course.instructor.user
+
+
+class IsEnrolledInCourse(permissions.BasePermission):
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+
+        course_id = view.kwargs.get("course_id")
+
+        course = get_object_or_404(Course, id=course_id)
+
+        try:
+            if hasattr(request.user, "student"):
+                is_member = CourseStudent.objects.filter(
+                    course=course, student=request.user.student
+                ).exists()
+                return is_member
+        except (ObjectDoesNotExist, MultipleObjectsReturned, FieldError):
+            return False
