@@ -1,11 +1,12 @@
 from rest_framework.views import APIView
-from api.models import InstructorRecordings, Course, LectureSummary
+from api.models import InstructorRecordings, Course, LectureSummary, CourseStudent
 from rest_framework import status
 from rest_framework.response import Response
 from api.serializers import (
     InstructorRecordingsSerializer,
     CourseSerializer,
     LectureSummarySerializer,
+    CourseStudentSerializer,
 )
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 
@@ -66,4 +67,35 @@ class GetSummariesByCourse(APIView):
         summaries = LectureSummary.objects.filter(course=course_id)
         return Response(
             LectureSummarySerializer(summaries, many=True).data, status=status.HTTP_200_OK
+        )
+
+
+@extend_schema(tags=["Instructor Course Management"])
+class GetStudentsByCourse(APIView):
+    permission_classes = [AllowInstructor & IsCourseOwner]
+
+    @extend_schema(
+        responses={
+            200: CourseStudentSerializer(many=True),
+            400: OpenApiResponse(description="Bad Request"),
+            401: OpenApiResponse(description="Unauthorized"),
+            403: OpenApiResponse(description="Forbidden"),
+            404: OpenApiResponse(description="Course not found"),
+        }
+    )
+    def get(self, request, course_id):
+        course_students = CourseStudent.objects.filter(course=course_id).order_by(
+            "student__user__last_name"
+        )
+        students = [
+            {
+                "first_name": s.student.user.first_name,
+                "last_name": s.student.user.last_name,
+                "email": s.student.user.email,
+                "joined_at": s.joined_at,
+            }
+            for s in course_students
+        ]
+        return Response(
+            CourseStudentSerializer(students, many=True).data, status=status.HTTP_200_OK
         )

@@ -15,6 +15,7 @@ from .models import (
     LectureSummary,
     QuizSessionLog,
     Course,
+    CourseStudent,
 )
 
 
@@ -369,6 +370,13 @@ class CourseSerializer(serializers.ModelSerializer):
             "start_date",
             "end_date",
         ]
+
+
+class CourseStudentSerializer(serializers.Serializer):
+    first_name = serializers.CharField()
+    last_name = serializers.CharField()
+    email = serializers.EmailField()
+    joined_at = serializers.DateTimeField()
 
 
 class LoginSerializer(serializers.Serializer):

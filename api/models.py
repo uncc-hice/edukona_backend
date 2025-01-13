@@ -281,7 +281,7 @@ class LectureSummary(models.Model):
 class CourseStudent(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE, null=False)
     student = models.ForeignKey(Student, on_delete=models.CASCADE, null=False)
-    joined_at = models.DateField(auto_now_add=True, null=False)
+    joined_at = models.DateTimeField(auto_now_add=True, null=False)
 
     class Meta:
         db_table = "api_course_student"
