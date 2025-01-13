@@ -63,7 +63,7 @@ class GetSummariesByCourse(APIView):
         }
     )
     def get(self, request, course_id):
-        summaries = LectureSummary.objects.filter(course=course_id).order_by("-created_at")
+        summaries = LectureSummary.objects.filter(course=course_id)
         return Response(
             LectureSummarySerializer(summaries, many=True).data, status=status.HTTP_200_OK
         )
