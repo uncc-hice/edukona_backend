@@ -227,6 +227,11 @@ urlpatterns = [
         name="get-instructor-course-summaries",
     ),
     path(
+        "course/<uuid:course_id>/get-students/",
+        GetStudentsByCourse.as_view(),
+        name="get-course-students",
+    ),
+    path(
         "token/verify/",
         TokenVerificationView.as_view(),
         name="verify-token",

@@ -371,6 +371,13 @@ class CourseSerializer(serializers.ModelSerializer):
         ]
 
 
+class CourseStudentSerializer(serializers.Serializer):
+    first_name = serializers.CharField()
+    last_name = serializers.CharField()
+    email = serializers.EmailField()
+    joined_at = serializers.DateTimeField()
+
+
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField(max_length=128)
     password = serializers.CharField(max_length=128, style={"input_type": "password"})

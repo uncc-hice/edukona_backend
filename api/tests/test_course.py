@@ -13,6 +13,8 @@ from rest_framework import status
 from datetime import timedelta
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient, APITestCase
+import random
+import string
 
 
 class BaseCourseTest(APITestCase):
@@ -435,3 +437,70 @@ class CourseSummariesTests(CourseViewsTest):
 
         self.assertEqual(prim_response.status_code, 403)
         self.assertEqual(alt_response.status_code, 403)
+
+
+class CourseStudentsTest(CourseViewsTest):
+    def setUp(self):
+        super().setUp()
+        self.prim_course = Course.objects.create(
+            instructor=self.instructor, title="primary course for summaries tests"
+        )
+        # Add a summary for each primary recording
+        self.prim_student_users = [
+            User.objects.create_user(
+                username=f"prim{x}@gmail.com",
+                email="prim{x}@gmail.com",
+                password="password",
+                first_name="primary",
+                last_name="".join(
+                    random.choice(string.ascii_letters) for _ in range(random.randint(5, 10))
+                ),
+            )
+            for x in range(10)
+        ]
+
+        self.prim_students = [Student.objects.create(user=u) for u in self.prim_student_users]
+
+        self.prim_course_students = [
+            CourseStudent.objects.create(course=self.prim_course, student=s)
+            for s in self.prim_students
+        ]
+
+        self.url = reverse("get-course-students", kwargs={"course_id": self.prim_course.id})
+
+    def test_get_students(self):
+        response = self.prim_instructor_client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+
+    def test_get_students_sorted(self):
+        response = self.prim_instructor_client.get(self.url)
+        data = response.json()
+        sortedLastNames = sorted([s.last_name for s in self.prim_student_users])
+        responseLastNames = [s["last_name"] for s in data]
+        self.assertEqual(sortedLastNames, responseLastNames)
+
+    def test_get_students_unauthorized(self):
+        tmp_client = APIClient()
+        response = tmp_client.get(self.url)
+
+        self.assertEqual(response.status_code, 401)
+
+    def test_get_students_forbidden(self):
+        response = self.alt_instructor_client.get(self.url)
+
+        self.assertEqual(response.status_code, 403)
+
+    def test_response_structure(self):
+        response = self.prim_instructor_client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        students = response.json()
+        expected_keys = {
+            "first_name",
+            "last_name",
+            "email",
+            "joined_at",
+        }
+        for student in students:
+            self.assertTrue(expected_keys.issubset(student.keys()))
