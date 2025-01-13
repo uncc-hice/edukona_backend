@@ -15,7 +15,6 @@ from .models import (
     LectureSummary,
     QuizSessionLog,
     Course,
-    CourseStudent,
 )
 
 
