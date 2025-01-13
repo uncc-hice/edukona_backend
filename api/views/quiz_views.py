@@ -3,13 +3,18 @@ from rest_framework import status
 from rest_framework.response import Response
 
 from api.models import Quiz
-from api.serializers import QuizSerializer, QuizListSerializer, QuizTitleUpdateSerializer
+from api.serializers import (
+    QuizSerializer,
+    QuizListSerializer,
+    QuizTitleUpdateSerializer,
+    FetchCourseQuizzesSerializer,
+)
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
 
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 
-from ..permissions import IsQuizOwner, AllowInstructor
+from ..permissions import IsQuizOwner, AllowInstructor, IsCourseOwner, IsEnrolledInCourse
 
 
 @extend_schema(tags=["Quiz Creation and Modification"])
@@ -98,3 +103,25 @@ class InstructorQuizzesView(APIView):
     def get(self, request):
         quizzes = Quiz.objects.filter(instructor=request.user.instructor)
         return Response(QuizListSerializer({"quizzes": quizzes}).data, status=status.HTTP_200_OK)
+
+
+@extend_schema(tags=["Quiz Creation and Modification"])
+class QuizzesByCourseView(APIView):
+    permission_classes = [IsCourseOwner | IsEnrolledInCourse]
+
+    @extend_schema(
+        responses={200: FetchCourseQuizzesSerializer(many=True)},
+        summary="Get all quizzes by course",
+    )
+    def get(self, request, course_id):
+        # check whether request user is student or instructor
+        is_instructor = True if hasattr(request.user, "instructor") else False
+        if is_instructor:
+            # return all quizes for course
+            quizzes = Quiz.objects.filter(course_id=course_id)
+        else:
+            # Return only published quizzes
+            quizzes = Quiz.objects.filter(published=True, course_id=course_id)
+
+        return_response = FetchCourseQuizzesSerializer(quizzes, many=True).data
+        return Response(return_response, status=status.HTTP_200_OK)
