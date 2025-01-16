@@ -18,6 +18,8 @@ from api.models import (
     QuizSessionQuestion,
 )
 
+from .serializers import QuizSerializer
+
 logger = logging.getLogger(__name__)
 
 from channels.db import database_sync_to_async
@@ -31,10 +33,22 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
 
         await self.accept()
 
+        quiz_data = await self.get_quiz_json()
+
+        uc = await self.fetch_user_count()
+
+        await self.send(
+            text_data=json.dumps({"type": "quiz_details", "quiz": quiz_data, "user_count": uc})
+        )
+
     @database_sync_to_async
     def fetch_user_count(self):
         session = QuizSession.objects.get(code=self.code)
         return session.students.count()
+
+    @database_sync_to_async
+    def get_quiz_json(self):
+        return QuizSerializer(QuizSession.objects.get(code=self.code).quiz).data
 
     async def disconnect(self, close_code):
         await self.channel_layer.group_discard(self.group_name, self.channel_name)
