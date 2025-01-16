@@ -48,7 +48,9 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def get_quiz_json(self):
-        return QuizSerializer(QuizSession.objects.get(code=self.code).quiz).data
+        data = QuizSerializer(QuizSession.objects.get(code=self.code).quiz).data
+        data["instructor_recording"] = str(data["instructor_recording"])
+        return data
 
     async def disconnect(self, close_code):
         await self.channel_layer.group_discard(self.group_name, self.channel_name)

@@ -8,6 +8,7 @@ from django.contrib.auth.models import User
 from api.models import (
     Quiz,
     Instructor,
+    InstructorRecordings,
     QuizSession,
     QuizSessionStudent,
     UserResponse,
@@ -36,6 +37,13 @@ async def test_quiz():
     )
 
     # ----------------------------
+    # Create a Recording
+    # ----------------------------
+    recording = await sync_to_async(InstructorRecordings.objects.create)(
+        instructor=instructor, title="test"
+    )
+
+    # ----------------------------
     # Create a Quiz
     # ----------------------------
     quiz = await sync_to_async(Quiz.objects.create)(
@@ -43,7 +51,7 @@ async def test_quiz():
         instructor=instructor,
         timer=True,
         created_at=timezone.now(),
-        instructor_recording=None,  # Or set to an existing InstructorRecordings instance
+        instructor_recording=recording,
     )
 
     # ----------------------------
