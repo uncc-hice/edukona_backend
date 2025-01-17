@@ -495,7 +495,7 @@ class StudentConsumer(AsyncWebsocketConsumer):
         return QuizSession.objects.get(code=self.code).quiz
 
     async def check_and_grant_skip_power_up(self, student_id):
-        quiz = await self.get_quiz(self.code)
+        quiz = await self.get_quiz()
         correct_responses = await self.get_correct_responses(student_id)
         student = await self.get_student(student_id)
         if quiz.skip_question:
