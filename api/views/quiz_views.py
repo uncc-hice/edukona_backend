@@ -9,12 +9,14 @@ from api.serializers import (
     QuizSerializer,
     QuizListSerializer,
     QuizTitleUpdateSerializer,
+    FetchCourseQuizzesSerializer,
 )
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
 
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 
+from ..permissions import IsQuizOwner, AllowInstructor, IsCourseOwner, IsEnrolledInCourse
 from ..permissions import IsQuizOwner, AllowInstructor, IsRecordingOwner
 import boto3
 from django.conf import settings
@@ -142,3 +144,25 @@ class CreateQuizFromTranscript(APIView):
                 status=HTTP_500_INTERNAL_SERVER_ERROR,
             )
         return Response(request.data, status=status.HTTP_201_CREATED)
+
+
+@extend_schema(tags=["Quiz Creation and Modification"])
+class QuizzesByCourseView(APIView):
+    permission_classes = [IsCourseOwner | IsEnrolledInCourse]
+
+    @extend_schema(
+        responses={200: FetchCourseQuizzesSerializer(many=True)},
+        summary="Get all quizzes by course",
+    )
+    def get(self, request, course_id):
+        # check whether request user is student or instructor
+        is_instructor = True if hasattr(request.user, "instructor") else False
+        if is_instructor:
+            # return all quizes for course
+            quizzes = Quiz.objects.filter(course_id=course_id)
+        else:
+            # Return only published quizzes
+            quizzes = Quiz.objects.filter(published=True, course_id=course_id)
+
+        return_response = FetchCourseQuizzesSerializer(quizzes, many=True).data
+        return Response(return_response, status=status.HTTP_200_OK)

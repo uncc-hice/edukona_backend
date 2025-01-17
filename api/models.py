@@ -19,6 +19,35 @@ class Instructor(models.Model):
     )
 
 
+class Course(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    instructor = models.ForeignKey(Instructor, on_delete=models.CASCADE)
+    title = models.CharField(blank=False, max_length=60)
+    description = models.TextField(blank=True)
+    code = models.CharField(blank=False, unique=True, max_length=75)
+    created_at = models.DateTimeField(auto_now_add=True)
+    allow_joining_until = models.DateTimeField(auto_now_add=True)
+    start_date = models.DateField(null=True)
+    end_date = models.DateField(null=True)
+
+    class Meta:
+        db_table = "api_course"
+
+    def generate_code(self):
+        hex_chars = string.digits + "abcdef"
+        ins_initial = self.instructor.user.first_name[:1]
+        ins_last_name = self.instructor.user.last_name
+        code = f"{ins_initial}{ins_last_name[:10]}{self.title.replace(' ', '-')}"
+        fin_code = code
+        while Course.objects.filter(code=fin_code).exists():
+            fin_code = f"{code}-{''.join(random.choices(hex_chars, k=2))}"
+        return fin_code
+
+    def save(self, *args, **kwargs):
+        self.code = self.generate_code()
+        super().save(*args, **kwargs)
+
+
 class InstructorRecordings(models.Model):
     id = models.UUIDField(
         primary_key=True, default=uuid.uuid4, editable=False
@@ -29,6 +58,8 @@ class InstructorRecordings(models.Model):
     transcript = models.TextField(default="")
     title = models.CharField(max_length=250, default="")
     duration = models.PositiveIntegerField(default=0)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, null=True)
+    published = models.BooleanField(default=False)
 
     class Meta:
         db_table = "api_instructor_recordings"
@@ -48,7 +79,9 @@ class Quiz(models.Model):
     skip_question_logic = models.TextField(default="random")
     skip_question_streak_count = models.IntegerField(default=1)
     skip_question_percentage = models.FloatField(default=0.0)
-
+    # End of settings
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, null=True)
+    published = models.BooleanField(default=False)
     instructor_recording = models.ForeignKey(
         InstructorRecordings, on_delete=models.CASCADE, null=True
     )
@@ -237,41 +270,18 @@ class LectureSummary(models.Model):
     )
     summary = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, null=True)
+    published = models.BooleanField(default=False)
 
     class Meta:
         db_table = "api_lecture_summary"
         ordering = ["-created_at"]
 
 
-class Course(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    instructor = models.ForeignKey(Instructor, on_delete=models.CASCADE)
-    title = models.CharField(blank=False, max_length=60)
-    description = models.TextField(blank=True)
-    code = models.CharField(blank=False, unique=True, max_length=75)
-    created_at = models.DateField(auto_now_add=True)
-    allow_joining_until = models.DateField(auto_now_add=True)
-    start_date = models.DateField(null=True)
-    end_date = models.DateField(null=True)
-
-    class Meta:
-        db_table = "api_course"
-
-    def generate_code(self):
-        hex_chars = string.digits + "abcdef"
-        ins_initial = self.instructor.user.first_name[:1]
-        ins_last_name = self.instructor.user.last_name
-        code = f"{ins_initial}{ins_last_name[:10]}{self.title.replace(' ', '-')}"
-        fin_code = code
-        while Course.objects.filter(code=fin_code).exists():
-            fin_code = f"{code}-{''.join(random.choices(hex_chars, k=2))}"
-        return fin_code
-
-
 class CourseStudent(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE, null=False)
     student = models.ForeignKey(Student, on_delete=models.CASCADE, null=False)
-    joined_at = models.DateField(auto_now_add=True, null=False)
+    joined_at = models.DateTimeField(auto_now_add=True, null=False)
 
     class Meta:
         db_table = "api_course_student"

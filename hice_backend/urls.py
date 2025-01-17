@@ -4,6 +4,7 @@ from api.views.question_views import *
 from api.views.quiz_views import *
 from api.views.session_views import *
 from api.views.user_views import *
+from api.views.course_views import *
 from api.views.recordings_views import *
 from api.consumers import *
 from rest_framework_simplejwt.views import (
@@ -20,6 +21,11 @@ urlpatterns = [
     path("quiz/<int:quiz_id>/", QuizView.as_view(), name="quiz-detail"),
     path(
         "quiz/<int:quiz_id>/update-title/", UpdateQuizTitleView.as_view(), name="quiz-update-title"
+    ),
+    path(
+        "course/<uuid:course_id>/get-quizzes/",
+        QuizzesByCourseView.as_view(),
+        name="quizzes-by-course",
     ),
     path("question/", QuestionView.as_view(), name="question-list"),
     path("question/<int:question_id>/", QuestionView.as_view(), name="question-detail"),
@@ -49,6 +55,7 @@ urlpatterns = [
         name="user-response-detail",
     ),
     path("sign-up-instructor/", SignUpInstructor.as_view(), name="sign-up-instructor"),
+    path("jwt-sign-up-instructor/", JWTSignUpInstructor.as_view(), name="jwt-sign-up-instructor"),
     # path('sign-up-student/', SignUpStudent.as_view()),
     path("login/", Login.as_view(), name="login"),
     path("logout/", Logout.as_view(), name="logout"),
@@ -210,6 +217,24 @@ urlpatterns = [
         "summary/<uuid:summary_id>/update-summary/",
         UpdateLectureSummaryView.as_view(),
         name="update-summary",
+    ),
+    path(
+        "course/<uuid:course_id>/get-recordings/",
+        GetRecordingsByCourse.as_view(),
+        name="get-course-recordings",
+    ),
+    path(
+        "instructor/get-courses/", GetCoursesByInstructor.as_view(), name="get-instructor-courses"
+    ),
+    path(
+        "instructor/course/<uuid:course_id>/get-summaries/",
+        GetSummariesByCourse.as_view(),
+        name="get-instructor-course-summaries",
+    ),
+    path(
+        "course/<uuid:course_id>/get-students/",
+        GetStudentsByCourse.as_view(),
+        name="get-course-students",
     ),
     path(
         "token/verify/",

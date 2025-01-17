@@ -766,6 +766,139 @@ class SignUpInstructorTests(BaseTest):
         mock_mailInstructor.assert_called_once_with(user.email)
 
 
+class JWTSignUpInstructorTests(BaseTest):
+    def setUp(self):
+        super().setUp()
+        self.signup_url = reverse(
+            "jwt-sign-up-instructor"
+        )  # Ensure this name matches your URL configuration
+
+    @patch("api.views.user_views.mailInstructor")  # Adjust the path based on your project structure
+    def test_signup_instructor_success(self, mock_mailInstructor):
+        """
+        Test that a user can successfully sign up as an instructor with all required fields.
+        """
+        data = {
+            "first_name": "Jane",
+            "last_name": "Doe",
+            "email": "jane.doe@example.com",
+            "password": "StrongPassword123!",
+        }
+
+        response = self.client.post(self.signup_url, data, format="json")
+
+        # Assert HTTP 201 Created
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # Assert the correct response data is returned
+        self.assertIn("access", response.data)
+        self.assertIn("refresh", response.data)
+        self.assertIn("user", response.data)
+        self.assertIn("instructor", response.data)
+
+        # Verify User creation
+        user = User.objects.get(email=data["email"])
+        self.assertEqual(user.first_name, data["first_name"])
+        self.assertEqual(user.last_name, data["last_name"])
+        self.assertTrue(user.check_password(data["password"]))
+
+        # Verify Instructor creation
+        instructor = Instructor.objects.get(user=user)
+        self.assertEqual(instructor.id, response.data["instructor"])
+
+        # Assert that mailInstructor was called once with correct email
+        mock_mailInstructor.assert_called_once_with(user.email)
+
+    @patch("api.views.user_views.mailInstructor")
+    def test_signup_instructor_invalid_email_format(self, mock_mailInstructor):
+        """
+        Test that signing up with an invalid email format fails.
+        """
+        data = {
+            "first_name": "Alice",
+            "last_name": "Wonderland",
+            "email": "invalid-email-format",
+            "password": "ValidPass123!",
+        }
+
+        response = self.client.post(self.signup_url, data, format="json")
+
+        # Assert HTTP 400 Bad Request
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        # Assert error message
+        self.assertIn("message", response.data)
+        self.assertEqual(response.data["message"], "Enter a valid email address.")
+
+        # Ensure no User or Instructor was created
+        self.assertFalse(User.objects.filter(email=data["email"]).exists())
+
+        # Assert that mailInstructor was not called
+        mock_mailInstructor.assert_not_called()
+
+    @patch("api.views.user_views.mailInstructor")
+    def test_signup_instructor_missing_required_fields(self, mock_mailInstructor):
+        """
+        Test that signing up without required fields fails.
+        """
+        data = {
+            "last_name": "NoFirstName",
+            "email": "nofirstname@example.com",
+            "password": "ValidPass123!",
+        }
+
+        response = self.client.post(self.signup_url, data, format="json")
+
+        # Assert HTTP 400 Bad Request
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        # Assert error message
+        self.assertIn("message", response.data)
+        self.assertEqual(response.data["message"], "Please provide all required fields.")
+
+        # Ensure no User or Instructor was created
+        self.assertFalse(User.objects.filter(email=data["email"]).exists())
+
+        # Assert that mailInstructor was not called
+        mock_mailInstructor.assert_not_called()
+
+    @patch("api.views.user_views.mailInstructor")
+    def test_signup_instructor_blank_last_name(self, mock_mailInstructor):
+        """
+        Test that signing up with a blank last_name sets it to an empty string.
+        """
+        data = {
+            "first_name": "Charlie",
+            "last_name": "",  # Blank last_name
+            "email": "charlie@example.com",
+            "password": "StrongPass123!",
+        }
+
+        response = self.client.post(self.signup_url, data, format="json")
+
+        # Assert HTTP 201 Created
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # Assert the correct response data is returned
+        self.assertIn("access", response.data)
+        self.assertIn("refresh", response.data)
+        self.assertIn("user", response.data)
+        self.assertIn("instructor", response.data)
+
+        # Verify User creation
+        user = User.objects.get(email=data["email"])
+        self.assertEqual(user.first_name, data["first_name"])
+        self.assertEqual(user.last_name, "")  # Should be empty string
+        self.assertTrue(user.check_password(data["password"]))
+
+        # Verify Instructor creation
+        instructor = Instructor.objects.get(user=user)
+        self.assertEqual(instructor.id, response.data["instructor"])
+
+        # Assert that mailInstructor was called once with correct email
+        mock_mailInstructor.assert_called_once_with(user.email)
+
+
 class LectureSummaryViewTest(BaseTest):
     def setUp(self):
         super().setUp()

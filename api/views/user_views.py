@@ -65,7 +65,7 @@ def mailInstructor(email):
         print(response.body)
         print(response.headers)
     except Exception as e:
-        print(e.message)
+        logger.error(f"Failed to send email to {email} with error: {str(e)}")
 
 
 @extend_schema(tags=["Authentication Endpoint"])
@@ -141,6 +141,113 @@ class SignUpInstructor(APIView):
                 )
             else:
                 # Generic error message for other validation errors
+                return Response(
+                    {"message": "Invalid data provided."}, status=status.HTTP_400_BAD_REQUEST
+                )
+
+
+@extend_schema(
+    operation_id="sign_up_instructor",
+    summary="Sign up as an Instructor",
+    description="Allows a new user to sign up as an instructor by providing first name, last name (optional), email, and password. Returns JWT tokens upon successful registration.",
+    request=SignUpInstructorSerializer,
+    responses={
+        201: {
+            "description": "Instructor created successfully.",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "access": "jwt_access_token",
+                        "refresh": "jwt_refresh_token",
+                        "user": "user-uuid-string",
+                        "instructor": "instructor-uuid-string",
+                    }
+                }
+            },
+        },
+        400: {
+            "description": "Bad Request. Input data is invalid.",
+            "content": {
+                "application/json": {
+                    "example": {"message": "A user with this email already exists."}
+                }
+            },
+        },
+        403: {
+            "description": "Forbidden. An error occurred while signing up.",
+            "content": {
+                "application/json": {"example": {"message": "An error occurred while signing up."}}
+            },
+        },
+        500: {
+            "description": "Internal Server Error. An error occurred while signing up.",
+            "content": {
+                "application/json": {"example": {"message": "An error occurred while signing up."}}
+            },
+        },
+    },
+    examples=[
+        OpenApiExample(
+            "Valid Input",
+            value={
+                "first_name": "John",
+                "last_name": "Doe",
+                "email": "john.doe@example.com",
+                "password": "StrongPassword123!",
+            },
+            request_only=True,
+            response_only=False,
+        ),
+    ],
+    tags=["Authentication Endpoint"],
+)
+class JWTSignUpInstructor(APIView):
+    permission_classes = [AllowAny]
+    serializer_class = SignUpInstructorSerializer
+
+    def post(self, request):
+        serializer = SignUpInstructorSerializer(data=request.data)
+        if serializer.is_valid():
+            instructor = serializer.save()
+            user = instructor.user
+            refresh = RefreshToken.for_user(user)
+
+            response = {
+                "access": str(refresh.access_token),
+                "refresh": str(refresh),
+                "user": user.id,
+                "instructor": instructor.id,
+            }
+
+            mailInstructor(user.email)  # Send a welcome email to the instructor
+            logger.info(f"Instructor {user.id} signed up successfully.")
+            return Response(response, status=status.HTTP_201_CREATED)
+        else:
+            errors = serializer.errors
+            if "email" in errors:
+                logger.warning(
+                    f"Sign up failed for email {request.data.get('email')}: {errors['email'][0]}"
+                )
+                return Response({"message": errors["email"][0]}, status=status.HTTP_400_BAD_REQUEST)
+            elif "password" in errors:
+                logger.warning(
+                    f"Sign up failed for email {request.data.get('email')}: {errors['password'][0]}"
+                )
+                return Response(
+                    {"message": errors["password"][0]}, status=status.HTTP_400_BAD_REQUEST
+                )
+            elif "first_name" in errors:
+                logger.warning(
+                    f"Sign up failed for email {request.data.get('email')}: Missing first name"
+                )
+                return Response(
+                    {"message": "Please provide all required fields."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            else:
+                logger.warning(
+                    f"Sign up failed for email {request.data.get('email')}: Invalid data provided"
+                )
                 return Response(
                     {"message": "Invalid data provided."}, status=status.HTTP_400_BAD_REQUEST
                 )
@@ -260,7 +367,43 @@ class Logout(APIView):
         return JsonResponse({"message": "User logged out successfully"}, status=status.HTTP_200_OK)
 
 
-@extend_schema(tags=["Authentication Endpoint"])
+@extend_schema(
+    operation_id="jwt_logout",
+    summary="Logout with JWT",
+    description="Allows a user to log out using a refresh token, and blacklists the token.",
+    request=LogoutSerializer,
+    responses={
+        200: {
+            "description": "Logout successful",
+            "content": {"application/json": {"example": {"detail": "Logout successful"}}},
+        },
+        400: {
+            "description": "Bad Request. Refresh token is required.",
+            "content": {"application/json": {"example": {"detail": "Refresh token is required"}}},
+        },
+        403: {
+            "description": "Forbidden. An error occurred while logging out.",
+            "content": {
+                "application/json": {"example": {"detail": "An error occurred while logging out."}}
+            },
+        },
+        500: {
+            "description": "Internal Server Error. An error occurred while logging out.",
+            "content": {
+                "application/json": {"example": {"detail": "An error occurred while logging out."}}
+            },
+        },
+    },
+    examples=[
+        OpenApiExample(
+            "Valid Input",
+            value={"refresh": "abc123def456ghi789"},
+            request_only=True,
+            response_only=False,
+        ),
+    ],
+    tags=["Authentication Endpoint"],
+)
 class JWTLogoutView(APIView):
     serializer_class = LogoutSerializer
     permission_classes = [IsAuthenticated]
@@ -715,15 +858,9 @@ class GoogleLogin(APIView):
 
 class JWTGoogleLogin(APIView):
     permission_classes = [AllowAny]
+    serializer_class = GoogleLoginRequestSerializer
 
-    @extend_schema(
-        request=GoogleLoginRequestSerializer,
-        responses={
-            200: GoogleLoginResponseSerializer,
-            400: OpenApiTypes.OBJECT,
-        },
-        tags=["Authentication Endpoint"],
-    )
+    @extend_schema(tags=["Authentication Endpoint"], request=GoogleLoginRequestSerializer)
     def post(self, request):
         token = request.data.get("token")
 
@@ -744,7 +881,7 @@ class JWTGoogleLogin(APIView):
             except User.DoesNotExist:
                 return Response(
                     {"message": "Account does not exist. Please sign up first."},
-                    status=status.HTTP_400_BAD_REQUEST,
+                    status=status.HTTP_403_FORBIDDEN,
                 )
 
             refresh = RefreshToken.for_user(user)
@@ -765,7 +902,7 @@ class JWTGoogleLogin(APIView):
             logger.error(f"Invalid token: {str(e)}")
             return Response(
                 {"message": "Google login failed."},
-                status=status.HTTP_400_BAD_REQUEST,
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
 
