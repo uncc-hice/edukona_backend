@@ -8,7 +8,6 @@ from api.serializers import (
     CourseSerializer,
     LectureSummarySerializer,
     CourseStudentSerializer,
-    Student,
 )
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 
