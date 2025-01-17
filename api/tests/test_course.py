@@ -504,3 +504,52 @@ class CourseStudentsTest(CourseViewsTest):
         }
         for student in students:
             self.assertTrue(expected_keys.issubset(student.keys()))
+
+
+class StudentCoursesTest(CourseViewsTest):
+    def setUp(self):
+        super().setUp()
+        self.additional_courses = [
+            Course.objects.create(instructor=self.instructor, title=f"Additional Course {x}")
+            for x in range(5)
+        ]
+        for course in self.additional_courses:
+            CourseStudent.objects.create(course=course, student=self.student_2)
+        self.url = reverse("get-courses-by-student")
+
+    def test_get_courses(self):
+        response = self.client_student_2.get(self.url)
+        data = response.json()
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(data), 5)
+
+    def test_get_courses_sorted(self):
+        response = self.client_student_2.get(self.url)
+        data = response.json()
+
+        self.assertEqual(self.additional_courses[-1].title, data[0]["title"])
+
+    def test_get_courses_unauthorized(self):
+        tmp_client = APIClient()
+        response = tmp_client.get(self.url)
+
+        self.assertEqual(response.status_code, 401)
+
+    def test_response_structure(self):
+        response = self.client_student_2.get(self.url)
+
+        courses = response.json()
+        expected_keys = {
+            "id",
+            "instructor",
+            "title",
+            "description",
+            "code",
+            "created_at",
+            "allow_joining_until",
+            "start_date",
+            "end_date",
+        }
+        for course in courses:
+            self.assertTrue(expected_keys.issubset(course.keys()))
