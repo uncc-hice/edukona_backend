@@ -2,15 +2,12 @@ import asyncio
 
 import pytest
 from asgiref.sync import sync_to_async
-from channels.routing import ProtocolTypeRouter, URLRouter
 from channels.testing import WebsocketCommunicator
 from django.contrib.auth.models import User
 from django.test import TestCase
-from django.urls import path
 from django.utils import timezone
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from api.consumers import RecordingConsumer
 from api.models import (
     Instructor,
     InstructorRecordings,
