@@ -1,4 +1,3 @@
-# api/tests/consumer_tests.py
 import asyncio
 
 import pytest
@@ -266,20 +265,10 @@ class RecordingConsumerTest(TestCase):
         self.refresh = RefreshToken.for_user(self.user)
         self.jwt_token = str(self.refresh.access_token)
 
-        self.application = ProtocolTypeRouter(
-            {
-                "websocket": URLRouter(
-                    [
-                        path("ws/recordings/", RecordingConsumer.as_asgi()),
-                    ]
-                ),
-            }
-        )
-
     @pytest.mark.asyncio
     async def test_jwt_authentication(self):
         communicator = WebsocketCommunicator(
-            self.application, f"/ws/recordings/?jwt={self.jwt_token}"
+            application, f"/ws/recordings/?jwt={self.jwt_token}"
         )
 
         connected, _ = await communicator.connect()
@@ -292,7 +281,7 @@ class RecordingConsumerTest(TestCase):
         invalid_jwt_token = "invalidtoken"
 
         communicator = WebsocketCommunicator(
-            self.application, f"/ws/recordings/?jwt={invalid_jwt_token}"
+            application, f"/ws/recordings/?jwt={invalid_jwt_token}"
         )
 
         connected, _ = await communicator.connect()
