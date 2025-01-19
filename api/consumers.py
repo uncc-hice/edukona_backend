@@ -621,7 +621,6 @@ def get_user_from_token(token_key):
 @database_sync_to_async
 def get_user_from_jwt(jwt_token):
     try:
-        UntypedToken(jwt_token)
         user_id = UntypedToken(jwt_token).payload["user_id"]
         return User.objects.get(id=user_id)
     except (InvalidToken, TokenError, User.DoesNotExist):
