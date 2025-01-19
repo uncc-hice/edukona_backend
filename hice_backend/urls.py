@@ -231,6 +231,7 @@ urlpatterns = [
         GetStudentsByCourse.as_view(),
         name="get-course-students",
     ),
+    path("student/get-courses/", GetCoursesByStudent.as_view(), name="get-courses-by-student"),
     path(
         "token/verify/",
         TokenVerificationView.as_view(),
