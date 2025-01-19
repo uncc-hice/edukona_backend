@@ -267,9 +267,7 @@ class RecordingConsumerTest(TestCase):
 
     @pytest.mark.asyncio
     async def test_jwt_authentication(self):
-        communicator = WebsocketCommunicator(
-            application, f"/ws/recordings/?jwt={self.jwt_token}"
-        )
+        communicator = WebsocketCommunicator(application, f"/ws/recordings/?jwt={self.jwt_token}")
 
         connected, _ = await communicator.connect()
         self.assertTrue(connected)
