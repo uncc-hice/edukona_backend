@@ -1,18 +1,25 @@
 # api/tests/consumer_tests.py
-import pytest
 import asyncio
-from channels.testing import WebsocketCommunicator
-from django.utils import timezone
+
+import pytest
 from asgiref.sync import sync_to_async
+from channels.routing import ProtocolTypeRouter, URLRouter
+from channels.testing import WebsocketCommunicator
 from django.contrib.auth.models import User
+from django.test import TestCase
+from django.urls import path
+from django.utils import timezone
+from rest_framework_simplejwt.tokens import RefreshToken
+
+from api.consumers import RecordingConsumer
 from api.models import (
-    Quiz,
     Instructor,
     InstructorRecordings,
+    QuestionMultipleChoice,
+    Quiz,
     QuizSession,
     QuizSessionStudent,
     UserResponse,
-    QuestionMultipleChoice,
 )
 from hice_backend.asgi import application  # Ensure this path is correct
 
@@ -251,3 +258,42 @@ async def test_quiz():
     # Disconnect the communicator
     # ----------------------------
     await communicator.disconnect()
+
+
+class RecordingConsumerTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username="testuser", password="password")
+        self.refresh = RefreshToken.for_user(self.user)
+        self.jwt_token = str(self.refresh.access_token)
+
+        self.application = ProtocolTypeRouter(
+            {
+                "websocket": URLRouter(
+                    [
+                        path("ws/recordings/", RecordingConsumer.as_asgi()),
+                    ]
+                ),
+            }
+        )
+
+    @pytest.mark.asyncio
+    async def test_jwt_authentication(self):
+        communicator = WebsocketCommunicator(
+            self.application, f"/ws/recordings/?jwt={self.jwt_token}"
+        )
+
+        connected, _ = await communicator.connect()
+        self.assertTrue(connected)
+
+        await communicator.disconnect()
+
+    @pytest.mark.asyncio
+    async def test_invalid_jwt_authentication(self):
+        invalid_jwt_token = "invalidtoken"
+
+        communicator = WebsocketCommunicator(
+            self.application, f"/ws/recordings/?jwt={invalid_jwt_token}"
+        )
+
+        connected, _ = await communicator.connect()
+        self.assertFalse(connected)
