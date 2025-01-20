@@ -571,16 +571,18 @@ class FetchPublishedCoursesTest(CourseViewsTest):
             recording=self.recording,
             course=self.course,
             published=True,
-            summary = "Summary 1", 
+            summary="Summary 1",
         )
 
         self.published_summary_2 = LectureSummary.objects.create(
-            recording=self.recording, 
-            course=self.course, 
-            published=True, 
-            summary = "Summary 2",
+            recording=self.recording,
+            course=self.course,
+            published=True,
+            summary="Summary 2",
         )
-        self.published_summary_2.created_at = self.published_summary_1.created_at + timedelta(days=1)
+        self.published_summary_2.created_at = self.published_summary_1.created_at + timedelta(
+            days=1
+        )
         self.published_summary_2.save()
 
         self.unpublished_summary = LectureSummary.objects.create(
