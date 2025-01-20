@@ -1,9 +1,10 @@
 from botocore.exceptions import ClientError
-from rest_framework.status import HTTP_500_INTERNAL_SERVER_ERROR
 from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.response import Response
 import json
+import logging
+from rest_framework.permissions import AllowAny
 
 from api.models import Quiz, InstructorRecordings
 from api.serializers import (
@@ -17,10 +18,12 @@ from django.http import JsonResponse
 
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 
-from ..permissions import IsQuizOwner, AllowInstructor, IsCourseOwner, IsEnrolledInCourse
+from ..permissions import IsCourseOwner, IsEnrolledInCourse
 from ..permissions import IsQuizOwner, AllowInstructor, IsRecordingOwner
 import boto3
 from django.conf import settings
+
+logger = logging.getLogger(__name__)
 
 
 @extend_schema(tags=["Quiz Creation and Modification"])
@@ -113,64 +116,36 @@ class InstructorQuizzesView(APIView):
 
 @extend_schema(tags=["Quiz Creation and Modification"])
 class CreateQuizFromTranscript(APIView):
-    permission_classes = [IsRecordingOwner]
+    permission_classes = [AllowAny]
 
     @extend_schema(
         operation_id="create-quiz-from-transcript",
         summary="Creates a new quiz from a transcript",
         description="Created a new quiz for a user given a transcript",
+        request=QuizSerializer,
         responses={
             201: QuizSerializer,
-            400: "Bad Request",
-            401: "Unauthorized",
+            204: OpenApiResponse(description="No Content"),
+            400: OpenApiResponse(description="Bad Request"),
+            401: OpenApiResponse(description="Unauthorized"),
+            403: OpenApiResponse(description="Forbidden"),
         },
     )
     def post(self, request):
-        instructor_recordings = get_object_or_404(
-            InstructorRecordings, user=request.user.instructor
+        instructor_recording = get_object_or_404(
+            InstructorRecordings, id=request.data["instructor_recording"]
         )
         data = request.data.copy()
-        data["id"] = instructor_recordings.id
-
-        print("Setup the data variable for serialization.")
-
-        serializer = QuizSerializer(data=data)
-        print("Called the serializer.")
+        data["instructor"] = instructor_recording.instructor
+        print(f"The data collected: {data}")
+        serializer = QuizSerializer(data=data, context={"request": request})
+        print(f"Serializer successfully created")
         if serializer.is_valid():
             serializer.save()
             new_quiz = serializer.instance
-            try:
-                lambda_client = boto3.client(
-                    "lambda",
-                    aws_access_key_id=settings.AWS_LAMBDA_INVOKER_ACCESS_KEY_ID,
-                    aws_secret_access_key=settings.AWS_LAMBDA_INVOKER_SECRET_ACCESS_KEY,
-                    region_name=settings.AWS_LAMBDA_INVOKER_REGION_NAME,
-                )
+            print(f"The new quiz created: {new_quiz}")
 
-                token = request.META.get("HTTP_AUTHORIZATION").split(" ")[1]
-                print(f"Extracted token: {token}")
-
-                payload = {
-                    "headers": {"Authorization": f"Token {token}"},
-                    "recording_id": new_quiz.id,
-                    "num_questions": new_quiz.num_questions,
-                    "question_duration": instructor_recordings.duration,
-                }
-
-                lambda_client.invoke(
-                    FunctionName="CreateQuizFromTranscript",
-                    InvocationType="Event",
-                    payload=json.dumps(payload),
-                )
-            except Exception as e:
-                return Response(
-                    {"error": f"Quiz saved, but failed to invoke lambda {str(e)}"},
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                )
-
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"message": "This is a test message."}, status=status.HTTP_200_OK)
 
 
 @extend_schema(tags=["Quiz Creation and Modification"])
