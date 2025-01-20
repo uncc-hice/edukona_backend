@@ -618,22 +618,12 @@ def get_user_from_token(token_key):
         return AnonymousUser()
 
 
-class ExpiredTokenError(Exception):
-    pass
-
-
 @database_sync_to_async
 def get_user_from_jwt(jwt_token):
     try:
         user_id = UntypedToken(jwt_token).payload["user_id"]
         return User.objects.get(id=user_id)
-    except (InvalidToken, TokenError) as e:
-        if isinstance(e, TokenError) and "Token is expired" in str(e):
-            raise ExpiredTokenError("Token is expired")
-        logger.warning(f"Invalid token: {e}")
-        return AnonymousUser()
-    except User.DoesNotExist:
-        logger.warning("User does not exist")
+    except (InvalidToken, TokenError, User.DoesNotExist):
         return AnonymousUser()
 
 
@@ -644,23 +634,14 @@ class RecordingConsumer(AsyncWebsocketConsumer):
         token_key = params.get("token")
         jwt_token = params.get("jwt")
 
-        try:
-            if jwt_token:
-                jwt_token = jwt_token[0]
-                self.user = await get_user_from_jwt(jwt_token)
-            elif token_key:
-                token_key = token_key[0]
-                self.user = await get_user_from_token(token_key)
-            else:
-                self.user = AnonymousUser()
-        except ExpiredTokenError:
-            await self.send(text_data=json.dumps({"error": "Token is expired."}))
-            await self.close()
-            return
-        except Exception as e:
-            logger.error(f"Unexpected error during connection: {e}")
-            await self.close()
-            return
+        if jwt_token:
+            jwt_token = jwt_token[0]
+            self.user = await get_user_from_jwt(jwt_token)
+        elif token_key:
+            token_key = token_key[0]
+            self.user = await get_user_from_token(token_key)
+        else:
+            self.user = AnonymousUser()
 
         if self.user.is_anonymous:
             await self.close()
