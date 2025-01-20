@@ -571,11 +571,17 @@ class FetchPublishedCoursesTest(CourseViewsTest):
             recording=self.recording,
             course=self.course,
             published=True,
+            summary = "Summary 1", 
         )
 
         self.published_summary_2 = LectureSummary.objects.create(
-            recording=self.recording, course=self.course, published=True
+            recording=self.recording, 
+            course=self.course, 
+            published=True, 
+            summary = "Summary 2",
         )
+        self.published_summary_2.created_at = self.published_summary_1.created_at + timedelta(days=1)
+        self.published_summary_2.save()
 
         self.unpublished_summary = LectureSummary.objects.create(
             recording=self.recording, course=self.course, published=False
@@ -586,6 +592,8 @@ class FetchPublishedCoursesTest(CourseViewsTest):
         summaries = response.json()
         self.assertEqual(len(summaries), 2)
         self.assertEqual(response.status_code, 200)
+        print(f"\nReponse: {response.json()}\n")
+        self.assertEqual(response.data[0]["summary"], "Summary 2")
 
     def test_get_summaries_unauthorized(self):
         response = self.client_student_2.get(self.url)
