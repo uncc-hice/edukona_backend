@@ -11,7 +11,7 @@ from api.serializers import (
 )
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 
-from api.permissions import AllowInstructor, IsCourseOwner
+from api.permissions import AllowInstructor, IsCourseOwner, IsEnrolledInCourse
 
 
 @extend_schema(tags=["Instructor Course Management"])
@@ -118,3 +118,17 @@ class GetCoursesByStudent(APIView):
         )
         courses = [sc.course for sc in student_courses]
         return Response(CourseSerializer(courses, many=True).data, status=status.HTTP_200_OK)
+
+
+@extend_schema(tags=["Summaries"])
+class FetchPublishedSummariesView(APIView):
+    permission_classes = [IsEnrolledInCourse]
+
+    @extend_schema(
+        description="Endpoint for students to get published summaries given course id that they are in"
+    )
+    def get(self, request, course_id):
+        summaries = LectureSummary.objects.filter(course=course_id, published=True)
+        return Response(
+            LectureSummarySerializer(summaries, many=True).data, status=status.HTTP_200_OK
+        )
