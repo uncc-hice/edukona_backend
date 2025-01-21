@@ -553,3 +553,57 @@ class StudentCoursesTest(CourseViewsTest):
         }
         for course in courses:
             self.assertTrue(expected_keys.issubset(course.keys()))
+
+
+class FetchPublishedCoursesTest(CourseViewsTest):
+    def setUp(self):
+        super().setUp()
+        self.unenrolled_course = Course.objects.create(
+            instructor=self.instructor, title="Unenrolled Course"
+        )
+        self.url = reverse("get-published-summaries", kwargs={"course_id": self.course.id})
+
+        self.recording = InstructorRecordings.objects.create(
+            instructor=self.instructor, title="Main Recording", course=self.course
+        )
+
+        self.published_summary_1 = LectureSummary.objects.create(
+            recording=self.recording,
+            course=self.course,
+            published=True,
+            summary="Summary 1",
+        )
+
+        self.published_summary_2 = LectureSummary.objects.create(
+            recording=self.recording,
+            course=self.course,
+            published=True,
+            summary="Summary 2",
+        )
+        self.published_summary_2.created_at = self.published_summary_1.created_at + timedelta(
+            days=1
+        )
+        self.published_summary_2.save()
+
+        self.unpublished_summary = LectureSummary.objects.create(
+            recording=self.recording, course=self.course, published=False
+        )
+
+    def test_get_summaries(self):
+        response = self.client_student_1.get(self.url)
+        summaries = response.json()
+        self.assertEqual(len(summaries), 2)
+        self.assertEqual(response.status_code, 200)
+        print(f"\nReponse: {response.json()}\n")
+        self.assertEqual(response.data[0]["summary"], "Summary 2")
+
+    def test_get_summaries_unauthorized(self):
+        response = self.client_student_2.get(self.url)
+        self.assertEqual(response.status_code, 403)
+
+    def test_get_summaries_invalid_course_id(self):
+        invalid_url = reverse(
+            "get-published-summaries", kwargs={"course_id": "c56a4180-65aa-42ec-a945-5fd21dec0538"}
+        )
+        response = self.client_student_1.get(invalid_url)
+        self.assertEqual(response.status_code, 404)
