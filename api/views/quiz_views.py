@@ -12,6 +12,7 @@ from api.serializers import (
     QuizListSerializer,
     QuizTitleUpdateSerializer,
     FetchCourseQuizzesSerializer,
+    InstructorRecordingsSerializer,
 )
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
@@ -116,7 +117,7 @@ class InstructorQuizzesView(APIView):
 
 @extend_schema(tags=["Quiz Creation and Modification"])
 class CreateQuizFromTranscript(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = [IsRecordingOwner]
 
     @extend_schema(
         operation_id="create-quiz-from-transcript",
@@ -125,27 +126,51 @@ class CreateQuizFromTranscript(APIView):
         request=QuizSerializer,
         responses={
             201: QuizSerializer,
-            204: OpenApiResponse(description="No Content"),
             400: OpenApiResponse(description="Bad Request"),
             401: OpenApiResponse(description="Unauthorized"),
-            403: OpenApiResponse(description="Forbidden"),
         },
     )
-    def post(self, request):
-        instructor_recording = get_object_or_404(
-            InstructorRecordings, id=request.data["instructor_recording"]
-        )
+    def post(self, request, recording_id):
+        # token: 0d8b54c4f0b78266e648d01016339039f3a679a3
+        # recording id: 69ac3d4b-1793-487d-b261-8fc8bc3e4837
+
+        instructor_recording = get_object_or_404(InstructorRecordings, id=recording_id)
         data = request.data.copy()
-        data["instructor"] = instructor_recording.instructor
-        print(f"The data collected: {data}")
+        # Make sure the data variable has the correct recording id before proceeding.
+        data["title"] = instructor_recording.title
+        data["instructor_recording"] = recording_id
+        print(f"Data collected: {data}")
         serializer = QuizSerializer(data=data, context={"request": request})
-        print(f"Serializer successfully created")
         if serializer.is_valid():
             serializer.save()
             new_quiz = serializer.instance
-            print(f"The new quiz created: {new_quiz}")
+            try:
+                lambda_client = boto3.client(
+                    "lambda",
+                    aws_access_key_id=settings.AWS_LAMBDA_INVOKER_ACCESS_KEY_ID,
+                    aws_secret_access_key=settings.AWS_LAMBDA_INVOKER_SECRET_ACCESS_KEY,
+                    region_name=settings.AWS_LAMBDA_INVOKER_REGION_NAME,
+                )
 
-        return Response({"message": "This is a test message."}, status=status.HTTP_200_OK)
+                token = request.META.get("HTTP_AUTHORIZATION").split(" ")[1]
+                payload = {
+                    "headers": {
+                        "Authorization": f"Token {token}",
+                    },
+                    "recording_id": str(recording_id),
+                    "num_of_questions": new_quiz.to_json()["num_questions"],
+                    "question_duration": new_quiz.instructor_recording.duration,
+                }
+                lambda_client.invoke(
+                    FunctionName="CreateQuizFromTranscript",
+                    InvocationType="Event",
+                    Payload=json.dumps(payload),  # Error is here
+                )
+            except ClientError as e:
+                return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @extend_schema(tags=["Quiz Creation and Modification"])

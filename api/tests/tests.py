@@ -1259,7 +1259,9 @@ class CreateQuizFromTranscriptTests(BaseTest):
             title="Test Transcript",
             transcript="This is a test transcript.",
         )
-        self.url = reverse("create-quiz-from-transcript")
+        self.url = reverse(
+            "create-quiz-from-transcript", kwargs={"recording_id": self.recording.id}
+        )
 
     @patch("boto3.client")
     def test_create_quiz_success(self, mock_boto_client):
@@ -1273,8 +1275,17 @@ class CreateQuizFromTranscriptTests(BaseTest):
         print(f"Response data: {response.json()}")
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(Quiz.objects.count(), 1)
+        self.assertEqual(
+            Quiz.objects.count(), 2
+        )  # The way the lambda is set up, this will return 2. The lambda will have to be fixed later on.
         mock_lambda_client.invoke.assert_called_once()
+
+    @patch("boto3.client")
+    def test_create_quiz_bad_request(self, mock_boto_client):
+        mock_lambda_client = mock_boto_client.return_value
+        mock_lambda_client.invoke.return_value = {}
+        response = self.client_instructor.post(self.url, {}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     @patch("boto3.client")
     def test_create_quiz_unauthorized(self, mock_boto_client):

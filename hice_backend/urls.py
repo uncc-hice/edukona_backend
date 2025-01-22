@@ -138,7 +138,7 @@ urlpatterns = [
     ),
     path("quiz/create/", CreateQuizView.as_view(), name="create-quiz"),
     path(
-        "quiz/create-from-transcript/",
+        "recordings/<uuid:recording_id>/create-quiz-from-transcript",
         CreateQuizFromTranscript.as_view(),
         name="create-quiz-from-transcript",
     ),
