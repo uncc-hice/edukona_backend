@@ -125,15 +125,11 @@ class CreateQuizFromTranscript(APIView):
         },
     )
     def post(self, request, recording_id):
-        # token: 0d8b54c4f0b78266e648d01016339039f3a679a3
-        # recording id: 69ac3d4b-1793-487d-b261-8fc8bc3e4837
         data = request.data.copy()
         # Make sure the data variable has the correct recording id before proceeding.
         data["recording_id"] = recording_id
         serializer = NewQuizSerializer(data=data, context={"request": request})
         if serializer.is_valid():
-            # serializer.save()
-            # new_quiz = serializer.instance
             try:
                 lambda_client = boto3.client(
                     "lambda",
