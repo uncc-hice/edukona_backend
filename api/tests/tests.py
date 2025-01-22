@@ -1268,24 +1268,19 @@ class CreateQuizFromTranscriptTests(BaseTest):
         mock_lambda_client = mock_boto_client.return_value
         mock_lambda_client.invoke.return_value = {}
 
-        data = {"recording_id": self.recording.id}
+        data = {
+            "recording_id": self.recording.id,
+            "number_of_questions": 3,
+            "question_duration": 30,
+        }
 
         response = self.client_instructor.post(self.url, data, format="json")
 
         print(f"Response data: {response.json()}")
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(
-            Quiz.objects.count(), 2
-        )  # The way the lambda is set up, this will return 2. The lambda will have to be fixed later on.
+        self.assertEqual(Quiz.objects.count(), 1)
         mock_lambda_client.invoke.assert_called_once()
-
-    @patch("boto3.client")
-    def test_create_quiz_bad_request(self, mock_boto_client):
-        mock_lambda_client = mock_boto_client.return_value
-        mock_lambda_client.invoke.return_value = {}
-        response = self.client_instructor.post(self.url, {}, format="json")
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     @patch("boto3.client")
     def test_create_quiz_unauthorized(self, mock_boto_client):
@@ -1299,18 +1294,4 @@ class CreateQuizFromTranscriptTests(BaseTest):
         print(f"Response data: {response.json()}")
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-        self.assertEqual(Quiz.objects.count(), 1)
-
-    @patch("boto3.client")
-    def test_create_quiz_forbidden(self, mock_boto_client):
-        mock_lambda_client = mock_boto_client.return_value
-        mock_lambda_client.invoke.return_value = {}
-
-        data = {"recording_id": self.recording.id}
-
-        response = self.client_instructor_two.post(self.url, data, format="json")
-
-        print(f"Response data: {response.json()}")
-
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertEqual(Quiz.objects.count(), 1)

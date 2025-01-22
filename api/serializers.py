@@ -133,6 +133,12 @@ class QuizSerializer(serializers.ModelSerializer):
         return QuizSession.objects.filter(quiz__id=obj.id).count()
 
 
+class NewQuizSerializer(serializers.Serializer):
+    number_of_questions = serializers.IntegerField()
+    question_duration = serializers.IntegerField()
+    recording_id = serializers.UUIDField()
+
+
 class QuizListSerializer(serializers.Serializer):
     quizzes = QuizSerializer(many=True)
 
