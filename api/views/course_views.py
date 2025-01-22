@@ -8,6 +8,7 @@ from api.serializers import (
     CourseSerializer,
     LectureSummarySerializer,
     CourseStudentSerializer,
+    CourseCreationSerializer,
 )
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 
@@ -100,6 +101,27 @@ class GetStudentsByCourse(APIView):
         return Response(
             CourseStudentSerializer(students, many=True).data, status=status.HTTP_200_OK
         )
+
+
+@extend_schema(tags=["Instructor Course Management"])
+class CreateCourse(APIView):
+    permission_classes = [AllowInstructor]
+
+    @extend_schema(
+        request=CourseCreationSerializer(),
+        responses={
+            201: CourseSerializer,
+            400: OpenApiResponse(description="Bad Request"),
+            401: OpenApiResponse(description="Unauthorized"),
+        },
+    )
+    def post(self, request):
+        instructor = request.user.instructor
+        serializer = CourseCreationSerializer(data=request.data, context={"instructor": instructor})
+        if serializer.is_valid():
+            course = serializer.save()
+            return Response(CourseSerializer(course).data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @extend_schema(tags=["Student Course Management"])
