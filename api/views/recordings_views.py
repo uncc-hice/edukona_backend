@@ -171,12 +171,18 @@ class CreateRecordingView(APIView):
                 )
 
                 # Extract the token from the Authorization header
-                token = request.META.get("HTTP_AUTHORIZATION").split(" ")[1]
+                token = jwt_token = None
+                if "Authorization" in request.headers:
+                    if request.headers["Authorization"].startswith("Bearer "):
+                        jwt_token = request.headers["Authorization"].split()[1]
+                    else:
+                        token = request.headers["Authorization"].split()[1]
 
                 # Prepare the payload for the Lambda function
                 payload = {
                     "s3_key": new_recording.s3_path,
                     "token": token,
+                    "jwt_token": jwt_token,
                     "recording_id": str(new_recording.id),
                 }
 

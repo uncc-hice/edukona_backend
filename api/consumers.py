@@ -2,27 +2,27 @@ import json
 import logging
 import random
 from collections import defaultdict
-
-from channels.generic.websocket import AsyncWebsocketConsumer
-from django.utils import timezone
-from django.contrib.auth.models import AnonymousUser
 from urllib.parse import parse_qs
-from rest_framework.authtoken.models import Token
 
+from channels.db import database_sync_to_async
+from channels.generic.websocket import AsyncWebsocketConsumer
+from django.contrib.auth.models import AnonymousUser, User
+from django.utils import timezone
+from rest_framework.authtoken.models import Token
+from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
+from rest_framework_simplejwt.tokens import UntypedToken
 
 from api.models import (
+    QuestionMultipleChoice,
     QuizSession,
+    QuizSessionQuestion,
     QuizSessionStudent,
     UserResponse,
-    QuestionMultipleChoice,
-    QuizSessionQuestion,
 )
 
 from .serializers import QuizSerializer
 
 logger = logging.getLogger(__name__)
-
-from channels.db import database_sync_to_async
 
 
 class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
@@ -618,13 +618,26 @@ def get_user_from_token(token_key):
         return AnonymousUser()
 
 
+@database_sync_to_async
+def get_user_from_jwt(jwt_token):
+    try:
+        user_id = UntypedToken(jwt_token).payload["user_id"]
+        return User.objects.get(id=user_id)
+    except (InvalidToken, TokenError, User.DoesNotExist):
+        return AnonymousUser()
+
+
 class RecordingConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         query_string = self.scope["query_string"].decode()
         params = parse_qs(query_string)
         token_key = params.get("token")
+        jwt_token = params.get("jwt")
 
-        if token_key:
+        if jwt_token:
+            jwt_token = jwt_token[0]
+            self.user = await get_user_from_jwt(jwt_token)
+        elif token_key:
             token_key = token_key[0]
             self.user = await get_user_from_token(token_key)
         else:

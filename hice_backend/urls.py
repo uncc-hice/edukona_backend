@@ -224,7 +224,9 @@ urlpatterns = [
         name="get-course-recordings",
     ),
     path(
-        "instructor/get-courses/", GetCoursesByInstructor.as_view(), name="get-instructor-courses"
+        "instructor/get-courses/",
+        GetCoursesByInstructor.as_view(),
+        name="get-instructor-courses",
     ),
     path(
         "instructor/course/<uuid:course_id>/get-summaries/",
@@ -235,6 +237,12 @@ urlpatterns = [
         "course/<uuid:course_id>/get-students/",
         GetStudentsByCourse.as_view(),
         name="get-course-students",
+    ),
+    path("student/get-courses/", GetCoursesByStudent.as_view(), name="get-courses-by-student"),
+    path(
+        "student/course/<course_id>/get-summaries/",
+        view=FetchPublishedSummariesView.as_view(),
+        name="get-published-summaries",
     ),
     path(
         "token/verify/",
