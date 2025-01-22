@@ -9,6 +9,7 @@ from api.models import (
     CourseStudent,
 )
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework import status
 from datetime import timedelta
 from rest_framework.authtoken.models import Token
@@ -655,3 +656,36 @@ class CreateCourseTest(CourseViewsTest):
             "end_date",
         }
         self.assertTrue(expected_keys.issubset(course.keys()))
+
+    def test_response_values(self):
+        course_data = {
+            "title": "New Test Course Creation",
+            "description": "This is a test",
+            "start_date": timezone.now().date(),
+            "end_date": timezone.now().date(),
+            "allow_joining_until": timezone.now(),
+        }
+        response = self.prim_instructor_client.post(self.url, data=course_data)
+        self.assertEqual(response.status_code, 201)
+
+        course = response.json()
+        expected_keys = {
+            "id",
+            "instructor",
+            "title",
+            "description",
+            "code",
+            "created_at",
+            "allow_joining_until",
+            "start_date",
+            "end_date",
+        }
+        self.assertTrue(expected_keys.issubset(course.keys()))
+        self.assertEqual(response.data["title"], course_data["title"])
+        self.assertEqual(response.data["description"], course_data["description"])
+        self.assertEqual(response.data["start_date"], course_data["start_date"].isoformat())
+        self.assertEqual(response.data["end_date"], course_data["end_date"].isoformat())
+        self.assertEqual(
+            response.data["allow_joining_until"],
+            course_data["allow_joining_until"].strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+        )
