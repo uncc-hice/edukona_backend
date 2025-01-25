@@ -26,7 +26,7 @@ class Course(models.Model):
     description = models.TextField(blank=True)
     code = models.CharField(blank=False, unique=True, max_length=75)
     created_at = models.DateTimeField(auto_now_add=True)
-    allow_joining_until = models.DateTimeField(auto_now_add=True)
+    allow_joining_until = models.DateTimeField(default=timezone.now)
     start_date = models.DateField(null=True)
     end_date = models.DateField(null=True)
 

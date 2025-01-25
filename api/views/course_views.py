@@ -120,6 +120,7 @@ class CreateCourse(APIView):
         serializer = CourseCreationSerializer(data=request.data, context={"instructor": instructor})
         if serializer.is_valid():
             course = serializer.save()
+            course.save()
             return Response(CourseSerializer(course).data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

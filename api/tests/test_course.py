@@ -619,8 +619,17 @@ class CreateCourseTest(CourseViewsTest):
             "title": "Test Course Creation",
             "description": "This is a test",
         }
+
+        # Verify request success
         response = self.prim_instructor_client.post(self.url, data=course_data)
+        response_data = response.json()
         self.assertEqual(response.status_code, 201)
+
+        # Verify that course was created on db
+        get_courses_url = reverse("get-instructor-courses")
+        courses_response = self.prim_instructor_client.get(get_courses_url)
+        courses = courses_response.json()
+        self.assertEqual(courses[0]["id"], response_data["id"])
 
     def test_create_course_unauthorized(self):
         course_data = {
