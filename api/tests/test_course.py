@@ -9,6 +9,7 @@ from api.models import (
     CourseStudent,
 )
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework import status
 from datetime import timedelta
 from rest_framework.authtoken.models import Token
@@ -594,7 +595,6 @@ class FetchPublishedCoursesTest(CourseViewsTest):
         summaries = response.json()
         self.assertEqual(len(summaries), 2)
         self.assertEqual(response.status_code, 200)
-        print(f"\nReponse: {response.json()}\n")
         self.assertEqual(response.data[0]["summary"], "Summary 2")
 
     def test_get_summaries_unauthorized(self):
@@ -607,3 +607,94 @@ class FetchPublishedCoursesTest(CourseViewsTest):
         )
         response = self.client_student_1.get(invalid_url)
         self.assertEqual(response.status_code, 404)
+
+
+class CreateCourseTest(CourseViewsTest):
+    def setUp(self):
+        super().setUp()
+        self.url = reverse("create-course")
+
+    def test_create_course(self):
+        course_data = {
+            "title": "Test Course Creation",
+            "description": "This is a test",
+        }
+
+        # Verify request success
+        response = self.prim_instructor_client.post(self.url, data=course_data)
+        response_data = response.json()
+        self.assertEqual(response.status_code, 201)
+
+        # Verify that course was created on db
+        get_courses_url = reverse("get-instructor-courses")
+        courses_response = self.prim_instructor_client.get(get_courses_url)
+        courses = courses_response.json()
+        self.assertEqual(courses[0]["id"], response_data["id"])
+
+    def test_create_course_unauthorized(self):
+        course_data = {
+            "title": "Test Course Creation",
+            "description": "This is a test",
+        }
+        response = APIClient().post(self.url, data=course_data)
+        self.assertEqual(response.status_code, 401)
+
+    def test_create_course_bad_request(self):
+        course_data = {}
+        response = self.prim_instructor_client.post(self.url, data=course_data)
+        self.assertEqual(response.status_code, 400)
+
+    def test_response_structure(self):
+        course_data = {
+            "title": "Test Course Creation",
+            "description": "This is a test",
+        }
+        response = self.prim_instructor_client.post(self.url, data=course_data)
+        self.assertEqual(response.status_code, 201)
+
+        course = response.json()
+        expected_keys = {
+            "id",
+            "instructor",
+            "title",
+            "description",
+            "code",
+            "created_at",
+            "allow_joining_until",
+            "start_date",
+            "end_date",
+        }
+        self.assertTrue(expected_keys.issubset(course.keys()))
+
+    def test_response_values(self):
+        course_data = {
+            "title": "New Test Course Creation",
+            "description": "This is a test",
+            "start_date": timezone.now().date(),
+            "end_date": timezone.now().date(),
+            "allow_joining_until": timezone.now(),
+        }
+        response = self.prim_instructor_client.post(self.url, data=course_data)
+        self.assertEqual(response.status_code, 201)
+
+        course = response.json()
+        expected_keys = {
+            "id",
+            "instructor",
+            "title",
+            "description",
+            "code",
+            "created_at",
+            "allow_joining_until",
+            "start_date",
+            "end_date",
+        }
+        self.assertTrue(expected_keys.issubset(course.keys()))
+        self.assertEqual(response.data["title"], course_data["title"])
+        self.assertEqual(response.data["description"], course_data["description"])
+        self.assertEqual(response.data["start_date"], course_data["start_date"].isoformat())
+        self.assertEqual(response.data["end_date"], course_data["end_date"].isoformat())
+        self.assertEqual(
+            response.data["allow_joining_until"],
+            course_data["allow_joining_until"].strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+        )
