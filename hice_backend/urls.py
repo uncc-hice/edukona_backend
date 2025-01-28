@@ -238,6 +238,7 @@ urlpatterns = [
         GetStudentsByCourse.as_view(),
         name="get-course-students",
     ),
+    path("instructor/create-course/", CreateCourse.as_view(), name="create-course"),
     path("student/get-courses/", GetCoursesByStudent.as_view(), name="get-courses-by-student"),
     path(
         "student/course/<course_id>/get-summaries/",

@@ -376,6 +376,19 @@ class CourseSerializer(serializers.ModelSerializer):
             "start_date",
             "end_date",
         ]
+        read_only_fields = ["id", "code", "created_at"]
+
+
+class CourseCreationSerializer(serializers.Serializer):
+    title = serializers.CharField()
+    description = serializers.CharField()
+    allow_joining_until = serializers.DateTimeField(required=False)
+    start_date = serializers.DateField(required=False)
+    end_date = serializers.DateField(required=False)
+
+    def create(self, validated_data):
+        validated_data["instructor"] = self.context.get("instructor")
+        return Course(**validated_data)
 
 
 class CourseStudentSerializer(serializers.Serializer):
