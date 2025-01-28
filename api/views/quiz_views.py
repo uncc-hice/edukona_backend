@@ -9,7 +9,7 @@ from api.serializers import (
     QuizListSerializer,
     QuizTitleUpdateSerializer,
     FetchCourseQuizzesSerializer,
-    NewQuizSerializer,
+    CreateQuizFromTranscriptRequestSerializer,
 )
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
@@ -118,9 +118,9 @@ class CreateQuizFromTranscript(APIView):
         operation_id="create-quiz-from-transcript",
         summary="Creates a new quiz from a transcript",
         description="Created a new quiz for a user given a transcript",
-        request=NewQuizSerializer,
+        request=CreateQuizFromTranscriptRequestSerializer,
         responses={
-            201: NewQuizSerializer,
+            201: CreateQuizFromTranscriptRequestSerializer,
             401: OpenApiResponse(description="Unauthorized"),
         },
     )
@@ -128,7 +128,9 @@ class CreateQuizFromTranscript(APIView):
         data = request.data.copy()
         # Make sure the data variable has the correct recording id before proceeding.
         data["recording_id"] = recording_id
-        serializer = NewQuizSerializer(data=data, context={"request": request})
+        serializer = CreateQuizFromTranscriptRequestSerializer(
+            data=data, context={"request": request}
+        )
         if serializer.is_valid():
             try:
                 lambda_client = boto3.client(
