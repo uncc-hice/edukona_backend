@@ -1,6 +1,5 @@
 import json
 import logging
-import random
 from collections import defaultdict
 from urllib.parse import parse_qs
 
