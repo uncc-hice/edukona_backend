@@ -344,12 +344,16 @@ class StudentConsumer(AsyncWebsocketConsumer):
 
     async def receive(self, text_data):
         data = json.loads(text_data)
-        if "type" in data and data["type"] == "join":
+        message_type = data.get("type")
+
+        if message_type == "join":
             await self.process_student_join(data)
-        elif "type" in data and data["type"] == "response":
+        elif message_type == "response":
             await self.submit_response(data)
-        elif "type" in data and data["type"] == "skip_question":
+        elif message_type == "skip_question":
             await self.skip_question(data)
+        elif message_type == "end_quiz":
+            await self.end_quiz()
 
     async def submit_response(self, data):
         response = await self.create_user_response(data)
@@ -444,6 +448,7 @@ class StudentConsumer(AsyncWebsocketConsumer):
                 "message": "Student created successfully",
                 "student_id": student.id,
             }
+            self.student = student
         except Exception as e:
             return {"status": "error", "message": str(e)}
 
@@ -607,6 +612,30 @@ class StudentConsumer(AsyncWebsocketConsumer):
         except Exception as e:
             print(e)
             return False
+
+    @database_sync_to_async
+    def fetch_grade(self):
+        try:
+            session = QuizSession.objects.get(code=self.code)
+        except QuizSession.DoesNotExist:
+            return {}
+
+        question_count = session.quiz.questions.count()
+        responses = UserResponse.objects.filter(student=self.student, quiz_session=session)
+        correct_responses = responses.filter(is_correct=True).count()
+
+        percentage = (correct_responses / question_count * 100) if question_count > 0 else 0.0
+        return round(percentage, 2)
+
+    async def end_quiz(self):
+        await self.send(
+            text_data=json.dumps(
+                {
+                    "type": "end_quiz",
+                    "grade": await self.fetch_grade(),
+                }
+            )
+        )
 
 
 @database_sync_to_async
