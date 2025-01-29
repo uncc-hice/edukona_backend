@@ -397,5 +397,16 @@ class LoginSerializer(serializers.Serializer):
     password = serializers.CharField(max_length=128, style={"input_type": "password"})
 
 
+class LoginResponseSerializer(serializers.Serializer):
+    access = serializers.CharField(help_text="JWT access token")
+    refresh = serializers.CharField(help_text="JWT refresh token")
+    user = serializers.IntegerField()
+    instructor = serializers.IntegerField(required=False)
+
+
+class LoginErrorResponseSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+
+
 class LogoutSerializer(serializers.Serializer):
     refresh = serializers.CharField()
