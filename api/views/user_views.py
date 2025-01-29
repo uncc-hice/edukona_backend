@@ -1,55 +1,56 @@
-from ..permissions import IsRecordingOwner
+import json
+import logging
+import os
 
+import boto3
 from django.conf import settings
-from django.shortcuts import get_object_or_404
-from django.http import JsonResponse
+from django.contrib.auth.models import User
 from django.db import transaction
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import (
+    OpenApiExample,
+    extend_schema,
+)
+from google.auth.transport import requests as google_requests
+from google.oauth2 import id_token
+from rest_framework import status
+from rest_framework.authtoken.models import Token
+from rest_framework.parsers import FormParser, MultiPartParser
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.throttling import UserRateThrottle
+from rest_framework.views import APIView
+from rest_framework_simplejwt.tokens import RefreshToken
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
-import os
-from rest_framework.throttling import UserRateThrottle
-from rest_framework.response import Response
-from rest_framework.parsers import MultiPartParser, FormParser
-from django.contrib.auth.models import User
-from rest_framework.authtoken.models import Token
-from rest_framework.views import APIView
-from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework import status
-from rest_framework_simplejwt.tokens import RefreshToken
-
-from google.oauth2 import id_token
-from google.auth.transport import requests as google_requests
 
 from api.models import (
     Instructor,
-    UserResponse,
-    QuizSessionStudent,
-    QuestionMultipleChoice,
-    QuizSession,
     InstructorRecordings,
+    QuestionMultipleChoice,
     Quiz,
+    QuizSession,
+    QuizSessionStudent,
+    UserResponse,
 )
 from api.serializers import (
-    InstructorRecordingsSerializer,
-    UpdateTranscriptSerializer,
-    GetTranscriptResponseSerializer,
-    GoogleLoginResponseSerializer,
-    GoogleLoginRequestSerializer,
-    SignUpInstructorSerializer,
     ContactMessageSerializer,
-    QuizSerializer,
+    GetTranscriptResponseSerializer,
+    GoogleLoginRequestSerializer,
+    GoogleLoginResponseSerializer,
+    InstructorRecordingsSerializer,
+    LoginErrorResponseSerializer,
+    LoginResponseSerializer,
     LoginSerializer,
     LogoutSerializer,
+    QuizSerializer,
+    SignUpInstructorSerializer,
+    UpdateTranscriptSerializer,
 )
-from drf_spectacular.utils import (
-    extend_schema,
-    OpenApiExample,
-)
-from drf_spectacular.types import OpenApiTypes
 
-import boto3
-import json
-import logging
+from ..permissions import IsRecordingOwner
 
 logger = logging.getLogger(__name__)
 
@@ -323,6 +324,13 @@ class Login(APIView):
 
 
 @extend_schema(tags=["Authentication Endpoint"])
+@extend_schema(
+    operation_id="jwt_login",
+    summary="Login with JWT",
+    description="Allows a user to log in using an email and password, and returns JWT tokens.",
+    request=LoginSerializer,
+    responses={200: LoginResponseSerializer, 401: LoginErrorResponseSerializer},
+)
 class JWTLoginView(APIView):
     serializer_class = LoginSerializer
     permission_classes = [AllowAny]
@@ -352,6 +360,9 @@ class JWTLoginView(APIView):
 
         if hasattr(user, "instructor"):
             response["instructor"] = user.instructor.id
+
+        response_serializer = LoginResponseSerializer(data=response)
+        response_serializer.is_valid(raise_exception=True)
 
         logger.info(f"User {user.id} logged in.")
         return JsonResponse(response, status=status.HTTP_200_OK)
