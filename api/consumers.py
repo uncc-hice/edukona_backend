@@ -443,12 +443,12 @@ class StudentConsumer(AsyncWebsocketConsumer):
             session = QuizSession.objects.get(code=code)
             # studentUser = Student.objects.get(user_id=user_id)
             student = QuizSessionStudent.objects.create(username=username, quiz_session=session)
+            self.student = student
             return {
                 "status": "success",
                 "message": "Student created successfully",
                 "student_id": student.id,
             }
-            self.student = student
         except Exception as e:
             return {"status": "error", "message": str(e)}
 
