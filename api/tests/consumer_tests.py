@@ -197,9 +197,9 @@ async def test_quiz():
         )
 
     # ----------------------------
-    # Send 'skip_question' to skip the second question
+    # Simulate serving the third question
     # ----------------------------
-    await communicator.send_json_to({"type": "skip_question", "question_id": second_question.id})
+    await communicator.send_json_to({"type": "next_question"})
 
     # ----------------------------
     # Receive 'next_question' for the third question
@@ -209,15 +209,15 @@ async def test_quiz():
         response = await communicator.receive_json_from(timeout=5)
         assert (
             response["type"] == "next_question"
-        ), "Expected 'next_question' message after skipping a question"
+        ), "Expected 'next_question' message after second question"
         assert "question" in response, "'question' not in response"
         assert (
             response["question"]["question_text"] == last_question.question_text
-        ), "Last question text mismatch after skipping"
+        ), "Last question text mismatch after second question"
     except asyncio.TimeoutError:
         pytest.fail(
-            f"Did not receive 'next_question' response for question '"
-            f"{last_question.question_text}' after skipping in time"
+            f"Did not receive 'next_question' response in time for question '"
+            f"{last_question.question_text}' after finshing second question"
         )
 
     # ----------------------------
@@ -233,17 +233,18 @@ async def test_quiz():
         assert response["type"] == "quiz_ended", "Expected 'quiz_ended' message"
         assert "grades" in response, "'grades' not in response"
 
-        # Expected grades based on variance and skipped question:
+        # Expected grades based on variance
         # - First two students: 2/2 = 100%
-        # - Next two students: 1/2 = 50%
+        # - Next two students: 1/3 = 33%
         # - Last student: 0/2 = 0%
         expected_grades = {
             "100.0": [students[0].username, students[1].username],
-            "50.0": [students[2].username, students[3].username],
+            "33.33": [students[2].username, students[3].username],
             "0.0": [students[4].username],
         }
 
         # Validate the grades
+        print(f"\n\n\n{response['grades']}\n\n\n")
         assert (
             response["grades"] == expected_grades
         ), f"Grades mismatch: Expected {expected_grades}, got {response['grades']}"

@@ -74,11 +74,6 @@ class Quiz(models.Model):
     # Settings starts here
     timer = models.BooleanField(default=False)
     live_bar_chart = models.BooleanField(default=True)
-    skip_question = models.BooleanField(default=False)
-    skip_count_per_student = models.IntegerField(default=1)
-    skip_question_logic = models.TextField(default="random")
-    skip_question_streak_count = models.IntegerField(default=1)
-    skip_question_percentage = models.FloatField(default=0.0)
     # End of settings
     course = models.ForeignKey(Course, on_delete=models.CASCADE, null=True)
     published = models.BooleanField(default=False)
@@ -105,10 +100,6 @@ class Quiz(models.Model):
             # Settings attributes
             "timer": self.timer,
             "live_bar_chart": self.live_bar_chart,
-            "skip_question": self.skip_question,
-            "skip_count_per_student": self.skip_count_per_student,
-            "skip_question_logic": self.skip_question_logic,
-            "skip_question_streak_count": self.skip_question_streak_count,
         }
 
 
@@ -191,7 +182,6 @@ class QuizSessionStudent(models.Model):
     joined_at = models.DateTimeField(default=timezone.now)
     quiz_session = models.ForeignKey(QuizSession, on_delete=models.CASCADE, related_name="students")
     score = models.IntegerField(default=0)
-    skip_count = models.IntegerField(default=0)
 
     class Meta:
         db_table = "api_quiz_session_student"
@@ -225,7 +215,6 @@ class UserResponse(models.Model):
     quiz_session = models.ForeignKey(
         "QuizSession", on_delete=models.CASCADE, related_name="responses", null=True
     )
-    skipped_question = models.BooleanField(default=False)
 
     class Meta:
         db_table = "api_user_response"
@@ -240,7 +229,6 @@ class QuizSessionQuestion(models.Model):
         on_delete=models.CASCADE,
         related_name="quiz_session_questions",
     )
-    skipped = models.BooleanField(default=False)
     unlocked = models.BooleanField(default=True)
     opened_at = models.DateTimeField(null=True, auto_now_add=True)
     extension = models.IntegerField(default=0)
