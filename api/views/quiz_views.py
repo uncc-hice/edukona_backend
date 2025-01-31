@@ -127,10 +127,9 @@ class CreateQuizFromTranscript(APIView):
     def post(self, request, recording_id):
         data = request.data.copy()
         # Make sure the data variable has the correct recording id before proceeding.
-        data["recording_id"] = recording_id
-        serializer = CreateQuizFromTranscriptRequestSerializer(
-            data=data, context={"request": request}
-        )
+        if data["recording_id"] != recording_id:
+            data["recording_id"] = recording_id
+        serializer = CreateQuizFromTranscriptRequestSerializer(data=data)
         if serializer.is_valid():
             try:
                 lambda_client = boto3.client(
@@ -140,6 +139,7 @@ class CreateQuizFromTranscript(APIView):
                     region_name=settings.AWS_LAMBDA_INVOKER_REGION_NAME,
                 )
 
+                """
                 token = request.META.get("HTTP_AUTHORIZATION").split(" ")[1]
                 payload = {
                     "headers": {
@@ -149,6 +149,25 @@ class CreateQuizFromTranscript(APIView):
                     "num_of_questions": serializer.validated_data["number_of_questions"],
                     "question_duration": serializer.validated_data["question_duration"],
                 }
+                """
+                token = jwt_token = None
+                is_jwt = True
+                if "Authorization" in request.headers:
+                    if request.headers["Authorization"].startswith("Bearer "):
+                        jwt_token = request.headers["Authorization"].split(" ")[1]
+                    else:
+                        token = request.headers["Authorization"].split(" ")[1]
+                        is_jwt = False
+
+                payload = {
+                    "headers": {
+                        "Authorization": f"Token {token}" if not is_jwt else f"Bearer {jwt_token}",
+                    },
+                    "recording_id": str(serializer.validated_data["recording_id"]),
+                    "num_of_questions": serializer.validated_data["number_of_questions"],
+                    "question_duration": serializer.validated_data["question_duration"],
+                }
+
                 lambda_client.invoke(
                     FunctionName="CreateQuizFromTranscript",
                     InvocationType="Event",
