@@ -48,6 +48,9 @@ from api.serializers import (
     QuizSerializer,
     SignUpInstructorSerializer,
     UpdateTranscriptSerializer,
+    ScoreQuizRequestSerializer,
+    ScoreQuizResponseSerializer,
+    GetScoreResponseSerializer,
 )
 
 from ..permissions import IsRecordingOwner
@@ -1044,3 +1047,47 @@ class TokenVerificationView(APIView):
 
     def get(self, request):
         return Response({"message": "Token is valid"}, status=status.HTTP_200_OK)
+
+
+class ScoreView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        operation_id="grade_quiz",
+        summary="Grade a quiz",
+        description="Grades a quiz for a student by ID.",
+        request=ScoreQuizRequestSerializer,
+        responses={
+            200: ScoreQuizResponseSerializer,
+            404: OpenApiTypes.OBJECT,
+        },
+    )
+    def post(self, request):
+        id = request.data.get("id")
+        responses_by_user = (
+            UserResponse.objects.filter(student_id=id)
+            .order_by("question_id", "-id")  # Get the latest response for each question
+            .distinct("question_id")
+        )
+
+        score = sum(response.is_correct for response in responses_by_user)
+
+        student = get_object_or_404(QuizSessionStudent, id=id)
+        student.score = score
+        student.save()
+
+        return JsonResponse({"message": "Grading Completed."}, status=status.HTTP_200_OK)
+
+    @extend_schema(
+        operation_id="get_grade_by_id",
+        summary="Get grade by ID",
+        description="Returns the grade of a student by ID.",
+        responses={
+            200: GetScoreResponseSerializer,
+            404: OpenApiTypes.OBJECT,
+        },
+    )
+    def get(self, request, id):
+        # IMPORTANT: needs to be replaced with caller verification when accounts are implemented
+        student = get_object_or_404(QuizSessionStudent, id=id)
+        return JsonResponse({"score": student.score}, status=status.HTTP_200_OK)
