@@ -613,21 +613,11 @@ class StudentConsumer(AsyncWebsocketConsumer):
             print(e)
             return False
 
-    @database_sync_to_async
-    def fetch_grade(self):
-        try:
-            session = QuizSession.objects.get(code=self.code)
-        except QuizSession.DoesNotExist:
-            return {}
-
-        question_count = session.quiz.questions.count()
-        responses = UserResponse.objects.filter(student=self.student, quiz_session=session)
-        correct_responses = responses.filter(is_correct=True).count()
-
-        percentage = (correct_responses / question_count * 100) if question_count > 0 else 0.0
-        return round(percentage, 2)
-
     async def end_quiz(self):
+        await self.channel_layer.group_send(
+            f"quiz_session_instructor_{self.code}",
+            {"type": "end_quiz"},
+        )
         await self.send(
             text_data=json.dumps(
                 {
