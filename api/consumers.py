@@ -618,14 +618,6 @@ class StudentConsumer(AsyncWebsocketConsumer):
             f"quiz_session_instructor_{self.code}",
             {"type": "end_quiz"},
         )
-        await self.send(
-            text_data=json.dumps(
-                {
-                    "type": "end_quiz",
-                    "grade": await self.fetch_grade(),
-                }
-            )
-        )
 
 
 @database_sync_to_async
