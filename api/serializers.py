@@ -413,11 +413,18 @@ class LogoutSerializer(serializers.Serializer):
 
 
 class ScoreQuizRequestSerializer(serializers.Serializer):
-    id = serializers.IntegerField()
+    student_id = serializers.IntegerField()
+    session_id = serializers.IntegerField()
 
 
 class ScoreQuizResponseSerializer(serializers.Serializer):
     message = serializers.CharField()
+    score = serializers.IntegerField()
+
+
+class GetScoreRequestSerializer(serializers.Serializer):
+    student_id = serializers.IntegerField()
+    quiz_session_id = serializers.IntegerField()
 
 
 class GetScoreResponseSerializer(serializers.ModelSerializer):

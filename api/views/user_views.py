@@ -50,6 +50,7 @@ from api.serializers import (
     UpdateTranscriptSerializer,
     ScoreQuizRequestSerializer,
     ScoreQuizResponseSerializer,
+    GetScoreRequestSerializer,
     GetScoreResponseSerializer,
 )
 
@@ -1063,31 +1064,30 @@ class ScoreView(APIView):
         },
     )
     def post(self, request):
-        id = request.data.get("id")
-        responses_by_user = (
-            UserResponse.objects.filter(student_id=id)
-            .order_by("question_id", "-id")  # Get the latest response for each question
-            .distinct("question_id")
-        )
+        serializer = ScoreQuizRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        student = get_object_or_404(QuizSessionStudent, id=serializer.validated_data["student_id"])
+        session = get_object_or_404(QuizSession, id=serializer.validated_data["session_id"])
 
-        score = sum(response.is_correct for response in responses_by_user)
+        responses = UserResponse.objects.filter(student=student, quiz_session=session).order_by("question_id", "-id").distinct("question_id")
+        score = sum(response.is_correct for response in responses)
 
-        student = get_object_or_404(QuizSessionStudent, id=id)
         student.score = score
         student.save()
 
-        return JsonResponse({"message": "Grading Completed."}, status=status.HTTP_200_OK)
+        return Response({"message": "Grading Completed", "score": score}, status=status.HTTP_200_OK)
 
+class GetScoreView(APIView):
     @extend_schema(
         operation_id="get_grade_by_id",
         summary="Get grade by ID",
         description="Returns the grade of a student by ID.",
+        request=GetScoreRequestSerializer,
         responses={
             200: GetScoreResponseSerializer,
             404: OpenApiTypes.OBJECT,
         },
     )
-    def get(self, request, id):
-        # IMPORTANT: needs to be replaced with caller verification when accounts are implemented
-        student = get_object_or_404(QuizSessionStudent, id=id)
+    def get(self, request, student_id, session_id):
+        student = get_object_or_404(QuizSessionStudent, id=student_id, quiz_session_id=session_id)
         return JsonResponse({"score": student.score}, status=status.HTTP_200_OK)
