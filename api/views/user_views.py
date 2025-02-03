@@ -1050,13 +1050,14 @@ class TokenVerificationView(APIView):
         return Response({"message": "Token is valid"}, status=status.HTTP_200_OK)
 
 
+@extend_schema(tags=["Quiz Scoring"])
 class ScoreView(APIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
-        operation_id="grade_quiz",
-        summary="Grade a quiz",
-        description="Grades a quiz for a student by ID.",
+        operation_id="score_quiz",
+        summary="Score a quiz",
+        description="Scores a quiz for a student for a particular session.",
         request=ScoreQuizRequestSerializer,
         responses={
             200: ScoreQuizResponseSerializer,
@@ -1069,7 +1070,11 @@ class ScoreView(APIView):
         student = get_object_or_404(QuizSessionStudent, id=serializer.validated_data["student_id"])
         session = get_object_or_404(QuizSession, id=serializer.validated_data["session_id"])
 
-        responses = UserResponse.objects.filter(student=student, quiz_session=session).order_by("question_id", "-id").distinct("question_id")
+        responses = (
+            UserResponse.objects.filter(student=student, quiz_session=session)
+            .order_by("question_id", "-id")
+            .distinct("question_id")
+        )
         score = sum(response.is_correct for response in responses)
 
         student.score = score
@@ -1077,11 +1082,13 @@ class ScoreView(APIView):
 
         return Response({"message": "Grading Completed", "score": score}, status=status.HTTP_200_OK)
 
+
+@extend_schema(tags=["Quiz Scoring"])
 class GetScoreView(APIView):
     @extend_schema(
-        operation_id="get_grade_by_id",
-        summary="Get grade by ID",
-        description="Returns the grade of a student by ID.",
+        operation_id="get_score_by_id",
+        summary="Get score by ID",
+        description="Returns the score of a student for a particular session.",
         request=GetScoreRequestSerializer,
         responses={
             200: GetScoreResponseSerializer,
