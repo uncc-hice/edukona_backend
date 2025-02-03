@@ -410,3 +410,24 @@ class LoginErrorResponseSerializer(serializers.Serializer):
 
 class LogoutSerializer(serializers.Serializer):
     refresh = serializers.CharField()
+
+
+class ScoreQuizRequestSerializer(serializers.Serializer):
+    student_id = serializers.IntegerField()
+    session_id = serializers.IntegerField()
+
+
+class ScoreQuizResponseSerializer(serializers.Serializer):
+    message = serializers.CharField()
+    score = serializers.IntegerField()
+
+
+class GetScoreRequestSerializer(serializers.Serializer):
+    student_id = serializers.IntegerField()
+    quiz_session_id = serializers.IntegerField()
+
+
+class GetScoreResponseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = QuizSessionStudent
+        fields = ["score"]

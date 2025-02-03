@@ -344,12 +344,16 @@ class StudentConsumer(AsyncWebsocketConsumer):
 
     async def receive(self, text_data):
         data = json.loads(text_data)
-        if "type" in data and data["type"] == "join":
+        message_type = data.get("type")
+
+        if message_type == "join":
             await self.process_student_join(data)
-        elif "type" in data and data["type"] == "response":
+        elif message_type == "response":
             await self.submit_response(data)
-        elif "type" in data and data["type"] == "skip_question":
+        elif message_type == "skip_question":
             await self.skip_question(data)
+        elif message_type == "end_quiz":
+            await self.end_quiz()
 
     async def submit_response(self, data):
         response = await self.create_user_response(data)
@@ -439,6 +443,7 @@ class StudentConsumer(AsyncWebsocketConsumer):
             session = QuizSession.objects.get(code=code)
             # studentUser = Student.objects.get(user_id=user_id)
             student = QuizSessionStudent.objects.create(username=username, quiz_session=session)
+            self.student = student
             return {
                 "status": "success",
                 "message": "Student created successfully",
@@ -607,6 +612,12 @@ class StudentConsumer(AsyncWebsocketConsumer):
         except Exception as e:
             print(e)
             return False
+
+    async def end_quiz(self):
+        await self.channel_layer.group_send(
+            f"quiz_session_instructor_{self.code}",
+            {"type": "end_quiz"},
+        )
 
 
 @database_sync_to_async
