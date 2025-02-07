@@ -68,7 +68,6 @@ class CreateMultipleQuestionsView(APIView):
 class QuestionView(APIView):
     permission_classes = [IsQuestionOwner]
 
-    # Get method to question by id
     def get(self, request, question_id):
         question = get_object_or_404(QuestionMultipleChoice, id=question_id)
         serializer = QuestionMultipleChoiceSerializer(question)
