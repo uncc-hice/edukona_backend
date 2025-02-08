@@ -1,6 +1,5 @@
 import json
 import logging
-import random
 from collections import defaultdict
 from urllib.parse import parse_qs
 
@@ -72,8 +71,6 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
                 await self.delete_student(data["username"])
             elif data["type"] == "increase_duration":
                 await self.add_to_duration(data["question_id"], data["extension"])
-            elif data["type"] == "skip_question":
-                await self.skip_question(data["question_id"])
             elif data["type"] == "question_timer_started":
                 await self.question_timer_started(data)
 
@@ -207,19 +204,10 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
         students = session.students.all()
         grade_buckets = defaultdict(list)
 
-        skipped_questions_ids = QuizSessionQuestion.objects.filter(
-            quiz_session=session, skipped=True
-        ).values_list("question", flat=True)
-
-        total_possible_responses = session.quiz.questions.exclude(
-            id__in=skipped_questions_ids
-        ).count()
+        total_possible_responses = session.quiz.questions.count()
 
         for student in students:
             responses = UserResponse.objects.filter(student=student, quiz_session=session)
-
-            # Exclude responses for skipped questions
-            responses = responses.exclude(question_id__in=skipped_questions_ids)
 
             # Count correct responses
             correct_responses = responses.filter(is_correct=True).count()
@@ -306,19 +294,6 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
         await self.send(text_data=json.dumps(response))
 
     @database_sync_to_async
-    def skip_question_db(self, question_id):
-        quiz_session_question = QuizSessionQuestion.objects.get(
-            question__id=question_id, quiz_session__code=self.code
-        )
-        quiz_session_question.skipped = True
-        quiz_session_question.unlocked = False
-        quiz_session_question.save()
-
-    async def skip_question(self, question_id):
-        await self.skip_question_db(question_id)
-        await self.send_next_question()
-
-    @database_sync_to_async
     def update_opened_at(self, question_id):
         quiz_session_question = QuizSessionQuestion.objects.get(
             question__id=question_id, quiz_session__code=self.code
@@ -348,8 +323,6 @@ class StudentConsumer(AsyncWebsocketConsumer):
             await self.process_student_join(data)
         elif "type" in data and data["type"] == "response":
             await self.submit_response(data)
-        elif "type" in data and data["type"] == "skip_question":
-            await self.skip_question(data)
 
     async def submit_response(self, data):
         response = await self.create_user_response(data)
@@ -369,8 +342,6 @@ class StudentConsumer(AsyncWebsocketConsumer):
                     "response": data.get("data").get("selected_answer"),
                 },
             )
-
-            await self.check_and_grant_skip_power_up(data["data"]["student"]["id"])
         await self.send(text_data=json.dumps(response))
 
     def is_question_open(self, question: QuestionMultipleChoice):
@@ -494,119 +465,11 @@ class StudentConsumer(AsyncWebsocketConsumer):
     def get_quiz(self):
         return QuizSession.objects.get(code=self.code).quiz
 
-    async def check_and_grant_skip_power_up(self, student_id):
-        quiz = await self.get_quiz()
-        correct_responses = await self.get_correct_responses(student_id)
-        student = await self.get_student(student_id)
-        if quiz.skip_question:
-            if quiz.skip_question_logic == "streak":
-                if (
-                    student.skip_count < quiz.skip_count_per_student
-                    and correct_responses % quiz.skip_question_streak_count == 0
-                ):
-                    grant_response = await self.grant_skip_power_up(student_id)
-                    if grant_response.get("status") == "success":
-                        await self.send(
-                            text_data=json.dumps(
-                                {
-                                    "type": "skip_power_up_granted",
-                                    "skip_count": grant_response.get("skip_count"),
-                                }
-                            )
-                        )
-            elif quiz.skip_question_logic == "random":
-                skip_percentage = quiz.skip_question_percentage or 0.2  # Default to 20% if not set
-                if (
-                    student.skip_count < quiz.skip_count_per_student
-                    and random.random() < skip_percentage
-                ):
-                    grant_response = await self.grant_skip_power_up(student_id)
-                    if grant_response.get("status") == "success":
-                        await self.send(
-                            text_data=json.dumps(
-                                {
-                                    "type": "skip_power_up_granted",
-                                    "skip_count": grant_response.get("skip_count"),
-                                }
-                            )
-                        )
-
-    @database_sync_to_async
-    def grant_skip_power_up(self, student_id):
-        student = QuizSessionStudent.objects.get(id=student_id)
-        student.skip_count += 1
-        student.save()
-        return {"status": "success", "skip_count": student.skip_count}
-
     @database_sync_to_async
     def get_correct_responses(self, student_id):
         student = QuizSessionStudent.objects.get(id=student_id)
         responses = student.responses.all()
-        return responses.filter(is_correct=True, skipped_question=False).count()
-
-    async def skip_question(self, data):
-        student = data.get("data").get("student")
-
-        skip_count = await self.get_skip_count(student.get("id"))
-        quiz = await self.get_quiz()
-
-        if skip_count < quiz.skip_count_per_student:
-            question_marked = await self.mark_question_as_skipped_and_correct(data)
-            print(question_marked)
-            if question_marked:
-                await self.increment_skip_count(student.get("id"))
-                await self.send(
-                    text_data=json.dumps(
-                        {
-                            "type": "skip_power_up_used",
-                            "message": "Question skipped successfully.",
-                        }
-                    )
-                )
-        else:
-            await self.send(
-                text_data=json.dumps(
-                    {
-                        "type": "skip_power_up_error",
-                        "message": "You have already used all your skip power ups for this session.",
-                    }
-                )
-            )
-
-    @database_sync_to_async
-    def get_skip_count(self, student_id):
-        student = QuizSessionStudent.objects.get(id=student_id)
-        return student.skip_count
-
-    @database_sync_to_async
-    def increment_skip_count(self, student_id):
-        student = QuizSessionStudent.objects.get(id=student_id)
-        student.skip_count += 1
-        student.save()
-
-    @database_sync_to_async
-    def mark_question_as_skipped_and_correct(self, data):
-        try:
-            data = data["data"]
-            student_data = data.pop("student", {})
-            student_id = student_data.get("id")
-            student = QuizSessionStudent.objects.get(id=student_id)
-            question = QuestionMultipleChoice.objects.get(id=data["question_id"])
-            quiz_session = QuizSession.objects.get(code=data["quiz_session_code"])
-
-            UserResponse.objects.create(
-                student=student,
-                is_correct=True,
-                quiz_session=quiz_session,
-                question=question,
-                selected_answer="skipped",
-                skipped_question=True,
-            )
-
-            return True
-        except Exception as e:
-            print(e)
-            return False
+        return responses.filter(is_correct=True).count()
 
 
 @database_sync_to_async
