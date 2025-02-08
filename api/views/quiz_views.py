@@ -138,18 +138,6 @@ class CreateQuizFromTranscript(APIView):
                     aws_secret_access_key=settings.AWS_LAMBDA_INVOKER_SECRET_ACCESS_KEY,
                     region_name=settings.AWS_LAMBDA_INVOKER_REGION_NAME,
                 )
-
-                """
-                token = request.META.get("HTTP_AUTHORIZATION").split(" ")[1]
-                payload = {
-                    "headers": {
-                        "Authorization": f"Token {token}",
-                    },
-                    "recording_id": str(serializer.validated_data["recording_id"]),
-                    "num_of_questions": serializer.validated_data["number_of_questions"],
-                    "question_duration": serializer.validated_data["question_duration"],
-                }
-                """
                 token = jwt_token = None
                 is_jwt = True
                 if "Authorization" in request.headers:
