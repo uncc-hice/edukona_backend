@@ -55,6 +55,7 @@ from api.serializers import (
 )
 
 from ..permissions import IsRecordingOwner
+from ..services import score_session
 
 logger = logging.getLogger(__name__)
 
@@ -1057,7 +1058,7 @@ class ScoreView(APIView):
     @extend_schema(
         operation_id="score_quiz",
         summary="Score a quiz",
-        description="Scores a quiz for a student for a particular session.",
+        description="Scores a particular session.",
         request=ScoreQuizRequestSerializer,
         responses={
             200: ScoreQuizResponseSerializer,
@@ -1067,20 +1068,9 @@ class ScoreView(APIView):
     def post(self, request):
         serializer = ScoreQuizRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        student = get_object_or_404(QuizSessionStudent, id=serializer.validated_data["student_id"])
-        session = get_object_or_404(QuizSession, id=serializer.validated_data["session_id"])
-
-        responses = (
-            UserResponse.objects.filter(student=student, quiz_session=session)
-            .order_by("question_id", "-id")
-            .distinct("question_id")
-        )
-        score = sum(response.is_correct for response in responses)
-
-        student.score = score
-        student.save()
-
-        return Response({"message": "Grading Completed", "score": score}, status=status.HTTP_200_OK)
+        session_id = serializer.validated_data["session_id"]
+        score_session(session_id)
+        return Response({"message": "Quiz scored successfully"}, status=status.HTTP_200_OK)
 
 
 @extend_schema(tags=["Quiz Scoring"])
