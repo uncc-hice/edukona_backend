@@ -21,6 +21,7 @@ from api.models import (
 )
 
 from .serializers import QuizSerializer
+from .services import score_session
 
 logger = logging.getLogger(__name__)
 
@@ -354,6 +355,8 @@ class StudentConsumer(AsyncWebsocketConsumer):
             await self.skip_question(data)
         elif message_type == "end_quiz":
             await self.end_quiz()
+        elif message_type == "request_grade":
+            await self.retrieve_grade()
 
     async def submit_response(self, data):
         response = await self.create_user_response(data)
@@ -458,6 +461,7 @@ class StudentConsumer(AsyncWebsocketConsumer):
         response = await self.create_student_session_entry(username, self.code)
 
         if response["status"] == "success":
+            self.student_id = response["student_id"]
             await self.send(
                 text_data=json.dumps(
                     {
@@ -613,11 +617,57 @@ class StudentConsumer(AsyncWebsocketConsumer):
             print(e)
             return False
 
+    async def retrieve_grade(self):
+        response = await self.get_student_grade()
+        if response.get("status") == "success":
+            await self.send(
+                text_data=json.dumps(
+                    {
+                        "type": "grade",
+                        "grade": response.get("grade"),
+                    }
+                )
+            )
+
+    @database_sync_to_async
+    def get_student_grade(self):
+        try:
+            session = QuizSession.objects.get(code=self.code)
+        except QuizSession.DoesNotExist:
+            return {"status": "error", "message": "Session not found."}
+
+        student = QuizSessionStudent.objects.get(quiz_session=session, student_id=self.student_id)
+        return {"status": "success", "grade": student.score}
+
     async def end_quiz(self):
-        await self.channel_layer.group_send(
-            f"quiz_session_instructor_{self.code}",
-            {"type": "end_quiz"},
-        )
+        try:
+            await self.channel_layer.group_send(
+                f"quiz_session_instructor_{self.code}",
+                {"type": "end_quiz"},
+            )
+            logger.info(f"Quiz ended for session {self.code}")
+
+            await self.channel_layer.group_send(
+                f"quiz_session_instructor_{self.code}",
+                {"type": "grading_started"},
+            )
+            logger.info(f"Grading started for session {self.code}")
+
+            session = QuizSession.objects.get(code=self.code)
+
+            await score_session(session.id)
+            logger.info(f"Scoring completed for session {self.code}")
+
+            await self.channel_layer.group_send(
+                f"quiz_session_instructor_{self.code}",
+                {"type": "grading_completed"},
+            )
+            logger.info(f"Grading completed for session {self.code}")
+
+        except QuizSession.DoesNotExist:
+            logger.error(f"QuizSession with code {self.code} does not exist.")
+        except Exception as e:
+            logger.error(f"An error occurred while ending the quiz for session {self.code}: {e}")
 
 
 @database_sync_to_async
