@@ -1,6 +1,7 @@
 from collections import defaultdict
 from .models import UserResponse, QuizSession, Quiz, QuizSessionStudent
 
+
 def score_session(session_id) -> dict:
     try:
         session = QuizSession.objects.get(id=session_id)
@@ -27,7 +28,9 @@ def score_session(session_id) -> dict:
         question_to_responses = defaultdict(list)
         for response in response_list:
             question_to_responses[response.question_id].append(response)
-        trimmed_responses = [max(q_responses, key=lambda r: r.id) for q_responses in question_to_responses.values()]
+        trimmed_responses = [
+            max(q_responses, key=lambda r: r.id) for q_responses in question_to_responses.values()
+        ]
         return trimmed_responses
 
     for student_id, responses in student_to_responses.items():
@@ -36,7 +39,10 @@ def score_session(session_id) -> dict:
     def score_responses(responses):
         return sum(1 for response in responses if response.is_correct)
 
-    student_id_to_score = {student_id: score_responses(responses) for student_id, responses in student_to_responses.items()}
+    student_id_to_score = {
+        student_id: score_responses(responses)
+        for student_id, responses in student_to_responses.items()
+    }
 
     for student_id, score in student_id_to_score.items():
         student = QuizSessionStudent.objects.get(id=student_id)
