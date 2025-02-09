@@ -192,6 +192,37 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
                     }
                 )
             )
+
+            try:
+                await self.channel_layer.group_send(
+                    f"quiz_session_instructor_{self.code}",
+                    {"type": "quiz_ended"},
+                )
+                logger.info(f"Quiz ended for session {self.code}")
+
+                await self.channel_layer.group_send(
+                    f"quiz_session_instructor_{self.code}",
+                    {"type": "grading_started"},
+                )
+                logger.info(f"Grading started for session {self.code}")
+
+                session = QuizSession.objects.get(code=self.code)
+
+                await score_session(session.id)
+                logger.info(f"Scoring completed for session {self.code}")
+
+                await self.channel_layer.group_send(
+                    f"quiz_session_instructor_{self.code}",
+                    {"type": "grading_completed"},
+                )
+                logger.info(f"Grading completed for session {self.code}")
+
+            except QuizSession.DoesNotExist:
+                logger.error(f"QuizSession with code {self.code} does not exist.")
+            except Exception as e:
+                logger.error(
+                    f"An error occurred while ending the quiz for session {self.code}: {e}"
+                )
         else:
             print("Failed to end the quiz; session not found.")
 
@@ -326,8 +357,6 @@ class StudentConsumer(AsyncWebsocketConsumer):
             await self.process_student_join(data)
         elif message_type == "response":
             await self.submit_response(data)
-        elif message_type == "end_quiz":
-            await self.end_quiz()
         elif message_type == "request_grade":
             await self.retrieve_grade()
 
@@ -501,36 +530,6 @@ class StudentConsumer(AsyncWebsocketConsumer):
 
         student = QuizSessionStudent.objects.get(quiz_session=session, student_id=self.student_id)
         return {"status": "success", "grade": student.score}
-
-    async def end_quiz(self):
-        try:
-            await self.channel_layer.group_send(
-                f"quiz_session_instructor_{self.code}",
-                {"type": "end_quiz"},
-            )
-            logger.info(f"Quiz ended for session {self.code}")
-
-            await self.channel_layer.group_send(
-                f"quiz_session_instructor_{self.code}",
-                {"type": "grading_started"},
-            )
-            logger.info(f"Grading started for session {self.code}")
-
-            session = QuizSession.objects.get(code=self.code)
-
-            await score_session(session.id)
-            logger.info(f"Scoring completed for session {self.code}")
-
-            await self.channel_layer.group_send(
-                f"quiz_session_instructor_{self.code}",
-                {"type": "grading_completed"},
-            )
-            logger.info(f"Grading completed for session {self.code}")
-
-        except QuizSession.DoesNotExist:
-            logger.error(f"QuizSession with code {self.code} does not exist.")
-        except Exception as e:
-            logger.error(f"An error occurred while ending the quiz for session {self.code}: {e}")
 
 
 @database_sync_to_async
