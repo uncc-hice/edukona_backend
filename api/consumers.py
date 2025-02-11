@@ -181,6 +181,36 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
             print("No quiz session found with the code:", self.code)
             return False
 
+    async def run_grading(self):
+        try:
+            await self.channel_layer.group_send(
+                f"quiz_session_{self.code}",
+                {"type": "quiz_ended"},
+            )
+            logger.info(f"Quiz ended for session {self.code}")
+
+            await self.channel_layer.group_send(
+                f"quiz_session_{self.code}",
+                {"type": "grading_started"},
+            )
+            logger.info(f"Grading started for session {self.code}")
+
+            session = QuizSession.objects.get(code=self.code)
+
+            await score_session(session.id)
+            logger.info(f"Scoring completed for session {self.code}")
+
+            await self.channel_layer.group_send(
+                f"quiz_session_{self.code}",
+                {"type": "grading_completed"},
+            )
+            logger.info(f"Grading completed for session {self.code}")
+
+        except QuizSession.DoesNotExist:
+            logger.error(f"QuizSession with code {self.code} does not exist.")
+        except Exception as e:
+            logger.error(f"An error occurred while ending the quiz for session {self.code}: {e}")
+
     async def end_quiz(self):
         if await self.update_quiz_end_time():
             grades = await self.fetch_grades()
@@ -193,36 +223,7 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
                 )
             )
 
-            try:
-                await self.channel_layer.group_send(
-                    f"quiz_session_instructor_{self.code}",
-                    {"type": "quiz_ended"},
-                )
-                logger.info(f"Quiz ended for session {self.code}")
-
-                await self.channel_layer.group_send(
-                    f"quiz_session_instructor_{self.code}",
-                    {"type": "grading_started"},
-                )
-                logger.info(f"Grading started for session {self.code}")
-
-                session = QuizSession.objects.get(code=self.code)
-
-                await score_session(session.id)
-                logger.info(f"Scoring completed for session {self.code}")
-
-                await self.channel_layer.group_send(
-                    f"quiz_session_instructor_{self.code}",
-                    {"type": "grading_completed"},
-                )
-                logger.info(f"Grading completed for session {self.code}")
-
-            except QuizSession.DoesNotExist:
-                logger.error(f"QuizSession with code {self.code} does not exist.")
-            except Exception as e:
-                logger.error(
-                    f"An error occurred while ending the quiz for session {self.code}: {e}"
-                )
+            await self.run_grading()
         else:
             print("Failed to end the quiz; session not found.")
 
