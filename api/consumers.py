@@ -195,9 +195,9 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
             )
             logger.info(f"Grading started for session {self.code}")
 
-            session = QuizSession.objects.get(code=self.code)
+            session = await database_sync_to_async(QuizSession.objects.get)(code=self.code)
 
-            await score_session(session.id)
+            await database_sync_to_async(score_session)(session.id)
             logger.info(f"Scoring completed for session {self.code}")
 
             await self.channel_layer.group_send(
@@ -294,13 +294,11 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
         responses = UserResponse.objects.all().filter(
             quiz_session__code=self.code, question_id=question_id
         )
-        answers = responses.distinct("selected_answer")
+        answers = responses.values_list("selected_answer", flat=True).distinct()
         answer_counts = {}
 
-        for response in answers:
-            answer_counts[response.selected_answer] = responses.filter(
-                selected_answer=response.selected_answer
-            ).count()
+        for answer in answers:
+            answer_counts[answer] = responses.filter(selected_answer=answer).count()
 
         return {"total_responses": responses.count(), "answers": answer_counts}
 
@@ -475,7 +473,7 @@ class StudentConsumer(AsyncWebsocketConsumer):
 
             await self.channel_layer.group_send(
                 f"quiz_session_instructor_{self.code}",
-                {"type": "student.joined", "text": json.dumps({"username": username})},
+                {"type": "student_joined", "text": json.dumps({"username": username})},
             )
 
     async def next_question(self, event):
@@ -529,8 +527,35 @@ class StudentConsumer(AsyncWebsocketConsumer):
         except QuizSession.DoesNotExist:
             return {"status": "error", "message": "Session not found."}
 
-        student = QuizSessionStudent.objects.get(quiz_session=session, student_id=self.student_id)
+        student = QuizSessionStudent.objects.get(quiz_session=session, id=self.student_id)
         return {"status": "success", "grade": student.score}
+
+    async def quiz_ended(self, event):
+        await self.send(
+            text_data=json.dumps(
+                {
+                    "type": "quiz_ended",
+                }
+            )
+        )
+
+    async def grading_started(self, event):
+        await self.send(
+            text_data=json.dumps(
+                {
+                    "type": "grading_started",
+                }
+            )
+        )
+
+    async def grading_completed(self, event):
+        await self.send(
+            text_data=json.dumps(
+                {
+                    "type": "grading_completed",
+                }
+            )
+        )
 
 
 @database_sync_to_async
