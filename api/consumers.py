@@ -357,7 +357,7 @@ class StudentConsumer(AsyncWebsocketConsumer):
         elif message_type == "response":
             await self.submit_response(data)
         elif message_type == "request_grade":
-            await self.retrieve_grade()
+            await self.retrieve_grade(data)
 
     async def submit_response(self, data):
         response = await self.create_user_response(data)
@@ -508,8 +508,8 @@ class StudentConsumer(AsyncWebsocketConsumer):
         responses = student.responses.all()
         return responses.filter(is_correct=True).count()
 
-    async def retrieve_grade(self):
-        response = await self.get_student_grade()
+    async def retrieve_grade(self, data):
+        response = await self.get_student_grade(data.get("id"))
         if response.get("status") == "success":
             await self.send(
                 text_data=json.dumps(
@@ -521,13 +521,13 @@ class StudentConsumer(AsyncWebsocketConsumer):
             )
 
     @database_sync_to_async
-    def get_student_grade(self):
+    def get_student_grade(self, student_id):
         try:
             session = QuizSession.objects.get(code=self.code)
         except QuizSession.DoesNotExist:
             return {"status": "error", "message": "Session not found."}
 
-        student = QuizSessionStudent.objects.get(quiz_session=session, id=self.student_id)
+        student = QuizSessionStudent.objects.get(quiz_session=session, id=student_id)
         return {"status": "success", "grade": student.score}
 
     async def quiz_ended(self, event):
