@@ -181,7 +181,7 @@ class QuizSessionStudent(models.Model):
     username = models.CharField(max_length=200)
     joined_at = models.DateTimeField(default=timezone.now)
     quiz_session = models.ForeignKey(QuizSession, on_delete=models.CASCADE, related_name="students")
-    score = models.IntegerField(default=0)
+    score = models.IntegerField(default=-1)
 
     class Meta:
         db_table = "api_quiz_session_student"
@@ -229,6 +229,7 @@ class QuizSessionQuestion(models.Model):
         on_delete=models.CASCADE,
         related_name="quiz_session_questions",
     )
+    skipped = models.BooleanField(default=False)
     unlocked = models.BooleanField(default=True)
     opened_at = models.DateTimeField(null=True, auto_now_add=True)
     extension = models.IntegerField(default=0)

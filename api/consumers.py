@@ -71,6 +71,8 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
                 await self.delete_student(data["username"])
             elif data["type"] == "increase_duration":
                 await self.add_to_duration(data["question_id"], data["extension"])
+            elif data["type"] == "skip_question":
+                await self.skip_question(data["question_id"])
             elif data["type"] == "question_timer_started":
                 await self.question_timer_started(data)
 
@@ -200,14 +202,23 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
             session = QuizSession.objects.get(code=self.code)
         except QuizSession.DoesNotExist:
             return {}
-
         students = session.students.all()
         grade_buckets = defaultdict(list)
 
+        skipped_questions_ids = QuizSessionQuestion.objects.filter(
+            quiz_session=session, skipped=True
+        ).values_list("question", flat=True)
+
+        total_possible_responses = session.quiz.questions.exclude(
+            id__in=skipped_questions_ids
+        ).count()
         total_possible_responses = session.quiz.questions.count()
 
         for student in students:
             responses = UserResponse.objects.filter(student=student, quiz_session=session)
+
+            # Exclude responses for skipped questions
+            responses = responses.exclude(question_id__in=skipped_questions_ids)
 
             # Count correct responses
             correct_responses = responses.filter(is_correct=True).count()
@@ -217,14 +228,11 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
                 percentage = (correct_responses / total_possible_responses) * 100
             else:
                 percentage = 0.0
-
             # Round to two decimal places
             percentage = round(percentage, 2)
             percentage_key = f"{percentage}"
-
             # Append the student's username to the appropriate bucket
             grade_buckets[percentage_key].append(student.username)
-
         return grade_buckets
 
     async def start_quiz(self):
@@ -283,6 +291,19 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
         quiz_session_question.extension += extension
         quiz_session_question.save()
         return quiz_session_question
+
+    @database_sync_to_async
+    def skip_question_db(self, question_id):
+        quiz_session_question = QuizSessionQuestion.objects.get(
+            question__id=question_id, quiz_session__code=self.code
+        )
+        quiz_session_question.skipped = True
+        quiz_session_question.unlocked = False
+        quiz_session_question.save()
+
+    async def skip_question(self, question_id):
+        await self.skip_question_db(question_id)
+        await self.send_next_question()
 
     async def add_to_duration(self, question_id, extension: int):
         quiz_session_question = await self.add_to_duration_db(question_id, extension)
