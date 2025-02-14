@@ -1,26 +1,22 @@
 from collections import defaultdict
-from .models import UserResponse, QuizSession, Quiz, QuizSessionStudent
+from typing import Dict
+from .models import UserResponse, QuizSessionStudent, QuizSessionQuestion, QuizSession
 
 
-def score_session(session_id) -> dict:
+def score_session(session_id) -> Dict[int, int]:
     try:
-        session = QuizSession.objects.get(id=session_id)
+        questions = QuizSessionQuestion.objects.filter(quiz_session_id=session_id, unlocked=True)
     except QuizSession.DoesNotExist:
-        raise ValueError(f"No session with id {session_id}")
+        return ValueError(f"Quiz session with id {session_id} does not exist")
 
-    try:
-        quiz = Quiz.objects.get(id=session.quiz_id)
-    except Quiz.DoesNotExist:
-        raise ValueError(f"No quiz with id {session.quiz_id}")
-
-    question_count = quiz.questions.count()
-    if question_count == 0:
-        raise ValueError(f"No questions in quiz {session.quiz_id}")
+    question_ids = set(q.question_id for q in questions)
 
     responses = UserResponse.objects.filter(quiz_session_id=session_id)
     student_to_responses = defaultdict(list)
 
     for response in responses:
+        if response.question_id not in question_ids:
+            continue  # Skip responses to questions that were skipped
         student_to_responses[response.student_id].append(response)
 
     # Among responses that have the same question_id, keep the one with the highest id
@@ -44,9 +40,11 @@ def score_session(session_id) -> dict:
         for student_id, responses in student_to_responses.items()
     }
 
-    for student_id, score in student_id_to_score.items():
-        student = QuizSessionStudent.objects.get(id=student_id)
-        student.score = score
-        student.save()
+    students_to_update = [
+        QuizSessionStudent(id=student_id, score=score)
+        for student_id, score in student_id_to_score.items()
+    ]
+
+    QuizSessionStudent.objects.bulk_update(students_to_update, ["score"])
 
     return student_id_to_score
