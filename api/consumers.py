@@ -20,6 +20,7 @@ from api.models import (
 )
 
 from .serializers import QuizSerializer
+from .services import score_session
 
 logger = logging.getLogger(__name__)
 
@@ -194,38 +195,38 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
         else:
             print("Failed to end the quiz; session not found.")
 
-    @database_sync_to_async
-    def fetch_grades(self):
+    async def fetch_grades(self):
         try:
-            session = QuizSession.objects.get(code=self.code)
+            session = await database_sync_to_async(QuizSession.objects.get)(code=self.code)
+            session_id = session.id
+            await database_sync_to_async(score_session)(session_id)
+            students = await database_sync_to_async(
+                lambda: list(
+                    QuizSessionStudent.objects.filter(quiz_session_id=session_id).values(
+                        "username", "score"
+                    )
+                )
+            )()
+
+            question_count = await database_sync_to_async(
+                QuizSessionQuestion.objects.filter(quiz_session_id=session_id).count
+            )()
+
+            def score_to_percentage(score):
+                return round((score / question_count) * 100, 2)
+
+            grade_buckets = defaultdict(list)
+            for student in students:
+                percentage = score_to_percentage(student["score"])
+                grade_buckets[percentage].append(student["username"])
+
+            return grade_buckets
         except QuizSession.DoesNotExist:
-            return {}
-
-        students = session.students.all()
-        grade_buckets = defaultdict(list)
-
-        total_possible_responses = session.quiz.questions.count()
-
-        for student in students:
-            responses = UserResponse.objects.filter(student=student, quiz_session=session)
-
-            # Count correct responses
-            correct_responses = responses.filter(is_correct=True).count()
-
-            # Calculate percentage
-            if total_possible_responses > 0:
-                percentage = (correct_responses / total_possible_responses) * 100
-            else:
-                percentage = 0.0
-
-            # Round to two decimal places
-            percentage = round(percentage, 2)
-            percentage_key = f"{percentage}"
-
-            # Append the student's username to the appropriate bucket
-            grade_buckets[percentage_key].append(student.username)
-
-        return grade_buckets
+            logger.error(f"Quiz session with code {self.code} does not exist.")
+            return {"error": "Quiz session not found."}
+        except Exception as e:
+            logger.exception("An error occurred while fetching grades.")
+            return {"error": str(e)}
 
     async def start_quiz(self):
         await self.channel_layer.group_send(f"quiz_session_{self.code}", {"type": "quiz_started"})
@@ -258,18 +259,15 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def fetch_question_results(self, question_id):
-        responses = UserResponse.objects.all().filter(
+        responses = UserResponse.objects.filter(
             quiz_session__code=self.code, question_id=question_id
-        )
-        answers = responses.distinct("selected_answer")
-        answer_counts = {}
+        ).values("selected_answer")
+        answer_counts = defaultdict(int)
 
-        for response in answers:
-            answer_counts[response.selected_answer] = responses.filter(
-                selected_answer=response.selected_answer
-            ).count()
+        for response in responses:
+            answer_counts[response["selected_answer"]] += 1
 
-        return {"total_responses": responses.count(), "answers": answer_counts}
+        return {"total_responses": len(responses), "answers": answer_counts}
 
     async def update_answers(self, event):
         results = await self.fetch_question_results(event["question_id"])
