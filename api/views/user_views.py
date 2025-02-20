@@ -254,6 +254,15 @@ class JWTSignUpInstructor(APIView):
                 )
 
 
+@extend_schema(tags=["Authentication Endpoint"])
+class GoogleJWTSignUp(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        # TODO: Finish this method.
+        pass
+
+
 @extend_schema(tags=["Profile and User Management"])
 class ProfileView(APIView):
     permission_classes = [IsAuthenticated]

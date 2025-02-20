@@ -56,6 +56,7 @@ urlpatterns = [
     ),
     path("sign-up-instructor/", SignUpInstructor.as_view(), name="sign-up-instructor"),
     path("jwt-sign-up-instructor/", JWTSignUpInstructor.as_view(), name="jwt-sign-up-instructor"),
+    path("jwt-google-sign-up", GoogleJWTSignUp.as_view(), name="jwt-google-sign-up"),
     # path('sign-up-student/', SignUpStudent.as_view()),
     path("login/", Login.as_view(), name="login"),
     path("logout/", Logout.as_view(), name="logout"),
