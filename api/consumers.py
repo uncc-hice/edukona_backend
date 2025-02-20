@@ -72,6 +72,8 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
                 await self.delete_student(data["username"])
             elif data["type"] == "increase_duration":
                 await self.add_to_duration(data["question_id"], data["extension"])
+            elif data["type"] == "skip_question":
+                await self.skip_question(data["question_id"])
             elif data["type"] == "question_timer_started":
                 await self.question_timer_started(data)
 
@@ -281,6 +283,19 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
         quiz_session_question.extension += extension
         quiz_session_question.save()
         return quiz_session_question
+
+    @database_sync_to_async
+    def skip_question_db(self, question_id):
+        quiz_session_question = QuizSessionQuestion.objects.get(
+            question__id=question_id, quiz_session__code=self.code
+        )
+        quiz_session_question.skipped = True
+        quiz_session_question.unlocked = False
+        quiz_session_question.save()
+
+    async def skip_question(self, question_id):
+        await self.skip_question_db(question_id)
+        await self.send_next_question()
 
     async def add_to_duration(self, question_id, extension: int):
         quiz_session_question = await self.add_to_duration_db(question_id, extension)
