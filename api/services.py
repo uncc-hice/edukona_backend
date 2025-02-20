@@ -5,9 +5,9 @@ from .models import UserResponse, QuizSessionStudent, QuizSessionQuestion, QuizS
 
 def score_session(session_id) -> Dict[int, int]:
     try:
-        questions = QuizSessionQuestion.objects.filter(quiz_session_id=session_id, unlocked=True)
+        questions = QuizSessionQuestion.objects.filter(quiz_session_id=session_id)
     except QuizSession.DoesNotExist:
-        return ValueError(f"Quiz session with id {session_id} does not exist")
+        raise ValueError(f"Quiz session with id {session_id} does not exist")
 
     question_ids = set(q.question_id for q in questions)
 
