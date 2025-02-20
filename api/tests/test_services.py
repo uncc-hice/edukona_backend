@@ -70,28 +70,45 @@ class BaseQuizTest(TestCase):
         self.student_count = 5
         self.students = [{"username": f"student_{i}"} for i in range(self.student_count)]
 
+
+class ScoreSessionServiceTest(BaseQuizTest):
+    def setUp(self):
+        super().setUp()
+        self.student_responses = self._generate_responses()
+        self.student_grades = self._calculate_expected_grades(self.student_responses)
+
+    def _generate_responses(self) -> List[List[str]]:
         def generate_student_response():
             responses = []
-            # randomly pick an answer for each question
             for question in self.questions:
                 options = question["incorrect_answer_list"] + [question["correct_answer"]]
                 responses.append(random.choice(options))
             return responses
 
-        self.student_responses = [generate_student_response() for _ in range(self.student_count)]
-        self.student_grades = [
-            self.grade_student_response(responses) for responses in self.student_responses
-        ]
+        return [generate_student_response() for _ in range(self.student_count)]
 
-    def grade_student_response(self, student_responses: List[str]) -> int:
+    def _calculate_expected_grades(self, responses: List[List[str]]) -> List[int]:
+        grades = []
+        for student_responses in responses:
+            score = 0
+            for i, response in enumerate(student_responses):
+                if response == self.questions[i]["correct_answer"]:
+                    score += 1
+            grades.append(score)
+        return grades
+
+    def _create_new_responses_and_grades(self):
+        responses = self._generate_responses()
+        grades = self._calculate_expected_grades(responses)
+        return responses, grades
+
+    def _grade_student_response(self, student_responses: List[str]) -> int:
         score = 0
         for i, response in enumerate(student_responses):
             if response == self.questions[i]["correct_answer"]:
                 score += 1
         return score
 
-
-class ScoreSessionServiceTest(BaseQuizTest):
     async def _create_student_records(self):
         student_records = []
         for student in self.students:
@@ -109,12 +126,12 @@ class ScoreSessionServiceTest(BaseQuizTest):
                 quiz_session=self.session,
             )
 
-    async def _submit_responses(self, student_records):
+    async def _submit_responses(self, student_records, responses):
         for question_index in range(self.question_count):
             for student_index in range(self.student_count):
                 student = student_records[student_index]
                 question = self.question_records[question_index]
-                selected_answer = self.student_responses[student_index][question_index]
+                selected_answer = responses[student_index][question_index]
                 is_correct = selected_answer == self.questions[question_index]["correct_answer"]
 
                 await sync_to_async(UserResponse.objects.create)(
@@ -135,7 +152,8 @@ class ScoreSessionServiceTest(BaseQuizTest):
     async def test_score_session(self):
         student_records = await self._create_student_records()
         await self._create_quiz_session_questions()
-        await self._submit_responses(student_records)
+        # submit default responses
+        await self._submit_responses(student_records, self.student_responses)
 
         # call the service
         await sync_to_async(score_session)(self.session.id)
@@ -158,10 +176,10 @@ class ScoreSessionServiceTest(BaseQuizTest):
 
         # recalculate student grades
         self.student_grades = [
-            self.grade_student_response(responses) for responses in self.student_responses
+            self._grade_student_response(responses) for responses in self.student_responses
         ]
 
-        await self._submit_responses(student_records)
+        await self._submit_responses(student_records, self.student_responses)
         await sync_to_async(score_session)(self.session.id)
 
         # check if the scores are correctly calculated
@@ -170,3 +188,46 @@ class ScoreSessionServiceTest(BaseQuizTest):
         )
         for i, student in enumerate(updated_student_records):
             self.assertEqual(student.score, self.student_grades[i])
+
+    @pytest.mark.asyncio
+    async def test_score_session_no_responses(self):
+        await self._create_student_records()
+        await self._create_quiz_session_questions()
+
+        # call the service
+        await sync_to_async(score_session)(self.session.id)
+
+        # check if the scores are correctly calculated
+        updated_student_records = await sync_to_async(list)(
+            QuizSessionStudent.objects.filter(quiz_session=self.session)
+        )
+        for student in updated_student_records:
+            self.assertEqual(student.score, 0)
+
+    @pytest.mark.asyncio
+    async def test_score_session_no_questions(self):
+        await self._create_student_records()
+
+        with pytest.raises(ValueError):
+            await sync_to_async(score_session)(self.session.id)
+
+    @pytest.mark.asyncio
+    async def test_score_session_with_two_responses_per_student(self):
+        student_records = await self._create_student_records()
+        await self._create_quiz_session_questions()
+
+        # submit default responses
+        await self._submit_responses(student_records, self.student_responses)
+
+        # submit new responses
+        new_student_responses, new_student_grades = self._create_new_responses_and_grades()
+        await self._submit_responses(student_records, new_student_responses)
+        await sync_to_async(score_session)(self.session.id)
+
+        # check if the scores are correctly calculated
+        updated_student_records = await sync_to_async(list)(
+            QuizSessionStudent.objects.filter(quiz_session=self.session)
+        )
+
+        for i, student in enumerate(updated_student_records):
+            self.assertEqual(student.score, new_student_grades[i])
