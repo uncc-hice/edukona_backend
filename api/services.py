@@ -1,44 +1,33 @@
-from collections import defaultdict
 from typing import Dict
-from .models import UserResponse, QuizSessionStudent, QuizSessionQuestion, QuizSession
+
+from django.db.models import Case, Count, IntegerField, Max, When
+
+from .models import QuizSessionQuestion, QuizSessionStudent, UserResponse
 
 
 def score_session(session_id) -> Dict[int, int]:
-    try:
-        questions = QuizSessionQuestion.objects.filter(quiz_session_id=session_id)
-    except QuizSession.DoesNotExist:
+    question_ids = QuizSessionQuestion.objects.filter(quiz_session_id=session_id).values_list(
+        "id", flat=True
+    )
+    if not question_ids:
         raise ValueError(f"Quiz session with id {session_id} does not exist")
 
-    question_ids = set(q.question_id for q in questions)
+    # Get the latest response for each question per student
+    latest_responses = (
+        UserResponse.objects.filter(quiz_session_id=session_id, question_id__in=question_ids)
+        .values("student_id", "question_id")
+        .annotate(max_id=Max("id"))
+    )
 
-    responses = UserResponse.objects.filter(quiz_session_id=session_id)
-    student_to_responses = defaultdict(list)
+    # Get the actual response objects for the latest responses
+    responses = UserResponse.objects.filter(id__in=[res["max_id"] for res in latest_responses])
 
-    for response in responses:
-        if response.question_id not in question_ids:
-            continue  # Skip responses to questions that were skipped
-        student_to_responses[response.student_id].append(response)
+    # Calculate the score for each student
+    student_scores = responses.values("student_id").annotate(
+        score=Count(Case(When(is_correct=True, then=1), output_field=IntegerField()))
+    )
 
-    # Among responses that have the same question_id, keep the one with the highest id
-    def trim_responses(response_list):
-        question_to_responses = defaultdict(list)
-        for response in response_list:
-            question_to_responses[response.question_id].append(response)
-        trimmed_responses = [
-            max(q_responses, key=lambda r: r.id) for q_responses in question_to_responses.values()
-        ]
-        return trimmed_responses
-
-    for student_id, responses in student_to_responses.items():
-        student_to_responses[student_id] = trim_responses(responses)
-
-    def score_responses(responses):
-        return sum(1 for response in responses if response.is_correct)
-
-    student_id_to_score = {
-        student_id: score_responses(responses)
-        for student_id, responses in student_to_responses.items()
-    }
+    student_id_to_score = {entry["student_id"]: entry["score"] for entry in student_scores}
 
     students_to_update = [
         QuizSessionStudent(id=student_id, score=score)
