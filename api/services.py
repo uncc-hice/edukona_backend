@@ -27,7 +27,11 @@ def score_session(session_id) -> Dict[int, int]:
         score=Count(Case(When(is_correct=True, then=1), output_field=IntegerField()))
     )
 
-    student_id_to_score = {entry["student_id"]: entry["score"] for entry in student_scores}
+    student_ids = QuizSessionStudent.objects.filter(quiz_session_id=session_id).values_list(
+        "id", flat=True
+    )
+    student_id_to_score = {id: 0 for id in student_ids}
+    student_id_to_score.update({entry["student_id"]: entry["score"] for entry in student_scores})
 
     students_to_update = [
         QuizSessionStudent(id=student_id, score=score)

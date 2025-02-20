@@ -231,3 +231,16 @@ class ScoreSessionServiceTest(BaseQuizTest):
 
         for i, student in enumerate(updated_student_records):
             self.assertEqual(student.score, new_student_grades[i])
+
+    @pytest.mark.asyncio
+    async def test_score_session_with_no_invocation(self):
+        student_records = await self._create_student_records()
+        await self._create_quiz_session_questions()
+
+        await self._submit_responses(student_records, self.student_responses)
+
+        updated_student_records = await sync_to_async(list)(
+            QuizSessionStudent.objects.filter(quiz_session=self.session)
+        )
+        for student in updated_student_records:
+            self.assertEqual(student.score, -1)  # score should be the default value of -1
