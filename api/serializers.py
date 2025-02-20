@@ -407,10 +407,6 @@ class LogoutSerializer(serializers.Serializer):
     refresh = serializers.CharField()
 
 
-class ScoreQuizRequestSerializer(serializers.Serializer):
-    session_id = serializers.IntegerField()
-
-
 class ScoreQuizResponseSerializer(serializers.Serializer):
     message = serializers.CharField()
 

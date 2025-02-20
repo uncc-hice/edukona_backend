@@ -48,7 +48,6 @@ from api.serializers import (
     LoginSerializer,
     LogoutSerializer,
     QuizSerializer,
-    ScoreQuizRequestSerializer,
     ScoreQuizResponseSerializer,
     SignUpInstructorSerializer,
     UpdateTranscriptSerializer,
