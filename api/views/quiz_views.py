@@ -126,9 +126,6 @@ class CreateQuizFromTranscript(APIView):
     )
     def post(self, request, recording_id):
         data = request.data.copy()
-        # Make sure the data variable has the correct recording id before proceeding.
-        if data["recording_id"] != recording_id:
-            data["recording_id"] = recording_id
         serializer = CreateQuizFromTranscriptRequestSerializer(data=data)
         if serializer.is_valid():
             try:
@@ -151,7 +148,7 @@ class CreateQuizFromTranscript(APIView):
                     "headers": {
                         "Authorization": f"Token {token}" if not is_jwt else f"Bearer {jwt_token}",
                     },
-                    "recording_id": str(serializer.validated_data["recording_id"]),
+                    "recording_id": str(recording_id),
                     "num_of_questions": serializer.validated_data["number_of_questions"],
                     "question_duration": serializer.validated_data["question_duration"],
                 }

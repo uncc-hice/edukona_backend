@@ -136,7 +136,6 @@ class QuizSerializer(serializers.ModelSerializer):
 class CreateQuizFromTranscriptRequestSerializer(serializers.Serializer):
     number_of_questions = serializers.IntegerField()
     question_duration = serializers.IntegerField()
-    recording_id = serializers.UUIDField()
 
 
 class QuizListSerializer(serializers.Serializer):
