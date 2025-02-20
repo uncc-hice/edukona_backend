@@ -1052,29 +1052,25 @@ class TokenVerificationView(APIView):
 
 
 @extend_schema(tags=["Quiz Scoring"])
-class ScoreView(APIView):
+class UpdateScoresView(APIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
-        operation_id="score_quiz",
-        summary="Score a quiz",
-        description="Scores a particular session.",
-        request=ScoreQuizRequestSerializer,
+        operation_id="update_scores",
+        summary="Update scores",
+        description="Updates the scores for a particular session.",
         responses={
             200: ScoreQuizResponseSerializer,
             404: OpenApiTypes.OBJECT,
         },
     )
-    def post(self, request):
-        serializer = ScoreQuizRequestSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        session_id = serializer.validated_data["session_id"]
+    def post(self, request, session_id):
         score_session(session_id)
         return Response({"message": "Quiz scored successfully"}, status=status.HTTP_200_OK)
 
 
 @extend_schema(tags=["Quiz Scoring"])
-class GetScoreView(APIView):
+class GetStudentScoreForSession(APIView):
     @extend_schema(
         operation_id="get_score_by_id",
         summary="Get score by ID",

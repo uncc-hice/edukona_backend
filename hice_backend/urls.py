@@ -252,6 +252,12 @@ urlpatterns = [
     path("jwt-login/", JWTLoginView.as_view(), name="jwt-login"),
     path("jwt-logout/", JWTLogoutView.as_view(), name="jwt-logout"),
     path("auth/jwt-google/", JWTGoogleLogin.as_view(), name="jwt-google"),
-    path("score/<int:student_id>/<int:session_id>/", GetScoreView.as_view(), name="get-score"),
-    path("score/", ScoreView.as_view(), name="score"),
+    path(
+        "sessions/<int:session_id>/get-score/<int:student_id>/",
+        GetStudentScoreForSession.as_view(),
+        name="get-score",
+    ),
+    path(
+        "sessions/<int:session_id>/update-scores/", UpdateScoresView.as_view(), name="update-scores"
+    ),
 ]
