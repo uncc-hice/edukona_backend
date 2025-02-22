@@ -7,7 +7,7 @@ from .models import QuizSessionQuestion, QuizSessionStudent, UserResponse
 
 def score_session(session_id) -> Dict[int, int]:
     question_ids = QuizSessionQuestion.objects.filter(quiz_session_id=session_id).values_list(
-        "id", flat=True
+        "question_id", flat=True
     )
     if not question_ids:
         raise ValueError(f"Quiz session with id {session_id} does not exist")
