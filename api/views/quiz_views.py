@@ -1,6 +1,7 @@
 from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.response import Response
+import json
 
 from api.models import Quiz
 from api.serializers import (
@@ -8,13 +9,17 @@ from api.serializers import (
     QuizListSerializer,
     QuizTitleUpdateSerializer,
     FetchCourseQuizzesSerializer,
+    CreateQuizFromTranscriptRequestSerializer,
 )
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
 
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 
-from ..permissions import IsQuizOwner, AllowInstructor, IsCourseOwner, IsEnrolledInCourse
+from ..permissions import IsCourseOwner, IsEnrolledInCourse
+from ..permissions import IsQuizOwner, AllowInstructor, IsRecordingOwner
+import boto3
+from django.conf import settings
 
 
 @extend_schema(tags=["Quiz Creation and Modification"])
@@ -103,6 +108,59 @@ class InstructorQuizzesView(APIView):
     def get(self, request):
         quizzes = Quiz.objects.filter(instructor=request.user.instructor)
         return Response(QuizListSerializer({"quizzes": quizzes}).data, status=status.HTTP_200_OK)
+
+
+@extend_schema(tags=["Quiz Creation and Modification"])
+class CreateQuizFromTranscript(APIView):
+    permission_classes = [IsRecordingOwner]
+
+    @extend_schema(
+        operation_id="create-quiz-from-transcript",
+        summary="Creates a new quiz from a transcript",
+        description="Created a new quiz for a user given a transcript",
+        request=CreateQuizFromTranscriptRequestSerializer,
+        responses={
+            201: CreateQuizFromTranscriptRequestSerializer,
+            401: OpenApiResponse(description="Unauthorized"),
+        },
+    )
+    def post(self, request, recording_id):
+        data = request.data.copy()
+        serializer = CreateQuizFromTranscriptRequestSerializer(data=data)
+        if serializer.is_valid():
+            try:
+                lambda_client = boto3.client(
+                    "lambda",
+                    aws_access_key_id=settings.AWS_LAMBDA_INVOKER_ACCESS_KEY_ID,
+                    aws_secret_access_key=settings.AWS_LAMBDA_INVOKER_SECRET_ACCESS_KEY,
+                    region_name=settings.AWS_LAMBDA_INVOKER_REGION_NAME,
+                )
+                token = jwt_token = None
+                is_jwt = True
+                if "Authorization" in request.headers:
+                    if request.headers["Authorization"].startswith("Bearer "):
+                        jwt_token = request.headers["Authorization"].split(" ")[1]
+                    else:
+                        token = request.headers["Authorization"].split(" ")[1]
+                        is_jwt = False
+
+                payload = {
+                    "headers": {
+                        "Authorization": f"Token {token}" if not is_jwt else f"Bearer {jwt_token}",
+                    },
+                    "recording_id": str(recording_id),
+                    "num_of_questions": serializer.validated_data["number_of_questions"],
+                    "question_duration": serializer.validated_data["question_duration"],
+                }
+
+                lambda_client.invoke(
+                    FunctionName="CreateQuizFromTranscript",
+                    InvocationType="Event",
+                    Payload=json.dumps(payload),
+                )
+            except Exception as e:
+                return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 @extend_schema(tags=["Quiz Creation and Modification"])
