@@ -217,14 +217,24 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
     async def end_quiz(self):
         if await self.update_quiz_end_time():
             grades = await self.fetch_grades()
-            await self.send(
-                text_data=json.dumps(
-                    {
-                        "type": "quiz_ended",
-                        "grades": grades,
-                    }
+            if "error" in grades:
+                await self.send(
+                    text_data=json.dumps(
+                        {
+                            "type": "error",
+                            "message": grades["error"],
+                        }
+                    )
                 )
-            )
+            else:
+                await self.send(
+                    text_data=json.dumps(
+                        {
+                            "type": "quiz_ended",
+                            "grades": grades,
+                        }
+                    )
+                )
 
             await self.run_grading()
         else:
@@ -244,8 +254,11 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
             )()
 
             question_count = await database_sync_to_async(
-                QuizSessionQuestion.objects.filter(quiz_session_id=session_id).count
+                QuizSessionQuestion.objects.filter(quiz_session_id=session_id, skipped=False).count
             )()
+
+            if question_count == 0:
+                return {"error": "No questions in the quiz."}
 
             def score_to_percentage(score):
                 return round((score / question_count) * 100, 2)
