@@ -74,10 +74,35 @@ class QuizSessionStudentSerializer(serializers.ModelSerializer):
 class InstructorRecordingsSerializer(serializers.ModelSerializer):
     class Meta:
         model = InstructorRecordings
-        fields = ["id", "s3_path", "uploaded_at", "instructor", "transcript", "title"]
+        fields = [
+            "id",
+            "s3_path",
+            "uploaded_at",
+            "instructor",
+            "transcript",
+            "title",
+            "duration",
+            "course",
+            "published",
+        ]
         read_only_fields = ["id", "uploaded_at", "transcript"]
 
         instructor = serializers.PrimaryKeyRelatedField(read_only=True)
+
+
+class RecordingUpdateSerializer(serializers.Serializer):
+    title = serializers.CharField()
+    duration = serializers.IntegerField()
+    course = serializers.UUIDField()
+    published = serializers.BooleanField()
+
+    def update(self, instance, validated_data):
+        instance.title = validated_data.get("title", instance.title)
+        instance.duration = validated_data.get("duration", instance.duration)
+        instance.course = validated_data.get("course", instance.course)
+        instance.published = validated_data.get("published", instance.published)
+        instance.save()
+        return instance
 
 
 class UpdateTranscriptSerializer(serializers.Serializer):
