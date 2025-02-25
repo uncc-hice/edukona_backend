@@ -420,3 +420,32 @@ class GetScoreResponseSerializer(serializers.ModelSerializer):
     class Meta:
         model = QuizSessionStudent
         fields = ["score"]
+
+
+class UpdateRecordingCourseSerializer(serializers.Serializer):
+    recording_id = serializers.UUIDField(required=True)
+    course_id = serializers.UUIDField(required=True)
+
+    def validate_course_id(self, value):
+        if not Course.objects.filter(id=value).exists():
+            raise serializers.ValidationError("Course not found.")
+        return value
+
+    def validate(self, data):
+        recording_id = data.get("recording_id")
+        course_id = data.get("course_id")
+
+        recording = InstructorRecordings.objects.get(id=recording_id)
+        course = Course.objects.get(id=course_id)
+
+        if recording.instructor != course.instructor:
+            raise serializers.ValidationError(
+                "The instructor of the course does not match the instructor of the recording."
+            )
+
+        return data
+
+    def update(self, instance, validated_data):
+        instance.course_id = validated_data["course_id"]
+        instance.save()
+        return instance
