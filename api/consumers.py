@@ -72,6 +72,8 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
                 await self.delete_student(data["username"])
             elif data["type"] == "increase_duration":
                 await self.add_to_duration(data["question_id"], data["extension"])
+            elif data["type"] == "skip_question":
+                await self.skip_question(data["question_id"])
             elif data["type"] == "question_timer_started":
                 await self.question_timer_started(data)
 
@@ -227,38 +229,38 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
         else:
             print("Failed to end the quiz; session not found.")
 
-    @database_sync_to_async
-    def fetch_grades(self):
+    async def fetch_grades(self):
         try:
-            session = QuizSession.objects.get(code=self.code)
+            session = await database_sync_to_async(QuizSession.objects.get)(code=self.code)
+            session_id = session.id
+            await database_sync_to_async(score_session)(session_id)
+            students = await database_sync_to_async(
+                lambda: list(
+                    QuizSessionStudent.objects.filter(quiz_session_id=session_id).values(
+                        "username", "score"
+                    )
+                )
+            )()
+
+            question_count = await database_sync_to_async(
+                QuizSessionQuestion.objects.filter(quiz_session_id=session_id).count
+            )()
+
+            def score_to_percentage(score):
+                return round((score / question_count) * 100, 2)
+
+            grade_buckets = defaultdict(list)
+            for student in students:
+                percentage = score_to_percentage(student["score"])
+                grade_buckets[percentage].append(student["username"])
+
+            return grade_buckets
         except QuizSession.DoesNotExist:
-            return {}
-
-        students = session.students.all()
-        grade_buckets = defaultdict(list)
-
-        total_possible_responses = session.quiz.questions.count()
-
-        for student in students:
-            responses = UserResponse.objects.filter(student=student, quiz_session=session)
-
-            # Count correct responses
-            correct_responses = responses.filter(is_correct=True).count()
-
-            # Calculate percentage
-            if total_possible_responses > 0:
-                percentage = (correct_responses / total_possible_responses) * 100
-            else:
-                percentage = 0.0
-
-            # Round to two decimal places
-            percentage = round(percentage, 2)
-            percentage_key = f"{percentage}"
-
-            # Append the student's username to the appropriate bucket
-            grade_buckets[percentage_key].append(student.username)
-
-        return grade_buckets
+            logger.error(f"Quiz session with code {self.code} does not exist.")
+            return {"error": "Quiz session not found."}
+        except Exception as e:
+            logger.exception("An error occurred while fetching grades.")
+            return {"error": str(e)}
 
     async def start_quiz(self):
         await self.channel_layer.group_send(f"quiz_session_{self.code}", {"type": "quiz_started"})
@@ -291,16 +293,16 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def fetch_question_results(self, question_id):
-        responses = UserResponse.objects.all().filter(
-            quiz_session__code=self.code, question_id=question_id
+        responses = UserResponse.objects.filter(
+            quiz_session__code=self.code, 
+            question_id=question_id
         )
-        answers = responses.values_list("selected_answer", flat=True).distinct()
-        answer_counts = {}
 
-        for answer in answers:
-            answer_counts[answer] = responses.filter(selected_answer=answer).count()
+        total_responses = responses.count()
+        answer_data = responses.values('selected_answer').annotate(count=Count('selected_answer'))
+        answer_counts = {item['selected_answer']: item['count'] for item in answer_data}
 
-        return {"total_responses": responses.count(), "answers": answer_counts}
+        return {"total_responses": total_responses, "answers": answer_counts}
 
     async def update_answers(self, event):
         results = await self.fetch_question_results(event["question_id"])
@@ -314,6 +316,19 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
         quiz_session_question.extension += extension
         quiz_session_question.save()
         return quiz_session_question
+
+    @database_sync_to_async
+    def skip_question_db(self, question_id):
+        quiz_session_question = QuizSessionQuestion.objects.get(
+            question__id=question_id, quiz_session__code=self.code
+        )
+        quiz_session_question.skipped = True
+        quiz_session_question.unlocked = False
+        quiz_session_question.save()
+
+    async def skip_question(self, question_id):
+        await self.skip_question_db(question_id)
+        await self.send_next_question()
 
     async def add_to_duration(self, question_id, extension: int):
         quiz_session_question = await self.add_to_duration_db(question_id, extension)

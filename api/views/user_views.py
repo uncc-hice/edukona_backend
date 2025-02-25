@@ -37,6 +37,8 @@ from api.models import (
 )
 from api.serializers import (
     ContactMessageSerializer,
+    GetScoreRequestSerializer,
+    GetScoreResponseSerializer,
     GetTranscriptResponseSerializer,
     GoogleLoginRequestSerializer,
     GoogleLoginResponseSerializer,
@@ -46,11 +48,13 @@ from api.serializers import (
     LoginSerializer,
     LogoutSerializer,
     QuizSerializer,
+    ScoreQuizResponseSerializer,
     SignUpInstructorSerializer,
     UpdateTranscriptSerializer,
 )
 
 from ..permissions import IsRecordingOwner
+from ..services import score_session
 
 logger = logging.getLogger(__name__)
 
@@ -1044,3 +1048,38 @@ class TokenVerificationView(APIView):
 
     def get(self, request):
         return Response({"message": "Token is valid"}, status=status.HTTP_200_OK)
+
+
+@extend_schema(tags=["Quiz Scoring"])
+class UpdateScoresView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        operation_id="update_scores",
+        summary="Update scores",
+        description="Updates the scores for a particular session.",
+        responses={
+            200: ScoreQuizResponseSerializer,
+            404: OpenApiTypes.OBJECT,
+        },
+    )
+    def post(self, request, session_id):
+        score_session(session_id)
+        return Response({"message": "Quiz scored successfully"}, status=status.HTTP_200_OK)
+
+
+@extend_schema(tags=["Quiz Scoring"])
+class GetStudentScoreForSession(APIView):
+    @extend_schema(
+        operation_id="get_score_by_id",
+        summary="Get score by ID",
+        description="Returns the score of a student for a particular session.",
+        request=GetScoreRequestSerializer,
+        responses={
+            200: GetScoreResponseSerializer,
+            404: OpenApiTypes.OBJECT,
+        },
+    )
+    def get(self, request, student_id, session_id):
+        student = get_object_or_404(QuizSessionStudent, id=student_id, quiz_session_id=session_id)
+        return JsonResponse({"score": student.score}, status=status.HTTP_200_OK)
