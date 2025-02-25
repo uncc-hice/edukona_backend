@@ -6,6 +6,7 @@ from urllib.parse import parse_qs
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
 from django.contrib.auth.models import AnonymousUser, User
+from django.db.models import Count
 from django.utils import timezone
 from rest_framework.authtoken.models import Token
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
@@ -294,13 +295,12 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def fetch_question_results(self, question_id):
         responses = UserResponse.objects.filter(
-            quiz_session__code=self.code, 
-            question_id=question_id
+            quiz_session__code=self.code, question_id=question_id
         )
 
         total_responses = responses.count()
-        answer_data = responses.values('selected_answer').annotate(count=Count('selected_answer'))
-        answer_counts = {item['selected_answer']: item['count'] for item in answer_data}
+        answer_data = responses.values("selected_answer").annotate(count=Count("selected_answer"))
+        answer_counts = {item["selected_answer"]: item["count"] for item in answer_data}
 
         return {"total_responses": total_responses, "answers": answer_counts}
 
@@ -523,14 +523,22 @@ class StudentConsumer(AsyncWebsocketConsumer):
         responses = student.responses.all()
         return responses.filter(is_correct=True).count()
 
+    @database_sync_to_async
+    def get_question_count_and_skipped(self):
+        questions = QuizSessionQuestion.objects.filter(quiz_session__code=self.code)
+        return questions.count(), questions.filter(skipped=True).count()
+
     async def retrieve_grade(self, data):
         response = await self.get_student_grade(data.get("id"))
+        question_count, skipped = await self.get_question_count_and_skipped()
         if response.get("status") == "success":
             await self.send(
                 text_data=json.dumps(
                     {
                         "type": "grade",
                         "grade": response.get("grade"),
+                        "question_count": question_count,
+                        "skipped": skipped,
                     }
                 )
             )
