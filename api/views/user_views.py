@@ -258,7 +258,60 @@ class JWTSignUpInstructor(APIView):
                 )
 
 
-@extend_schema(tags=["Authentication Endpoint"])
+@extend_schema(
+    operation_id="sign_up_instructor_google",
+    summary="Sign up as an Instructor using Google",
+    description="Allows a new user to sign up as an instructor through Google. Returns JWT tokens upon successful registration.",
+    request=SignUpInstructorSerializer,
+    responses={
+        201: {
+            "description": "Instructor created successfully.",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "access": "jwt_access_token",
+                        "refresh": "jwt_refresh_token",
+                        "user": "user-uuid-string",
+                        "instructor": "instructor-uuid-string",
+                    }
+                }
+            },
+        },
+        400: {
+            "description": "Bad Request. Input data is invalid.",
+            "content": {
+                "application/json": {
+                    "example": {"message": "A user with this email already exists."}
+                }
+            },
+        },
+        403: {
+            "description": "Forbidden. An error occurred while signing up.",
+            "content": {
+                "application/json": {"example": {"message": "An error occurred while signing up."}}
+            },
+        },
+        500: {
+            "description": "Internal Server Error. An error occurred while signing up.",
+            "content": {
+                "application/json": {"example": {"message": "An error occurred while signing up."}}
+            },
+        },
+    },
+    examples=[
+        OpenApiExample(
+            "Valid Input",
+            value={
+                "first_name": "John",
+                "last_name": "Doe",
+                "email": "john.doe@gmail.com",
+            },
+            request_only=True,
+            response_only=False,
+        ),
+    ],
+    tags=["Authentication Endpoint"],
+)
 class GoogleJWTSignUp(APIView):
     permission_classes = [AllowAny]
 
