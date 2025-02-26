@@ -263,8 +263,44 @@ class GoogleJWTSignUp(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        # TODO: Finish this method.
-        pass
+        serializer = SignUpInstructorSerializer(data=request.data, context={"google_signup": True})
+        if serializer.is_valid():
+            instructor = serializer.save()
+            user = instructor.user
+            refresh = RefreshToken.for_user(user)
+
+            response = {
+                "access": str(refresh.access_token),
+                "refresh": str(refresh),
+                "user": user.id,
+                "instructor": instructor.id,
+            }
+
+            mailInstructor(user.email)
+            logger.info(f"Instructor {user.id} signed up successfully using Google.")
+            return Response(response, status=status.HTTP_201_CREATED)
+        else:
+            errors = serializer.errors
+            if "email" in errors:
+                logger.warning(
+                    f"Sign up failed for email {request.data.get('email')}: {errors['email'][0]}"
+                )
+                return Response({"message": errors["email"][0]}, status=status.HTTP_400_BAD_REQUEST)
+            elif "first_name" in errors:
+                logger.warning(
+                    f"Sign up failed for email {request.data.get('email')}: Missing first name"
+                )
+                return Response(
+                    {"message": "Please provide all required fields."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            else:
+                logger.warning(
+                    f"Sign up failed for email {request.data.get('email')}: Invalid data provided"
+                )
+                return Response(
+                    {"message": "Invalid data provided"}, status=status.HTTP_400_BAD_REQUEST
+                )
 
 
 @extend_schema(tags=["Profile and User Management"])

@@ -299,7 +299,12 @@ class SignUpInstructorSerializer(serializers.Serializer):
         is_google = self.context.get("google_signup", False)
 
         if is_google:
-            data["password"] = None
+            if "password" in data:
+                del data["password"]
+            if not data["email"].endswith("@gmail.com"):
+                raise serializers.ValidationError(
+                    {"email": "The email provided is not a google email."}
+                )
         elif not data.get("password"):
             raise serializers.ValidationError({"password": "This field is required"})
 
