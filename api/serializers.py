@@ -74,7 +74,7 @@ class QuizSessionStudentSerializer(serializers.ModelSerializer):
 class InstructorRecordingsSerializer(serializers.ModelSerializer):
     class Meta:
         model = InstructorRecordings
-        fields = ["id", "s3_path", "uploaded_at", "instructor", "transcript", "title"]
+        fields = "__all__"
         read_only_fields = ["id", "uploaded_at", "transcript"]
 
         instructor = serializers.PrimaryKeyRelatedField(read_only=True)
@@ -423,29 +423,30 @@ class GetScoreResponseSerializer(serializers.ModelSerializer):
 
 
 class UpdateRecordingCourseSerializer(serializers.Serializer):
-    recording_id = serializers.UUIDField(required=True)
     course_id = serializers.UUIDField(required=True)
 
     def validate_course_id(self, value):
-        if not Course.objects.filter(id=value).exists():
+        try:
+            self._course = Course.objects.get(id=value)
+            return value
+        except Course.DoesNotExist:
             raise serializers.ValidationError("Course not found.")
-        return value
 
     def validate(self, data):
-        recording_id = data.get("recording_id")
-        course_id = data.get("course_id")
+        recording = self.context.get("recording")
 
-        recording = InstructorRecordings.objects.get(id=recording_id)
-        course = Course.objects.get(id=course_id)
+        if recording is None:
+            raise serializers.ValidationError("Recording must be provided in the context.")
 
-        if recording.instructor != course.instructor:
+        if recording.instructor != self._course.instructor:
             raise serializers.ValidationError(
                 "The instructor of the course does not match the instructor of the recording."
             )
 
+        data["course"] = self._course
         return data
 
     def update(self, instance, validated_data):
-        instance.course_id = validated_data["course_id"]
+        instance.course = validated_data["course"]
         instance.save()
         return instance

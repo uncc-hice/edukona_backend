@@ -249,20 +249,19 @@ class UpdateRecordingCourse(APIView):
             200: InstructorRecordingsSerializer,
             400: "Bad Request",
             401: "Unauthorized",
+            404: "Not Found",
         },
     )
     def patch(self, request, recording_id):
         recording = get_object_or_404(InstructorRecordings, id=recording_id)
-        serializer = UpdateRecordingCourseSerializer(data=request.data)
+
+        serializer = UpdateRecordingCourseSerializer(
+            recording, data=request.data, context={"recording": recording}
+        )
 
         if serializer.is_valid():
-            validated_data = serializer.validated_data
-            recording.course_id = validated_data["course_id"]
-            recording.save()
-            updated_recording_serializer = InstructorRecordingsSerializer(recording)
-            return Response(
-                updated_recording_serializer.data,
-                status=status.HTTP_200_OK,
-            )
+            updated_recording = serializer.save()
+            response_serializer = InstructorRecordingsSerializer(updated_recording)
+            return Response(response_serializer.data, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
