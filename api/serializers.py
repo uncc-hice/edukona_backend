@@ -74,7 +74,7 @@ class QuizSessionStudentSerializer(serializers.ModelSerializer):
 class InstructorRecordingsSerializer(serializers.ModelSerializer):
     class Meta:
         model = InstructorRecordings
-        fields = ["id", "s3_path", "uploaded_at", "instructor", "transcript", "title"]
+        fields = "__all__"
         read_only_fields = ["id", "uploaded_at", "transcript"]
 
         instructor = serializers.PrimaryKeyRelatedField(read_only=True)
