@@ -11,6 +11,7 @@ from api.serializers import (
     QuizTypedSerializer,
     LectureSummaryTypedSerializer,
     QuizAndSummarySerializer,
+    UpdateRecordingCourseSerializer,
 )
 from django.conf import settings
 from django.shortcuts import get_object_or_404
@@ -235,3 +236,32 @@ class GetQuizzesAndSummaries(APIView):
         data = sorted(chain(quizzes, summaries), key=lambda obj: obj.created_at, reverse=True)
         serializer = QuizAndSummarySerializer(data, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@extend_schema(tags=["Recordings"])
+class UpdateRecordingCourse(APIView):
+    permission_classes = [IsRecordingOwner]
+
+    @extend_schema(
+        request=UpdateRecordingCourseSerializer,
+        description="Endpoint to update the course of a recording",
+        responses={
+            200: InstructorRecordingsSerializer,
+            400: "Bad Request",
+            401: "Unauthorized",
+            404: "Not Found",
+        },
+    )
+    def patch(self, request, recording_id):
+        recording = get_object_or_404(InstructorRecordings, id=recording_id)
+
+        serializer = UpdateRecordingCourseSerializer(
+            recording, data=request.data, context={"recording": recording}
+        )
+
+        if serializer.is_valid():
+            updated_recording = serializer.save()
+            response_serializer = InstructorRecordingsSerializer(updated_recording)
+            return Response(response_serializer.data, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
