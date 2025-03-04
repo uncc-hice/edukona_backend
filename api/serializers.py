@@ -89,7 +89,8 @@ class RecordingUpdateSerializer(serializers.Serializer):
     def update(self, instance, validated_data):
         instance.title = validated_data.get("title", instance.title)
         instance.duration = validated_data.get("duration", instance.duration)
-        instance.course = validated_data.get("course", instance.course)
+        if validated_data.get("course"):
+            instance.course = Course.objects.get(id=validated_data["course"])
         instance.published = validated_data.get("published", instance.published)
         instance.save()
         return instance
