@@ -6,6 +6,7 @@ from urllib.parse import parse_qs
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
 from django.contrib.auth.models import AnonymousUser, User
+from django.db.models import Count
 from django.utils import timezone
 from rest_framework.authtoken.models import Token
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
@@ -183,6 +184,36 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
             print("No quiz session found with the code:", self.code)
             return False
 
+    async def run_grading(self):
+        try:
+            await self.channel_layer.group_send(
+                f"quiz_session_{self.code}",
+                {"type": "quiz_ended"},
+            )
+            logger.info(f"Quiz ended for session {self.code}")
+
+            await self.channel_layer.group_send(
+                f"quiz_session_{self.code}",
+                {"type": "grading_started"},
+            )
+            logger.info(f"Grading started for session {self.code}")
+
+            session = await database_sync_to_async(QuizSession.objects.get)(code=self.code)
+
+            await database_sync_to_async(score_session)(session.id)
+            logger.info(f"Scoring completed for session {self.code}")
+
+            await self.channel_layer.group_send(
+                f"quiz_session_{self.code}",
+                {"type": "grading_completed"},
+            )
+            logger.info(f"Grading completed for session {self.code}")
+
+        except QuizSession.DoesNotExist:
+            logger.error(f"QuizSession with code {self.code} does not exist.")
+        except Exception as e:
+            logger.error(f"An error occurred while ending the quiz for session {self.code}: {e}")
+
     async def end_quiz(self):
         if await self.update_quiz_end_time():
             grades = await self.fetch_grades()
@@ -194,6 +225,8 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
                     }
                 )
             )
+
+            await self.run_grading()
         else:
             print("Failed to end the quiz; session not found.")
 
@@ -211,8 +244,11 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
             )()
 
             question_count = await database_sync_to_async(
-                QuizSessionQuestion.objects.filter(quiz_session_id=session_id).count
+                QuizSessionQuestion.objects.filter(quiz_session_id=session_id, skipped=False).count
             )()
+
+            if question_count == 0:
+                return {"error": "No questions in the quiz."}
 
             def score_to_percentage(score):
                 return round((score / question_count) * 100, 2)
@@ -263,13 +299,13 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
     def fetch_question_results(self, question_id):
         responses = UserResponse.objects.filter(
             quiz_session__code=self.code, question_id=question_id
-        ).values("selected_answer")
-        answer_counts = defaultdict(int)
+        )
 
-        for response in responses:
-            answer_counts[response["selected_answer"]] += 1
+        total_responses = responses.count()
+        answer_data = responses.values("selected_answer").annotate(count=Count("selected_answer"))
+        answer_counts = {item["selected_answer"]: item["count"] for item in answer_data}
 
-        return {"total_responses": len(responses), "answers": answer_counts}
+        return {"total_responses": total_responses, "answers": answer_counts}
 
     async def update_answers(self, event):
         results = await self.fetch_question_results(event["question_id"])
@@ -332,10 +368,14 @@ class StudentConsumer(AsyncWebsocketConsumer):
 
     async def receive(self, text_data):
         data = json.loads(text_data)
-        if "type" in data and data["type"] == "join":
+        message_type = data.get("type")
+
+        if message_type == "join":
             await self.process_student_join(data)
-        elif "type" in data and data["type"] == "response":
+        elif message_type == "response":
             await self.submit_response(data)
+        elif message_type == "request_grade":
+            await self.retrieve_grade(data)
 
     async def submit_response(self, data):
         response = await self.create_user_response(data)
@@ -423,6 +463,7 @@ class StudentConsumer(AsyncWebsocketConsumer):
             session = QuizSession.objects.get(code=code)
             # studentUser = Student.objects.get(user_id=user_id)
             student = QuizSessionStudent.objects.create(username=username, quiz_session=session)
+            self.student = student
             return {
                 "status": "success",
                 "message": "Student created successfully",
@@ -437,6 +478,7 @@ class StudentConsumer(AsyncWebsocketConsumer):
         response = await self.create_student_session_entry(username, self.code)
 
         if response["status"] == "success":
+            self.student_id = response["student_id"]
             await self.send(
                 text_data=json.dumps(
                     {
@@ -449,7 +491,7 @@ class StudentConsumer(AsyncWebsocketConsumer):
 
             await self.channel_layer.group_send(
                 f"quiz_session_instructor_{self.code}",
-                {"type": "student.joined", "text": json.dumps({"username": username})},
+                {"type": "student_joined", "text": json.dumps({"username": username})},
             )
 
     async def next_question(self, event):
@@ -483,6 +525,63 @@ class StudentConsumer(AsyncWebsocketConsumer):
         student = QuizSessionStudent.objects.get(id=student_id)
         responses = student.responses.all()
         return responses.filter(is_correct=True).count()
+
+    @database_sync_to_async
+    def get_question_count_and_skipped(self):
+        questions = QuizSessionQuestion.objects.filter(quiz_session__code=self.code)
+        return questions.count(), questions.filter(skipped=True).count()
+
+    async def retrieve_grade(self, data):
+        response = await self.get_student_grade(data.get("id"))
+        question_count, skipped = await self.get_question_count_and_skipped()
+        if response.get("status") == "success":
+            await self.send(
+                text_data=json.dumps(
+                    {
+                        "type": "grade",
+                        "grade": response.get("grade"),
+                        "question_count": question_count,
+                        "skipped": skipped,
+                    }
+                )
+            )
+
+    @database_sync_to_async
+    def get_student_grade(self, student_id):
+        try:
+            session = QuizSession.objects.get(code=self.code)
+        except QuizSession.DoesNotExist:
+            return {"status": "error", "message": "Session not found."}
+
+        student = QuizSessionStudent.objects.get(quiz_session=session, id=student_id)
+        return {"status": "success", "grade": student.score}
+
+    async def quiz_ended(self, event):
+        await self.send(
+            text_data=json.dumps(
+                {
+                    "type": "quiz_ended",
+                }
+            )
+        )
+
+    async def grading_started(self, event):
+        await self.send(
+            text_data=json.dumps(
+                {
+                    "type": "grading_started",
+                }
+            )
+        )
+
+    async def grading_completed(self, event):
+        await self.send(
+            text_data=json.dumps(
+                {
+                    "type": "grading_completed",
+                }
+            )
+        )
 
 
 @database_sync_to_async

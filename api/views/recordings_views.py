@@ -25,6 +25,7 @@ from api.serializers import (
     RecordingDurationUpdateSerializer,
     RecordingTitleUpdateSerializer,
     RecordingUpdateSerializer,
+    UpdateRecordingCourseSerializer,
 )
 
 from ..permissions import IsRecordingOwner
@@ -276,6 +277,31 @@ class UpdateRecordingView(APIView):
                     {"error": "An error occurred while updating the recording."},
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        # If not valid, return validation errors
+
+@extend_schema(tags=["Recordings"])
+class UpdateRecordingCourseView(APIView):
+    permission_classes = [IsRecordingOwner]
+
+    @extend_schema(
+        request=UpdateRecordingCourseSerializer,
+        description="Endpoint to update the course of a recording",
+        responses={
+            200: InstructorRecordingsSerializer,
+            400: "Bad Request",
+            401: "Unauthorized",
+            404: "Not Found",
+        },
+    )
+    def patch(self, request, recording_id):
+        recording = get_object_or_404(InstructorRecordings, id=recording_id)
+        serializer = UpdateRecordingCourseSerializer(
+            recording, data=request.data, context={"recording": recording}
+        )
+
+        if serializer.is_valid():
+            updated_recording = serializer.save()
+            response_serializer = InstructorRecordingsSerializer(updated_recording)
+            return Response(response_serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

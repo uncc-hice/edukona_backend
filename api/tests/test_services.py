@@ -105,7 +105,10 @@ class ScoreSessionServiceTest(BaseQuizTest):
     def _grade_student_response(self, student_responses: List[str]) -> int:
         score = 0
         for i, response in enumerate(student_responses):
-            if response == self.questions[i]["correct_answer"]:
+            if (
+                self.questions[i]["id"] not in self.skipped_questions
+                and response == self.questions[i]["correct_answer"]
+            ):
                 score += 1
         return score
 
