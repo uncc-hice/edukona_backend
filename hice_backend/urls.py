@@ -139,6 +139,11 @@ urlpatterns = [
     ),
     path("quiz/create/", CreateQuizView.as_view(), name="create-quiz"),
     path(
+        "recordings/<uuid:recording_id>/create-quiz-from-transcript/",
+        CreateQuizFromTranscript.as_view(),
+        name="create-quiz-from-transcript",
+    ),
+    path(
         "schema/swagger-ui/",
         SpectacularSwaggerView.as_view(url_name="schema"),
         name="swagger-ui",
@@ -262,8 +267,13 @@ urlpatterns = [
         "sessions/<int:session_id>/update-scores/", UpdateScoresView.as_view(), name="update-scores"
     ),
     path(
+        "recordings/<uuid:recording_id>/update/",
+        UpdateRecordingView.as_view(),
+        name="update-recording",
+    ),
+    path(
         "recordings/<uuid:recording_id>/move-recording-to-course/",
-        UpdateRecordingCourse.as_view(),
+        UpdateRecordingCourseView.as_view(),
         name="update-recording-course",
     ),
 ]
