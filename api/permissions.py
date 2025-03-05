@@ -91,6 +91,9 @@ class IsRecordingOwner(permissions.BasePermission):
         # Get recording_id from path parameters
         recording_id = view.kwargs.get("recording_id")
 
+        if recording_id is None:
+            recording_id = request.data.get("recording_id")
+
         try:
             recording = InstructorRecordings.objects.get(id=recording_id)
         except (ObjectDoesNotExist, MultipleObjectsReturned, FieldError):

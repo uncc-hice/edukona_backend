@@ -1249,3 +1249,49 @@ class GetQuizzesAndSummariesTests(BaseTest):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         response_data = response.json()
         self.assertIn(response_data["detail"], "Authentication credentials were not provided.")
+
+
+class CreateQuizFromTranscriptTests(BaseTest):
+    def setUp(self):
+        super().setUp()
+        self.recording = InstructorRecordings.objects.create(
+            instructor=self.instructor,
+            title="Test Transcript",
+            transcript="This is a test transcript.",
+        )
+        self.url = reverse(
+            "create-quiz-from-transcript", kwargs={"recording_id": self.recording.id}
+        )
+
+    @patch("boto3.client")
+    def test_create_quiz_success(self, mock_boto_client):
+        mock_lambda_client = mock_boto_client.return_value
+        mock_lambda_client.invoke.return_value = {}
+
+        data = {
+            "recording_id": self.recording.id,
+            "number_of_questions": 3,
+            "question_duration": 30,
+        }
+
+        response = self.client_instructor.post(self.url, data, format="json")
+
+        print(f"Response data: {response.json()}")
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Quiz.objects.count(), 1)
+        mock_lambda_client.invoke.assert_called_once()
+
+    @patch("boto3.client")
+    def test_create_quiz_unauthorized(self, mock_boto_client):
+        mock_lambda_client = mock_boto_client.return_value
+        mock_lambda_client.invoke.return_value = {}
+
+        data = {"recording_id": self.recording.id}
+
+        response = self.client.post(self.url, data, format="json")
+
+        print(f"Response data: {response.json()}")
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(Quiz.objects.count(), 1)
