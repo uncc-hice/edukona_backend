@@ -1,20 +1,22 @@
+from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 from django.core.validators import EmailValidator
 from rest_framework import serializers
-from django.contrib.auth.models import User
+
+from .constants import ROLES
 from .models import (
-    Student,
-    Instructor,
-    Quiz,
-    QuestionMultipleChoice,
-    UserResponse,
-    QuizSession,
-    QuizSessionStudent,
-    InstructorRecordings,
     ContactMessage,
-    LectureSummary,
-    QuizSessionLog,
     Course,
+    Instructor,
+    InstructorRecordings,
+    LectureSummary,
+    QuestionMultipleChoice,
+    Quiz,
+    QuizSession,
+    QuizSessionLog,
+    QuizSessionStudent,
+    Student,
+    UserResponse,
 )
 
 
@@ -450,3 +452,13 @@ class UpdateRecordingCourseSerializer(serializers.Serializer):
         instance.course = validated_data["course"]
         instance.save()
         return instance
+
+
+class GoogleSSOSerializer(serializers.Serializer):
+    token = serializers.CharField(null=False)
+    role = serializers.CharField(allow_null=True, required=False)
+
+    def validate_role(self, value):
+        if value not in ROLES:
+            raise serializers.ValidationError("Invalid role")
+        return value
