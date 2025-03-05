@@ -265,4 +265,9 @@ urlpatterns = [
     path(
         "sessions/<int:session_id>/update-scores/", UpdateScoresView.as_view(), name="update-scores"
     ),
+    path(
+        "recordings/<uuid:recording_id>/move-recording-to-course/",
+        UpdateRecordingCourse.as_view(),
+        name="update-recording-course",
+    ),
 ]
