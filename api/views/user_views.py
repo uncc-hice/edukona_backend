@@ -258,6 +258,104 @@ class JWTSignUpInstructor(APIView):
                 )
 
 
+@extend_schema(
+    operation_id="sign_up_instructor_google",
+    summary="Sign up as an Instructor using Google",
+    description="Allows a new user to sign up as an instructor through Google. Returns JWT tokens upon successful registration.",
+    request=SignUpInstructorSerializer,
+    responses={
+        201: {
+            "description": "Instructor created successfully.",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "access": "jwt_access_token",
+                        "refresh": "jwt_refresh_token",
+                        "user": "user-uuid-string",
+                        "instructor": "instructor-uuid-string",
+                    }
+                }
+            },
+        },
+        400: {
+            "description": "Bad Request. Input data is invalid.",
+            "content": {
+                "application/json": {
+                    "example": {"message": "A user with this email already exists."}
+                }
+            },
+        },
+        403: {
+            "description": "Forbidden. An error occurred while signing up.",
+            "content": {
+                "application/json": {"example": {"message": "An error occurred while signing up."}}
+            },
+        },
+        500: {
+            "description": "Internal Server Error. An error occurred while signing up.",
+            "content": {
+                "application/json": {"example": {"message": "An error occurred while signing up."}}
+            },
+        },
+    },
+    examples=[
+        OpenApiExample(
+            "Valid Input",
+            value={
+                "first_name": "John",
+                "last_name": "Doe",
+                "email": "john.doe@gmail.com",
+            },
+            request_only=True,
+            response_only=False,
+        ),
+    ],
+    tags=["Authentication Endpoint"],
+)
+class GoogleJWTSignUp(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = SignUpInstructorSerializer(data=request.data, context={"google_signup": True})
+        if serializer.is_valid():
+            instructor = serializer.save()
+            user = instructor.user
+            refresh = RefreshToken.for_user(user)
+
+            response = {
+                "access": str(refresh.access_token),
+                "refresh": str(refresh),
+                "user": user.id,
+                "instructor": instructor.id,
+            }
+
+            mailInstructor(user.email)
+            logger.info(f"Instructor {user.id} signed up successfully using Google.")
+            return Response(response, status=status.HTTP_201_CREATED)
+        else:
+            errors = serializer.errors
+            if "email" in errors:
+                logger.warning(
+                    f"Sign up failed for email {request.data.get('email')}: {errors['email'][0]}"
+                )
+                return Response({"message": errors["email"][0]}, status=status.HTTP_400_BAD_REQUEST)
+            elif "first_name" in errors:
+                logger.warning(
+                    f"Sign up failed for email {request.data.get('email')}: Missing first name"
+                )
+                return Response(
+                    {"message": "Please provide all required fields."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            else:
+                logger.warning(
+                    f"Sign up failed for email {request.data.get('email')}: Invalid data provided"
+                )
+                return Response(
+                    {"message": "Invalid data provided"}, status=status.HTTP_400_BAD_REQUEST
+                )
+
+
 @extend_schema(tags=["Profile and User Management"])
 class ProfileView(APIView):
     permission_classes = [IsAuthenticated]

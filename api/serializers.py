@@ -298,7 +298,7 @@ class SignUpInstructorSerializer(serializers.Serializer):
     )
     password = serializers.CharField(
         write_only=True,
-        required=True,
+        required=False,
         validators=[validate_password],
         style={"input_type": "password"},
     )
@@ -313,6 +313,24 @@ class SignUpInstructorSerializer(serializers.Serializer):
             raise serializers.ValidationError("This email is already registered.")
         return value
 
+    def validate(self, data):
+        """
+        Will check to see if a password was provided. (Goggle signups shouldn't have a password)
+        """
+        is_google = self.context.get("google_signup", False)
+
+        if is_google:
+            if "password" in data:
+                del data["password"]
+            if not data["email"].endswith("@gmail.com"):
+                raise serializers.ValidationError(
+                    {"email": "The email provided is not a google email."}
+                )
+        elif not data.get("password"):
+            raise serializers.ValidationError({"password": "This field is required"})
+
+        return data
+
     def create(self, validated_data):
         """
         Create a new User and Instructor instance.
@@ -320,7 +338,7 @@ class SignUpInstructorSerializer(serializers.Serializer):
         first_name = validated_data.get("first_name")
         last_name = validated_data.get("last_name", "")
         email = validated_data.get("email")
-        password = validated_data.get("password")
+        password = validated_data.get("password", None)
 
         # Create the User
         user = User.objects.create(
@@ -329,7 +347,9 @@ class SignUpInstructorSerializer(serializers.Serializer):
             first_name=first_name,
             last_name=last_name,
         )
-        user.set_password(password)
+        if password:
+            user.set_password(password)
+
         user.save()
 
         # Create the Instructor

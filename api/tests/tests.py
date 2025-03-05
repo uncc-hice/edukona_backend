@@ -899,6 +899,114 @@ class JWTSignUpInstructorTests(BaseTest):
         mock_mailInstructor.assert_called_once_with(user.email)
 
 
+class JWTSignupGoogleInstructor(BaseTest):
+    def setUp(self):
+        super().setUp()
+        self.signup_url = reverse("jwt-google-sign-up")
+
+    @patch("api.views.user_views.mailInstructor")
+    def test_google_signup_success(self, mock_mailInstructor):
+        """
+        Tests that a user can successfully sign up through Google.
+        """
+        data = {
+            "first_name": "John",
+            "last_name": "Doe",
+            "email": "jdoe@gmail.com",
+        }
+
+        response = self.client.post(self.signup_url, data, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        self.assertIn("access", response.data)
+        self.assertIn("refresh", response.data)
+        self.assertIn("user", response.data)
+        self.assertIn("instructor", response.data)
+
+        user = User.objects.get(email=data["email"])
+        self.assertEqual(user.first_name, data["first_name"])
+        self.assertEqual(user.last_name, data["last_name"])
+
+        instructor = Instructor.objects.get(user=user)
+        self.assertEqual(instructor.id, response.data["instructor"])
+
+        mock_mailInstructor.assert_called_once_with(user.email)
+
+    @patch("api.views.user_views.mailInstructor")
+    def test_google_missing_required_fields(self, mock_mailInstructor):
+        """
+        Tests that the endpoint will return a 400 if all the required fields aren't specified
+        """
+        data = {
+            "last_name": "NoFirstName",
+            "email": "noFirstName@gmail.com",
+        }
+
+        response = self.client.post(self.signup_url, data, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertIn("message", response.data)
+        self.assertEqual(response.data["message"], "Please provide all required fields.")
+
+        self.assertFalse(User.objects.filter(email=data["email"]).exists())
+
+        mock_mailInstructor.assert_not_called()
+
+    @patch("api.views.user_views.mailInstructor")
+    def test_google_invalid_email(self, mock_mailInstructor):
+        """
+        Tests that a non Google email will return a 400
+        """
+
+        data = {
+            "first_name": "John",
+            "last_name": "Smith",
+            "email": "jSmith@yahoo.com",
+        }
+
+        response = self.client.post(self.signup_url, data, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertIn("message", response.data)
+
+        self.assertFalse(User.objects.filter(email=data["email"]).exists())
+
+        mock_mailInstructor.assert_not_called()
+
+    @patch("api.views.user_views.mailInstructor")
+    def test_google_blank_last_name(self, mock_mailInstructor):
+        """
+        Tests that even with a blank last name, the user will still be created.
+        """
+
+        data = {
+            "first_name": "Jacob",
+            "last_name": "",
+            "email": "jacob@gmail.com",
+        }
+
+        response = self.client.post(self.signup_url, data, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        self.assertIn("access", response.data)
+        self.assertIn("refresh", response.data)
+        self.assertIn("user", response.data)
+        self.assertIn("instructor", response.data)
+
+        user = User.objects.get(email=data["email"])
+        self.assertEqual(user.first_name, data["first_name"])
+        self.assertEqual(user.last_name, "")
+
+        instructor = Instructor.objects.get(user=user)
+        self.assertEqual(instructor.id, response.data["instructor"])
+
+        mock_mailInstructor.assert_called_once_with(user.email)
+
+
 class LectureSummaryViewTest(BaseTest):
     def setUp(self):
         super().setUp()
