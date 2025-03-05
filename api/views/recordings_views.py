@@ -1,29 +1,36 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from drf_spectacular.utils import extend_schema, PolymorphicProxySerializer, inline_serializer
-from rest_framework import status, serializers
+import json
+import logging
+from itertools import chain
 
+import boto3
+from django.conf import settings
+from django.db.models import CharField, Value
+from django.shortcuts import get_object_or_404
+from drf_spectacular.utils import (
+    PolymorphicProxySerializer,
+    extend_schema,
+    inline_serializer,
+)
+from rest_framework import serializers, status
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from api.models import Instructor, InstructorRecordings, LectureSummary, Quiz
 from api.serializers import (
     InstructorRecordingsSerializer,
-    RecordingTitleUpdateSerializer,
-    RecordingDurationUpdateSerializer,
-    QuizTypedSerializer,
     LectureSummaryTypedSerializer,
     QuizAndSummarySerializer,
+    QuizTypedSerializer,
+    RecordingDurationUpdateSerializer,
+    RecordingTitleUpdateSerializer,
+    RecordingUpdateSerializer,
     UpdateRecordingCourseSerializer,
 )
-from django.conf import settings
-from django.shortcuts import get_object_or_404
-from itertools import chain
-from django.db.models import CharField, Value
-
-
-from api.models import Instructor, InstructorRecordings, Quiz, LectureSummary
-import boto3
-import json
 
 from ..permissions import IsRecordingOwner
+
+logger = logging.getLogger(__name__)
 
 
 @extend_schema(tags=["Authentication Endpoint"])
@@ -239,7 +246,42 @@ class GetQuizzesAndSummaries(APIView):
 
 
 @extend_schema(tags=["Recordings"])
-class UpdateRecordingCourse(APIView):
+class UpdateRecordingView(APIView):
+    permission_classes = [IsRecordingOwner]
+
+    @extend_schema(
+        operation_id="update_recording",
+        summary="Update an existing recording",
+        description="Updates an existing InstructorRecordings entry in the database with the provided data.",
+        request=RecordingUpdateSerializer,
+        responses={
+            200: InstructorRecordingsSerializer,
+            400: "Bad Request",
+            401: "Unauthorized",
+        },
+    )
+    def patch(self, request, recording_id):
+        recording = get_object_or_404(InstructorRecordings, id=recording_id)
+        serializer = RecordingUpdateSerializer(recording, data=request.data, partial=True)
+
+        if serializer.is_valid():
+            try:
+                updated_recording = serializer.save()
+                return Response(
+                    InstructorRecordingsSerializer(updated_recording).data,
+                    status=status.HTTP_200_OK,
+                )
+            except Exception as e:
+                logger.error(f"Error updating recording {recording_id}: {e}")
+                return Response(
+                    {"error": "An error occurred while updating the recording."},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@extend_schema(tags=["Recordings"])
+class UpdateRecordingCourseView(APIView):
     permission_classes = [IsRecordingOwner]
 
     @extend_schema(
@@ -254,7 +296,6 @@ class UpdateRecordingCourse(APIView):
     )
     def patch(self, request, recording_id):
         recording = get_object_or_404(InstructorRecordings, id=recording_id)
-
         serializer = UpdateRecordingCourseSerializer(
             recording, data=request.data, context={"recording": recording}
         )
@@ -263,5 +304,4 @@ class UpdateRecordingCourse(APIView):
             updated_recording = serializer.save()
             response_serializer = InstructorRecordingsSerializer(updated_recording)
             return Response(response_serializer.data, status=status.HTTP_200_OK)
-
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
