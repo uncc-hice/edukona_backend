@@ -455,8 +455,8 @@ class UpdateRecordingCourseSerializer(serializers.Serializer):
 
 
 class GoogleSSOSerializer(serializers.Serializer):
-    token = serializers.CharField(null=False)
-    role = serializers.CharField(allow_null=True, required=False)
+    token = serializers.CharField()
+    role = serializers.CharField(required=False)
 
     def validate_role(self, value):
         if value not in ROLES:
