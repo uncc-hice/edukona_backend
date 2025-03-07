@@ -82,6 +82,22 @@ class InstructorRecordingsSerializer(serializers.ModelSerializer):
         instructor = serializers.PrimaryKeyRelatedField(read_only=True)
 
 
+class RecordingUpdateSerializer(serializers.Serializer):
+    title = serializers.CharField()
+    duration = serializers.IntegerField()
+    course = serializers.UUIDField()
+    published = serializers.BooleanField()
+
+    def update(self, instance, validated_data):
+        instance.title = validated_data.get("title", instance.title)
+        instance.duration = validated_data.get("duration", instance.duration)
+        if validated_data.get("course"):
+            instance.course = Course.objects.get(id=validated_data["course"])
+        instance.published = validated_data.get("published", instance.published)
+        instance.save()
+        return instance
+
+
 class UpdateTranscriptSerializer(serializers.Serializer):
     transcript = serializers.CharField()
 
@@ -133,6 +149,11 @@ class QuizSerializer(serializers.ModelSerializer):
 
     def get_num_sessions(self, obj):
         return QuizSession.objects.filter(quiz__id=obj.id).count()
+
+
+class CreateQuizFromTranscriptRequestSerializer(serializers.Serializer):
+    number_of_questions = serializers.IntegerField()
+    question_duration = serializers.IntegerField()
 
 
 class QuizListSerializer(serializers.Serializer):
