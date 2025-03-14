@@ -1,4 +1,3 @@
-from django.http import JsonResponse
 from rest_framework.views import APIView
 from api.models import InstructorRecordings, Course, LectureSummary, CourseStudent
 from rest_framework import status
