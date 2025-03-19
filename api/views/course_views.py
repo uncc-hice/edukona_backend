@@ -32,9 +32,11 @@ class GetRecordingsByCourse(APIView):
         recordings = InstructorRecordings.objects.filter(
             instructor=request.user.instructor, course=course_id
         ).order_by("-uploaded_at")
-        return Response(
-            InstructorRecordingsSerializer(recordings, many=True).data, status=status.HTTP_200_OK
-        )
+        data = InstructorRecordingsSerializer(recordings, many=True).data
+
+        for recording in data:
+            recording["transcript"] = "completed" if recording.get("transcript") else "pending"
+        return Response(data, status=status.HTTP_200_OK)
 
 
 @extend_schema(tags=["Instructor Course Management"])
