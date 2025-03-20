@@ -475,7 +475,7 @@ class UpdateRecordingCourseSerializer(serializers.Serializer):
         return instance
 
 
-class GoogleSSOSerializer(serializers.Serializer):
+class GoogleSSORequestSerializer(serializers.Serializer):
     token = serializers.CharField()
     role = serializers.CharField(required=False)
 
@@ -483,3 +483,11 @@ class GoogleSSOSerializer(serializers.Serializer):
         if value not in ROLES:
             raise serializers.ValidationError("Invalid role")
         return value
+
+
+class GoogleSSOResponseSerializer(serializers.Serializer):
+    access = serializers.CharField()
+    refresh = serializers.CharField()
+    user = serializers.IntegerField()
+    instructor = serializers.IntegerField(required=False)
+    student = serializers.IntegerField(required=False)
