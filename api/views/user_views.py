@@ -13,6 +13,7 @@ from drf_spectacular.utils import (
     OpenApiExample,
     extend_schema,
 )
+from google.auth.exceptions import GoogleAuthError
 from google.auth.transport import requests as google_requests
 from google.oauth2 import id_token
 from rest_framework import status
@@ -34,6 +35,7 @@ from api.models import (
     QuizSession,
     QuizSessionStudent,
     UserResponse,
+    Student,
 )
 from api.serializers import (
     ContactMessageSerializer,
@@ -51,6 +53,8 @@ from api.serializers import (
     ScoreQuizResponseSerializer,
     SignUpInstructorSerializer,
     UpdateTranscriptSerializer,
+    GoogleSSORequestSerializer,
+    GoogleSSOResponseSerializer,
 )
 
 from ..permissions import IsRecordingOwner
@@ -1083,3 +1087,95 @@ class GetStudentScoreForSession(APIView):
     def get(self, request, student_id, session_id):
         student = get_object_or_404(QuizSessionStudent, id=student_id, quiz_session_id=session_id)
         return JsonResponse({"score": student.score}, status=status.HTTP_200_OK)
+
+
+class GoogleSSOThrottle(UserRateThrottle):
+    rate = "10/minute"
+
+
+@extend_schema(tags=["Authentication"])
+class GoogleSSOView(APIView):
+    permission_classes = [AllowAny]
+    throttle_classes = [GoogleSSOThrottle]
+
+    @extend_schema(
+        operation_id="google_sso",
+        summary="Google SSO",
+        description="Allows a user to log in using Google SSO, and returns JWT tokens.",
+        request=GoogleSSORequestSerializer,
+        responses={200: GoogleSSOResponseSerializer, 400: OpenApiTypes.OBJECT},
+    )
+    def post(self, request):
+        serializer = GoogleSSORequestSerializer(data=request.data)
+        if not serializer.is_valid():
+            logger.error(serializer.errors)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        # Validate token
+        try:
+            id_info = id_token.verify_oauth2_token(
+                serializer.validated_data["token"],
+                google_requests.Request(),
+                settings.GOOGLE_CLIENT_ID,
+            )
+            email = id_info.get("email")
+            first_name = id_info.get("given_name")
+            last_name = id_info.get("family_name")
+        except GoogleAuthError as e:
+            logger.error(f"Invalid issuer: {str(e)}")
+            return Response({"message": "Google login failed."}, status=status.HTTP_400_BAD_REQUEST)
+        except ValueError as e:
+            logger.error(f"Invalid token: {str(e)}")
+            return Response(
+                {"message": "Google login failed."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+        is_new_user = not User.objects.filter(email=email).exists()
+        role = serializer.validated_data.get("role", None)
+        if is_new_user and not role:
+            logger.error(
+                f"Malformed signup request: New user with email '{email}' did not provide a valid role."
+            )
+            return Response(
+                {"message": "Malformed signup request"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        role_data = {}
+        if is_new_user:
+            with transaction.atomic():
+                user = User.objects.create(
+                    email=email, first_name=first_name, last_name=last_name, username=email
+                )
+                if role == "instructor":
+                    role_data["instructor"] = Instructor.objects.create(user=user).id
+                elif role == "student":
+                    role_data["student"] = Student.objects.create(user=user).id
+        else:
+            user = User.objects.get(email=email)
+            if hasattr(user, "instructor"):
+                role_data["instructor"] = user.instructor.id
+            elif hasattr(user, "student"):
+                role_data["student"] = user.student.id
+
+        try:
+            refresh = RefreshToken.for_user(user)
+            response_data = {
+                "access": str(refresh.access_token),
+                "refresh": str(refresh),
+                "user": user.id,
+                **role_data,
+            }
+
+            response_serializer = GoogleSSOResponseSerializer(data=response_data)
+            if not response_serializer.is_valid():
+                logger.error(response_serializer.errors)
+                return Response(response_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+            logger.info(f"User {user.id} logged in with Google.")
+            return Response(response_serializer.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error(f"Failed to generate response: {str(e)}")
+            return Response(
+                {"message": "An error occurred while logging in."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
