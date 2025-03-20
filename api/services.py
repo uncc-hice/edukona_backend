@@ -1,6 +1,6 @@
 from typing import Dict
 
-from django.db.models import Case, Count, IntegerField, Max, When
+from django.db.models import Case, Count, IntegerField, When
 
 from .models import QuizSessionQuestion, QuizSessionStudent, UserResponse
 
