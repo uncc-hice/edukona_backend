@@ -59,7 +59,6 @@ from api.serializers import (
 
 from ..permissions import IsRecordingOwner
 from ..services import score_session
-from ..constants import ROLES
 
 logger = logging.getLogger(__name__)
 
