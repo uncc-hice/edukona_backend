@@ -137,12 +137,11 @@ class ScoreSessionServiceTest(BaseQuizTest):
                 selected_answer = responses[student_index][question_index]
                 is_correct = selected_answer == self.questions[question_index]["correct_answer"]
 
-                await sync_to_async(UserResponse.objects.create)(
+                await sync_to_async(UserResponse.objects.update_or_create)(
                     student=student,
                     question=question,
-                    selected_answer=selected_answer,
-                    is_correct=is_correct,
                     quiz_session=self.session,
+                    defaults={"selected_answer": selected_answer, "is_correct": is_correct},
                 )
 
     async def _skip_question(self, question_id):

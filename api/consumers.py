@@ -438,15 +438,13 @@ class StudentConsumer(AsyncWebsocketConsumer):
             }
 
         is_correct = selected_answer == question.correct_answer
-        user_response, created = UserResponse.objects.get_or_create(
+
+        user_response, _ = UserResponse.objects.update_or_create(
             student=student,
             quiz_session=quiz_session,
             question=question,
+            defaults={"selected_answer": selected_answer, "is_correct": is_correct},
         )
-        user_response.selected_answer = selected_answer
-        user_response.is_correct = is_correct
-
-        user_response.save()
 
         return {
             "type": "answer",
