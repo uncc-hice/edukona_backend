@@ -309,7 +309,7 @@ class UpdateRecordingCourseView(APIView):
 
 
 @extend_schema(tags=["Recordings"])
-class DownloadRecordingView:
+class DownloadRecordingView(APIView):
     permission_classes = [IsRecordingOwner]
 
     @extend_schema(
