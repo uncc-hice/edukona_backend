@@ -14,6 +14,7 @@ from drf_spectacular.utils import (
 from rest_framework import serializers, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from django.http import FileResponse
 from rest_framework.views import APIView
 
 from api.models import Instructor, InstructorRecordings, LectureSummary, Quiz
@@ -305,3 +306,42 @@ class UpdateRecordingCourseView(APIView):
             response_serializer = InstructorRecordingsSerializer(updated_recording)
             return Response(response_serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@extend_schema(tags=["Recordings"])
+class DownloadRecordingView(APIView):
+    permission_classes = [IsRecordingOwner]
+
+    @extend_schema(
+        description="Endpoint to get a recording file",
+        responses={
+            200: "Recording Retrieved",
+            400: "Bad Request",
+            401: "Unauthorized",
+            404: "Not Found",
+        },
+    )
+    def get(self, request, recording_id):
+        recording = get_object_or_404(InstructorRecordings, id=recording_id)
+
+        s3_client = boto3.client(
+            "s3",
+            aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+            region_name=settings.AWS_S3_REGION_NAME,
+        )
+
+        try:
+            # Get file object from S3
+            file_obj = s3_client.get_object(
+                Bucket=settings.AWS_STORAGE_BUCKET_NAME, Key=recording.s3_path
+            )
+
+            response = FileResponse(file_obj["Body"], content_type=file_obj["ContentType"])
+            response["Content-Disposition"] = (
+                f'attachment; filename="{recording.s3_path.split("/")[-1]}"'
+            )
+            return response
+
+        except Exception:
+            return Response({"error": "Exception Occured"}, status=403)
