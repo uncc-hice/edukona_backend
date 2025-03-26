@@ -170,6 +170,11 @@ urlpatterns = [
         name="update-recording-duration",
     ),
     path(
+        "recordings/<uuid:recording_id>/download-recording/",
+        DownloadRecordingView.as_view(),
+        name="download-recording",
+    ),
+    path(
         "recordings/",
         RecordingsView.as_view(),
         name="instructor-recording",
