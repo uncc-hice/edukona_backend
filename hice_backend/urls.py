@@ -280,4 +280,5 @@ urlpatterns = [
         UpdateRecordingCourseView.as_view(),
         name="update-recording-course",
     ),
+    path("auth/", GoogleSSOView.as_view(), name="google-sso"),
 ]
