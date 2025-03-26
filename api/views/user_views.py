@@ -281,7 +281,6 @@ class ProfileView(APIView):
 
 @extend_schema(tags=["Profile and User Management"])
 class CheckDeveloperStatus(APIView):
-
     def get(self, request):
         user = request.user
         if user.is_staff:
@@ -465,7 +464,6 @@ class JWTLogoutView(APIView):
 
 @extend_schema(tags=["Profile and User Management"])
 class InstructorView(APIView):
-
     def post(self, request):
         user_data = request.data.pop("user", {})
         new_instructor = Instructor.objects.create(

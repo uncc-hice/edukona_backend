@@ -98,7 +98,7 @@ urlpatterns = [
     path(
         "quiz/student/question/<str:session_code>/<int:question_id>/",
         StudentQuestion.as_view(),
-        name="student" "-question",
+        name="student-question",
     ),
     path(
         "quiz/student/question/<str:session_code>/",

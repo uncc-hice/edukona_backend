@@ -354,9 +354,7 @@ class UserResponseViewTest(BaseTest):
 
 
 class QuizSessionResultsTest(BaseTest):
-
     def test_quiz_session_results(self):
-
         instructor_token = Token.objects.get(user=self.new_user_instructor).key
         self.client.credentials(HTTP_AUTHORIZATION="Token " + instructor_token)
 
@@ -474,7 +472,6 @@ class AddQuizSessionLogTest(BaseTest):
 
 
 class LoginViewTest(BaseTest):
-
     def test_post_login(self):
         url = reverse("login")
         data = {"email": "bad_email", "password": "bad_password!"}
