@@ -1,6 +1,6 @@
 from typing import Dict
 
-from django.db.models import Case, Count, IntegerField, Max, When
+from django.db.models import Case, Count, IntegerField, When
 
 from .models import QuizSessionQuestion, QuizSessionStudent, UserResponse
 
@@ -12,15 +12,10 @@ def score_session(session_id) -> Dict[int, int]:
     if not question_ids:
         raise ValueError(f"Quiz session with id {session_id} does not exist")
 
-    # Get the latest response for each question per student
-    latest_responses = (
-        UserResponse.objects.filter(quiz_session_id=session_id, question_id__in=question_ids)
-        .values("student_id", "question_id")
-        .annotate(max_id=Max("id"))
+    # Directly get the only response per question per student
+    responses = UserResponse.objects.filter(
+        quiz_session_id=session_id, question_id__in=question_ids
     )
-
-    # Get the actual response objects for the latest responses
-    responses = UserResponse.objects.filter(id__in=[res["max_id"] for res in latest_responses])
 
     # Calculate the score for each student
     student_scores = responses.values("student_id").annotate(
