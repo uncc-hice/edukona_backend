@@ -40,6 +40,14 @@ class GetRecordingsByCourse(APIView):
 
 
 @extend_schema(tags=["Instructor Course Management"])
+class GetCourseByCourseID(APIView):
+    permission_classes = None
+
+    def get(self, course_id):
+        pass
+
+
+@extend_schema(tags=["Instructor Course Management"])
 class GetCoursesByInstructor(APIView):
     permission_classes = [AllowInstructor]
 
