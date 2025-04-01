@@ -370,20 +370,42 @@ class InstructorCoursesTests(CourseViewsTest):
 class GetCourseByIdTests(CourseViewsTest):
     def setUp(self):
         super().setUp()
-        self.course_id = uuid.uuid4()
-        self.test_course = Course.objects.create(
-            instructor=self.instructor, id=self.course_id, title="CourseIdTest"
-        )
-        self.url = reverse("get-course")
+        self.prim_url = reverse("get-course", kwargs={"course_id": self.course.id})
+        self.alt_url = reverse("get-course", kwargs={"course_id": self.alt_course.id})
 
     def test_get_course_successful(self):
-        pass
+        prim_response = self.prim_instructor_client.get(self.prim_url)
+        alt_response = self.alt_instructor_client.get(self.alt_url)
+        prim_data = prim_response.json()
+        alt_data = prim_response.json()
+
+        self.assertEqual(prim_response.status_code, 200)
+        self.assertEqual(alt_response.status_code, 200)
+        self.assertNotEqual(len(prim_data), 0)
+        self.assertNotEqual(len(alt_data), 0)
 
     def test_get_course_unauthorized(self):
-        pass
+        tmp_client = APIClient()
+        prim_response = tmp_client.get(self.prim_url)
+        alt_response = tmp_client.get(self.alt_url)
+
+        self.assertEqual(prim_response.status_code, 401)
+        self.assertEqual(alt_response.status_code, 401)
+
+    def test_get_course_forbidden(self):
+        prim_response = self.prim_instructor_client.get(self.alt_url)
+        alt_response = self.alt_instructor_client.get(self.prim_url)
+
+        self.assertEqual(prim_response.status_code, 403)
+        self.assertEqual(alt_response.status_code, 403)
 
     def test_get_course_not_found(self):
-        pass
+        tmp_url = reverse("get-course", kwargs={"course_id": uuid.uuid4()})
+        prim_response = self.prim_instructor_client.get(tmp_url)
+        alt_response = self.alt_instructor_client.get(tmp_url)
+
+        self.assertEqual(prim_response.status_code, 404)
+        self.assertEqual(alt_response.status_code, 404)
 
 
 class CourseSummariesTests(CourseViewsTest):
