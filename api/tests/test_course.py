@@ -16,6 +16,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient, APITestCase
 import random
 import string
+import uuid
 
 
 class BaseCourseTest(APITestCase):
@@ -364,6 +365,25 @@ class InstructorCoursesTests(CourseViewsTest):
         response = tmp_client.get(self.url)
 
         self.assertEqual(response.status_code, 401)
+
+
+class GetCourseByIdTests(CourseViewsTest):
+    def setUp(self):
+        super().setUp()
+        self.course_id = uuid.uuid4()
+        self.test_course = Course.objects.create(
+            instructor=self.instructor, id=self.course_id, title="CourseIdTest"
+        )
+        self.url = reverse("get-course")
+
+    def test_get_course_successful(self):
+        pass
+
+    def test_get_course_unauthorized(self):
+        pass
+
+    def test_get_course_not_found(self):
+        pass
 
 
 class CourseSummariesTests(CourseViewsTest):
