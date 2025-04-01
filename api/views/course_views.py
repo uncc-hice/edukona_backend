@@ -41,10 +41,19 @@ class GetRecordingsByCourse(APIView):
 
 @extend_schema(tags=["Instructor Course Management"])
 class GetCourseByCourseID(APIView):
-    permission_classes = None
+    permission_classes = [AllowInstructor & IsCourseOwner]
 
+    @extend_schema(
+        responses={
+            200: CourseSerializer(many=False),
+            401: OpenApiResponse(description="Unauthorized"),
+            403: OpenApiResponse(description="Forbidden"),
+            404: OpenApiResponse(description="Not Found"),
+        }
+    )
     def get(self, course_id):
-        pass
+        course = Course.objects.filter(id=course_id)
+        return Response(CourseSerializer(course, many=False).data, status=status.HTTP_200_OK)
 
 
 @extend_schema(tags=["Instructor Course Management"])
