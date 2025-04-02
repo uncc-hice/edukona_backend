@@ -51,9 +51,11 @@ class GetCourseByCourseID(APIView):
             404: OpenApiResponse(description="Not Found"),
         }
     )
-    def get(self, course_id):
-        course = Course.objects.filter(id=course_id)
-        return Response(CourseSerializer(course, many=False).data, status=status.HTTP_200_OK)
+    def get(self, request, course_id):
+        course = Course.objects.filter(id=course_id, instructor=request.user.instructor)
+        serializer = CourseSerializer(course, many=False)
+        print(serializer)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 @extend_schema(tags=["Instructor Course Management"])
