@@ -490,4 +490,4 @@ class GoogleSSOResponseSerializer(serializers.Serializer):
     refresh = serializers.CharField()
     user = serializers.IntegerField()
     instructor = serializers.IntegerField(required=False)
-    student = serializers.IntegerField(required=False)
+    student = serializers.UUIDField(required=False)
