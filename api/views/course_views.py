@@ -52,9 +52,8 @@ class GetCourseByCourseID(APIView):
         }
     )
     def get(self, request, course_id):
-        course = Course.objects.filter(id=course_id, instructor=request.user.instructor)
+        course = Course.objects.get(id=course_id)
         serializer = CourseSerializer(course, many=False)
-        print(serializer)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
