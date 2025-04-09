@@ -250,7 +250,11 @@ urlpatterns = [
         view=FetchPublishedSummariesView.as_view(),
         name="get-published-summaries",
     ),
-    path("student/course/join-course/", view=None, name="join-course"),
+    path(
+        "student/course/<uuid:course_id>/join-course/",
+        view=JoinCourse.as_view(),
+        name="join-course",
+    ),
     path(
         "token/verify/",
         TokenVerificationView.as_view(),

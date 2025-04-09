@@ -128,6 +128,22 @@ class CreateCourse(APIView):
 
 
 @extend_schema(tags=["Student Course Management"])
+class JoinCourse(APIView):
+    permission_classes = [AllowInstructor]
+
+    @extend_schema(
+        request=CourseStudentSerializer(),
+        responses={
+            201: CourseSerializer,
+            400: OpenApiResponse(description="Bad Request"),
+            404: OpenApiResponse(description="Course not found"),
+        },
+    )
+    def post(self, request):
+        pass
+
+
+@extend_schema(tags=["Student Course Management"])
 class GetCoursesByStudent(APIView):
     permission_classes = [IsAuthenticated]
 
