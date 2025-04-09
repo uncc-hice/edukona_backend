@@ -251,6 +251,11 @@ urlpatterns = [
         name="get-published-summaries",
     ),
     path(
+        "student/course/<uuid:course_id>/join-course/",
+        view=JoinCourse.as_view(),
+        name="join-course",
+    ),
+    path(
         "token/verify/",
         TokenVerificationView.as_view(),
         name="verify-token",
