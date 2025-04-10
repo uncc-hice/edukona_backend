@@ -591,7 +591,7 @@ class StudentConsumer(AsyncWebsocketConsumer):
 
     async def send_current_question_to_student(self):
         session = await self.fetch_quiz_session()
-        if await database_sync_to_async(lambda: session.current_question)() != None:
+        if await database_sync_to_async(lambda: session.current_question)() is not None:
             question_data = await database_sync_to_async(
                 lambda: session.current_question.to_json()
             )()

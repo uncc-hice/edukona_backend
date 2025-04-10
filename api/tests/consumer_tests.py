@@ -17,11 +17,8 @@ from api.models import (
     QuizSessionStudent,
     UserResponse,
 )
-from hice_backend.asgi import application  # Ensure this path is correct
+from hice_backend.asgi import application
 
-from api.consumers import StudentConsumer
-
-import json
 import random
 from .test_services import BaseQuizTest
 
