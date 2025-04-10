@@ -591,11 +591,12 @@ class StudentConsumer(AsyncWebsocketConsumer):
 
     async def send_current_question_to_student(self):
         session = await self.fetch_quiz_session()
-        if session.current_question:
+        if await database_sync_to_async(lambda: session.current_question)() != None:
+            question_data = await database_sync_to_async(
+                lambda: session.current_question.to_json()
+            )()
             await self.send(
-                text_data=json.dumps(
-                    {"type": "next_question", "question": session.current_question.to_json()}
-                )
+                text_data=json.dumps({"type": "next_question", "question": question_data})
             )
         else:
             await self.send(
@@ -636,7 +637,6 @@ class StudentConsumer(AsyncWebsocketConsumer):
         self.student_id = student_id
 
         # Success response with session state
-        await self.send_current_question_to_student()
         await self.send(
             text_data=json.dumps(
                 {
@@ -644,6 +644,7 @@ class StudentConsumer(AsyncWebsocketConsumer):
                 }
             )
         )
+        await self.send_current_question_to_student()
 
 
 @database_sync_to_async
