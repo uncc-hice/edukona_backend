@@ -587,26 +587,31 @@ class StudentConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def fetch_quiz_session(self):
         session = QuizSession.objects.get(code=self.code)
-        return session
+        return session.to_json()
+
+    @database_sync_to_async
+    def fetch_current_question(self):
+        session = QuizSession.objects.get(code=self.code)
+        if session.current_question:
+            return session.current_question.to_json()
+        return None
 
     async def send_current_question_to_student(self):
-        session = await self.fetch_quiz_session()
-        if await database_sync_to_async(lambda: session.current_question)() is not None:
-            question_data = await database_sync_to_async(
-                lambda: session.current_question.to_json()
-            )()
-            await self.send(
-                text_data=json.dumps({"type": "next_question", "question": question_data})
-            )
-        else:
+        quiz_session = await self.fetch_quiz_session()
+        current_question = await self.fetch_current_question()
+
+        if current_question:
             await self.send(
                 text_data=json.dumps(
                     {
-                        "type": "no_active_question",
-                        "message": "There is no active question at the moment",
+                        "type": "next_question",
+                        "question": current_question,
+                        "quiz_session": quiz_session,
                     }
                 )
             )
+        else:
+            await self.send(text_data=json.dumps({"type": "no_active_question"}))
 
     @database_sync_to_async
     def get_student_by_id(self, id):
@@ -636,7 +641,6 @@ class StudentConsumer(AsyncWebsocketConsumer):
         self.student = student
         self.student_id = student_id
 
-        # Success response with session state
         await self.send(
             text_data=json.dumps(
                 {
