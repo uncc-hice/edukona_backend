@@ -360,6 +360,16 @@ class StudentConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.code = self.scope["url_route"]["kwargs"].get("code")
         self.group_name = f"quiz_session_{self.code}"
+
+        # authenticated user support
+        query_string = self.scope["query_string"].decode()
+        params = parse_qs(query_string)
+        jwt = params.get("jwt")
+
+        if jwt:
+            jwt = jwt[0]
+            self.user = await get_user_from_jwt(jwt)
+
         await self.channel_layer.group_add(self.group_name, self.channel_name)
         await self.accept()
 
@@ -379,6 +389,8 @@ class StudentConsumer(AsyncWebsocketConsumer):
         elif message_type == "reconnect":
             student_id = data.get("student_id")
             await self.process_student_reconnect(student_id)
+        elif message_type == "join_as_user":
+            await self.process_student_user_join()
 
     async def submit_response(self, data):
         response = await self.create_user_response(data)
@@ -478,6 +490,33 @@ class StudentConsumer(AsyncWebsocketConsumer):
         # user_id = data.get('user_id')
         response = await self.create_student_session_entry(username, self.code)
 
+        if response["status"] == "success":
+            self.student_id = response["student_id"]
+            await self.send(
+                text_data=json.dumps(
+                    {
+                        "type": "success",
+                        "message": "Student joined successfully",
+                        "student_id": response["student_id"],
+                    }
+                )
+            )
+
+            await self.channel_layer.group_send(
+                f"quiz_session_instructor_{self.code}",
+                {"type": "student_joined", "text": json.dumps({"username": username})},
+            )
+
+    async def process_student_user_join(self):
+        if self.user is None:
+            await self.close()
+            logger.warning("WebSocket connection rejected due to anonymous user.")
+            return
+
+        first_name = self.user.first_name
+        last_name = self.user.last_name
+        username = f"{first_name} {last_name}"
+        response = await self.create_student_session_entry(username, self.code)
         if response["status"] == "success":
             self.student_id = response["student_id"]
             await self.send(
