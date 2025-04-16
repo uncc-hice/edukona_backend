@@ -18,7 +18,7 @@ from typing import List, Set
 
 
 class BaseQuizTest(TestCase):
-    def setUp(self):
+    def setUp(self, student_count=5):
         self.quiz = Quiz.objects.create(
             title="Sample Quiz",
         )
@@ -67,7 +67,7 @@ class BaseQuizTest(TestCase):
         self.skipped_questions: Set[int] = set()
 
         # student-side setup
-        self.student_count = 5
+        self.student_count = student_count
         self.students = [{"username": f"student_{i}"} for i in range(self.student_count)]
 
 

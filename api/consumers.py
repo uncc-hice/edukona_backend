@@ -386,6 +386,9 @@ class StudentConsumer(AsyncWebsocketConsumer):
             await self.submit_response(data)
         elif message_type == "request_grade":
             await self.retrieve_grade(data)
+        elif message_type == "reconnect":
+            student_id = data.get("student_id")
+            await self.process_student_reconnect(student_id)
         elif message_type == "join_as_user":
             await self.process_student_user_join()
 
@@ -619,6 +622,72 @@ class StudentConsumer(AsyncWebsocketConsumer):
                 }
             )
         )
+
+    @database_sync_to_async
+    def fetch_quiz_session(self):
+        session = QuizSession.objects.get(code=self.code)
+        return session.to_json()
+
+    @database_sync_to_async
+    def fetch_current_question(self):
+        session = QuizSession.objects.get(code=self.code)
+        if session.current_question:
+            return session.current_question.to_json()
+        return None
+
+    async def send_current_question_to_student(self):
+        quiz_session = await self.fetch_quiz_session()
+        current_question = await self.fetch_current_question()
+
+        if current_question:
+            await self.send(
+                text_data=json.dumps(
+                    {
+                        "type": "next_question",
+                        "question": current_question,
+                        "quiz_session": quiz_session,
+                    }
+                )
+            )
+        else:
+            await self.send(text_data=json.dumps({"type": "no_active_question"}))
+
+    @database_sync_to_async
+    def get_student_by_id(self, id):
+        try:
+            student = QuizSessionStudent.objects.get(id=id, quiz_session__code=self.code)
+            return student
+        except QuizSessionStudent.DoesNotExist:
+            logger.warning("Attempted to retrieve a student that doesn't exist")
+            return None
+
+    async def process_student_reconnect(self, student_id):
+        logger.info(f"Student with id {student_id} requested a reconnect")
+
+        student = await self.get_student_by_id(student_id)
+        if student is None:
+            await self.send(
+                text_data=json.dumps(
+                    {
+                        "type": "reconnect_failed",
+                        "status": "error",
+                        "message": "Invalid student ID or session",
+                    }
+                )
+            )
+            return
+
+        self.student = student
+        self.student_id = student_id
+
+        await self.send(
+            text_data=json.dumps(
+                {
+                    "type": "reconnect_success",
+                }
+            )
+        )
+        await self.send_current_question_to_student()
 
 
 @database_sync_to_async
