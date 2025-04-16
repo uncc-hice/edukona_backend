@@ -234,6 +234,11 @@ urlpatterns = [
         name="get-instructor-courses",
     ),
     path(
+        "instructor/course/<uuid:course_id>/fetch_course/",
+        GetCourseByCourseID.as_view(),
+        name="get-course",
+    ),
+    path(
         "instructor/course/<uuid:course_id>/get-summaries/",
         GetSummariesByCourse.as_view(),
         name="get-instructor-course-summaries",
