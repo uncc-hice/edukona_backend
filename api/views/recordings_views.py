@@ -233,7 +233,6 @@ class GetQuizzesAndSummaries(APIView):
         },
     )
     def get(self, request, recording_id):
-
         quizzes = Quiz.objects.filter(instructor_recording_id=recording_id).annotate(
             type=Value("quiz", output_field=CharField())
         )
