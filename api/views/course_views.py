@@ -11,7 +11,7 @@ from api.serializers import (
     CourseCreationSerializer,
 )
 from drf_spectacular.utils import extend_schema, OpenApiResponse
-
+from datetime import datetime
 from api.permissions import AllowInstructor, IsCourseOwner, IsEnrolledInCourse
 
 
@@ -132,15 +132,23 @@ class JoinCourse(APIView):
     permission_classes = [AllowInstructor]
 
     @extend_schema(
-        request=CourseStudentSerializer(),
+        request=CourseStudentSerializer,
         responses={
-            201: CourseSerializer,
+            201: CourseStudentSerializer,
             400: OpenApiResponse(description="Bad Request"),
             404: OpenApiResponse(description="Course not found"),
         },
     )
-    def post(self, request):
-        pass
+    def post(self, request, course_id):
+        try:
+            course = Course.objects.get(id=course_id)
+        except Course.DoesNotExist:
+            return Response({"error": "Course not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        response_payload = {
+
+        }
+        return None
 
 
 @extend_schema(tags=["Student Course Management"])

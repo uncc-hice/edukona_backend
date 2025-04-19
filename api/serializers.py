@@ -406,9 +406,16 @@ class CourseCreationSerializer(serializers.Serializer):
 class CourseStudentSerializer(serializers.Serializer):
     first_name = serializers.CharField()
     last_name = serializers.CharField()
+    course = serializers.UUIDField(required=False, allow_null=True)
     email = serializers.EmailField()
-    joined_at = serializers.DateTimeField()
+    joined_at = serializers.DateTimeField(read_only=True)
 
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if not data.get("course"):
+            data.pop("course", None)
+
+        return data
 
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField(max_length=128)
