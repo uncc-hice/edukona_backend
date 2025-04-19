@@ -404,11 +404,11 @@ class CourseCreationSerializer(serializers.Serializer):
 
 
 class CourseStudentSerializer(serializers.Serializer):
-    first_name = serializers.CharField(unique=True, max_length=150)
-    last_name = serializers.CharField(unique=True, max_length=150)
-    course_title = serializers.CharField(read_only=True)
-    email = serializers.EmailField(unique=True, max_length=254)
-    joined_at = serializers.DateTimeField(read_only=True)
+    first_name = serializers.CharField()
+    last_name = serializers.CharField()
+    email = serializers.EmailField()
+    joined_at = serializers.DateTimeField()
+
 
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField(max_length=128)
