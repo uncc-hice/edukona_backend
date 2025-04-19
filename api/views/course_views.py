@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from rest_framework.views import APIView
 from api.models import InstructorRecordings, Course, LectureSummary, CourseStudent
 from rest_framework import status
@@ -146,10 +147,19 @@ class JoinCourse(APIView):
             return Response({"error": "Course not found"}, status=status.HTTP_404_NOT_FOUND)
 
         response_payload = {
-
+            "first_name": request.first_name,
+            "last_name": request.last_name,
+            "course_title": course.title,
+            "email": request.email,
+            "joined_at": datetime.now(),
         }
-        return None
-
+        serializer = CourseStudentSerializer(response_payload, many=False)
+        try:
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        except ValidationError:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @extend_schema(tags=["Student Course Management"])
 class GetCoursesByStudent(APIView):
