@@ -1,4 +1,3 @@
-from django.core.exceptions import ValidationError
 from rest_framework.views import APIView
 from api.models import InstructorRecordings, Course, LectureSummary, CourseStudent
 from rest_framework import status
@@ -9,10 +8,10 @@ from api.serializers import (
     CourseSerializer,
     LectureSummarySerializer,
     CourseStudentSerializer,
-    CourseCreationSerializer, CourseStudentJoinSerializer,
+    CourseCreationSerializer,
+    CourseStudentJoinSerializer,
 )
 from drf_spectacular.utils import extend_schema, OpenApiResponse
-from datetime import datetime
 from api.permissions import AllowInstructor, IsCourseOwner, IsEnrolledInCourse
 
 
@@ -134,7 +133,7 @@ class JoinCourse(APIView):
 
     @extend_schema(
         responses={
-            201: CourseStudentJoinSerializer(many=False),
+            201: CourseStudentJoinSerializer,
             404: OpenApiResponse(description="Course not found"),
         },
     )
@@ -142,22 +141,15 @@ class JoinCourse(APIView):
         try:
             course = Course.objects.get(id=course_id)
         except Course.DoesNotExist:
-            return Response({"message": "The course does not exist"}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"message": "The course does not exist"}, status=status.HTTP_404_NOT_FOUND
+            )
 
-        response_payload = {
-            "student": request.user.student,
-            "first_name": request.user.first_name,
-            "last_name": request.user.last_name,
-            "email": request.user.email,
-            "course": course.id,
-            "course_title": course.title,
-            "joined_at": datetime.now()
-        }
+        course_student = CourseStudent.objects.create(course=course, student=request.user.student)
 
-        serializer = CourseStudentJoinSerializer(response_payload, many=False)
+        serializer = CourseStudentJoinSerializer(course_student)
 
-        return Response(serializer, status=status.HTTP_201_CREATED)
-
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 @extend_schema(tags=["Student Course Management"])
