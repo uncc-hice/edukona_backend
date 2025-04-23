@@ -169,13 +169,13 @@ async def test_quiz():
 
     try:
         response = await communicator.receive_json_from(timeout=5)
-        assert (
-            response["type"] == "next_question"
-        ), "Expected 'next_question' message for the first question"
+        assert response["type"] == "next_question", (
+            "Expected 'next_question' message for the first question"
+        )
         assert "question" in response, "'question' not in response"
-        assert (
-            response["question"]["question_text"] == first_question.question_text
-        ), "First question text mismatch"
+        assert response["question"]["question_text"] == first_question.question_text, (
+            "First question text mismatch"
+        )
     except asyncio.TimeoutError:
         pytest.fail(
             f"Did not receive 'next_question' response for question '{first_question.question_text}' in time"
@@ -189,13 +189,13 @@ async def test_quiz():
 
     try:
         response = await communicator.receive_json_from(timeout=5)
-        assert (
-            response["type"] == "next_question"
-        ), "Expected 'next_question' message for the second question"
+        assert response["type"] == "next_question", (
+            "Expected 'next_question' message for the second question"
+        )
         assert "question" in response, "'question' not in response"
-        assert (
-            response["question"]["question_text"] == second_question.question_text
-        ), "Second question text mismatch"
+        assert response["question"]["question_text"] == second_question.question_text, (
+            "Second question text mismatch"
+        )
     except asyncio.TimeoutError:
         pytest.fail(
             f"Did not receive 'next_question' response for question '{second_question.question_text}' in time"
@@ -212,13 +212,13 @@ async def test_quiz():
     last_question = questions[2]
     try:
         response = await communicator.receive_json_from(timeout=5)
-        assert (
-            response["type"] == "next_question"
-        ), "Expected 'next_question' message after second question"
+        assert response["type"] == "next_question", (
+            "Expected 'next_question' message after second question"
+        )
         assert "question" in response, "'question' not in response"
-        assert (
-            response["question"]["question_text"] == last_question.question_text
-        ), "Last question text mismatch after second question"
+        assert response["question"]["question_text"] == last_question.question_text, (
+            "Last question text mismatch after second question"
+        )
     except asyncio.TimeoutError:
         pytest.fail(
             f"Did not receive 'next_question' response in time for question '"
@@ -250,9 +250,9 @@ async def test_quiz():
 
         # Validate the grades
         print(f"\n\n\n{response['grades']}\n\n\n")
-        assert (
-            response["grades"] == expected_grades
-        ), f"Grades mismatch: Expected {expected_grades}, got {response['grades']}"
+        assert response["grades"] == expected_grades, (
+            f"Grades mismatch: Expected {expected_grades}, got {response['grades']}"
+        )
     except asyncio.TimeoutError:
         pytest.fail("Did not receive 'quiz_ended' response in time")
 
@@ -443,9 +443,9 @@ class StudentConsumerReconnectTest(BaseQuizTest):
         reconnected_communicator = await self.perform_reconnect(student_bar)
 
         response = await reconnected_communicator.receive_json_from(timeout=self.timeout)
-        assert (
-            response["type"] == "next_question"
-        ), "Reconnected student didn't receive current question"
+        assert response["type"] == "next_question", (
+            "Reconnected student didn't receive current question"
+        )
         assert response["question"]["question_text"] == self.questions[1]["question_text"]
 
         await self.cleanup()
