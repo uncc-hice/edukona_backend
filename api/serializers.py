@@ -16,7 +16,7 @@ from .models import (
     QuizSessionLog,
     QuizSessionStudent,
     Student,
-    UserResponse,
+    UserResponse, CourseStudent,
 )
 
 
@@ -409,6 +409,17 @@ class CourseStudentSerializer(serializers.Serializer):
     email = serializers.EmailField()
     joined_at = serializers.DateTimeField()
 
+class CourseStudentJoinSerializer(serializers.ModelSerializer):
+    first_name = serializers.CharField()
+    last_name = serializers.CharField()
+    email = serializers.CharField()
+    course_title = serializers.CharField()
+    class Meta:
+        model = CourseStudent
+        fields = ["student", "first_name", "last_name", "email", "course", "course_title", "joined_at"]
+        read_only_fields = ["joined_at"]
+
+        # student = serializers.PrimaryKeyRelatedField(read_only=True)
 
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField(max_length=128)
