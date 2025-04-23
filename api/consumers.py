@@ -70,7 +70,7 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
             elif data["type"] == "current_question":
                 await self.send_current_question()
             elif data["type"] == "delete_student":
-                await self.delete_student(data["username"])
+                await self.delete_student(data["student_id"])
             elif data["type"] == "increase_duration":
                 await self.add_to_duration(data["question_id"], data["extension"])
             elif data["type"] == "skip_question":
@@ -91,16 +91,16 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
                 },
             )
 
-    async def delete_student(self, username):
+    async def delete_student(self, student_id):
         try:
-            response = await self.delete_student_from_db(username)
+            response = await self.delete_student_from_db(student_id)
             if response.get("status") == "success":
                 await self.send(
                     text_data=json.dumps(
                         {
                             "type": "student_deleted",
                             "message": "Student deleted successfully",
-                            "username": username,
+                            "student_id": student_id,
                         }
                     )
                 )
@@ -110,7 +110,7 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
                         {
                             "type": "error",
                             "message": "Failed to delete student.",
-                            "username": username,
+                            "student_id": student_id,
                         }
                     )
                 )
@@ -120,17 +120,17 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
                     {
                         "type": "error",
                         "message": "An error occurred: " + str(e),
-                        "username": username,
+                        "student_id": student_id,
                     }
                 )
             )
 
     @database_sync_to_async
-    def delete_student_from_db(self, username):
+    def delete_student_from_db(self, id):
         session = QuizSession.objects.get(code=self.code)
-        student = QuizSessionStudent.objects.get(quiz_session=session, username=username)
+        student = QuizSessionStudent.objects.get(quiz_session=session, id=id)
         student.delete()
-        return {"status": "success", "username": username}
+        return {"status": "success", "student_id": id}
 
     async def send_current_question(self):
         question_data = await self.fetch_current_question()
@@ -280,6 +280,7 @@ class QuizSessionInstructorConsumer(AsyncWebsocketConsumer):
                 {
                     "type": "student_joined",
                     "username": event_message["username"],
+                    "student_id": event_message["student_id"],
                     "message": f"Student {event_message['username']} joined the session.",
                 }
             )
@@ -474,7 +475,6 @@ class StudentConsumer(AsyncWebsocketConsumer):
     def create_student_session_entry(self, username, code):
         try:
             session = QuizSession.objects.get(code=code)
-            # studentUser = Student.objects.get(user_id=user_id)
             student = QuizSessionStudent.objects.create(username=username, quiz_session=session)
             self.student = student
             return {
@@ -487,7 +487,6 @@ class StudentConsumer(AsyncWebsocketConsumer):
 
     async def process_student_join(self, data):
         username = data.get("username")
-        # user_id = data.get('user_id')
         response = await self.create_student_session_entry(username, self.code)
 
         if response["status"] == "success":
@@ -504,7 +503,10 @@ class StudentConsumer(AsyncWebsocketConsumer):
 
             await self.channel_layer.group_send(
                 f"quiz_session_instructor_{self.code}",
-                {"type": "student_joined", "text": json.dumps({"username": username})},
+                {
+                    "type": "student_joined",
+                    "text": json.dumps({"username": username, "student_id": self.student_id}),
+                },
             )
 
     async def process_student_user_join(self):
@@ -531,7 +533,10 @@ class StudentConsumer(AsyncWebsocketConsumer):
 
             await self.channel_layer.group_send(
                 f"quiz_session_instructor_{self.code}",
-                {"type": "student_joined", "text": json.dumps({"username": username})},
+                {
+                    "type": "student_joined",
+                    "text": json.dumps({"username": username, "student_id": self.student_id}),
+                },
             )
 
     async def next_question(self, event):
