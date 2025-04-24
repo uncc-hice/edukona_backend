@@ -17,7 +17,6 @@ from .models import (
     QuizSessionStudent,
     Student,
     UserResponse,
-    CourseStudent,
 )
 
 
