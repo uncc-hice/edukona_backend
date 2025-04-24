@@ -411,26 +411,6 @@ class CourseStudentSerializer(serializers.Serializer):
     joined_at = serializers.DateTimeField()
 
 
-class CourseStudentJoinSerializer(serializers.ModelSerializer):
-    first_name = serializers.CharField(source="student.user.first_name", read_only=True)
-    last_name = serializers.CharField(source="student.user.last_name", read_only=True)
-    email = serializers.CharField(source="student.user.email", read_only=True)
-    course_title = serializers.CharField(source="course.title", read_only=True)
-
-    class Meta:
-        model = CourseStudent
-        fields = [
-            "student",
-            "first_name",
-            "last_name",
-            "email",
-            "course",
-            "course_title",
-            "joined_at",
-        ]
-        read_only_fields = ["joined_at"]
-
-
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField(max_length=128)
     password = serializers.CharField(max_length=128, style={"input_type": "password"})
