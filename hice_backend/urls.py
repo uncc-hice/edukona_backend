@@ -20,7 +20,9 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("quiz/<int:quiz_id>/", QuizView.as_view(), name="quiz-detail"),
     path(
-        "quiz/<int:quiz_id>/update-title/", UpdateQuizTitleView.as_view(), name="quiz-update-title"
+        "quiz/<int:quiz_id>/update-title/",
+        UpdateQuizTitleView.as_view(),
+        name="quiz-update-title",
     ),
     path(
         "course/<uuid:course_id>/get-quizzes/",
@@ -45,7 +47,11 @@ urlpatterns = [
         InstructorView.as_view(),
         name="instructor-detail",
     ),
-    path("instructor/quizzes/", InstructorQuizzesView.as_view(), name="instructor-quizzes"),
+    path(
+        "instructor/quizzes/",
+        InstructorQuizzesView.as_view(),
+        name="instructor-quizzes",
+    ),
     # path('student/', StudentView.as_view(), name='student-list'),
     # path('student/<int:student_id>/', StudentView.as_view(), name='student-detail'),
     path("user-response/", UserResponseView.as_view(), name="user-response-list"),
@@ -55,7 +61,11 @@ urlpatterns = [
         name="user-response-detail",
     ),
     path("sign-up-instructor/", SignUpInstructor.as_view(), name="sign-up-instructor"),
-    path("jwt-sign-up-instructor/", JWTSignUpInstructor.as_view(), name="jwt-sign-up-instructor"),
+    path(
+        "jwt-sign-up-instructor/",
+        JWTSignUpInstructor.as_view(),
+        name="jwt-sign-up-instructor",
+    ),
     # path('sign-up-student/', SignUpStudent.as_view()),
     path("login/", Login.as_view(), name="login"),
     path("logout/", Logout.as_view(), name="logout"),
@@ -234,7 +244,7 @@ urlpatterns = [
         name="get-instructor-courses",
     ),
     path(
-        "instructor/course/<uuid:course_id>/fetch_course/",
+        "instructor/course/<uuid:course_id>/fetch-course/",
         GetCourseByCourseID.as_view(),
         name="get-course",
     ),
@@ -249,7 +259,11 @@ urlpatterns = [
         name="get-course-students",
     ),
     path("instructor/create-course/", CreateCourse.as_view(), name="create-course"),
-    path("student/get-courses/", GetCoursesByStudent.as_view(), name="get-courses-by-student"),
+    path(
+        "student/get-courses/",
+        GetCoursesByStudent.as_view(),
+        name="get-courses-by-student",
+    ),
     path(
         "student/course/<course_id>/get-summaries/",
         view=FetchPublishedSummariesView.as_view(),
@@ -273,7 +287,9 @@ urlpatterns = [
         name="get-score",
     ),
     path(
-        "sessions/<int:session_id>/update-scores/", UpdateScoresView.as_view(), name="update-scores"
+        "sessions/<int:session_id>/update-scores/",
+        UpdateScoresView.as_view(),
+        name="update-scores",
     ),
     path(
         "recordings/<uuid:recording_id>/update/",
