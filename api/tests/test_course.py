@@ -8,6 +8,7 @@ from api.models import (
     Student,
     CourseStudent,
 )
+import uuid
 from django.urls import reverse
 from django.utils import timezone
 from rest_framework import status
@@ -693,3 +694,29 @@ class CreateCourseTest(CourseViewsTest):
             response.data["allow_joining_until"],
             course_data["allow_joining_until"].strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
         )
+
+
+class JoinCourseTests(CourseViewsTest):
+    def setUp(self):
+        super().setUp()
+        self.url = reverse("join-course", kwargs={"course_id": self.course.id})
+        self.alt_url = reverse("join-course", kwargs={"course_id": uuid.uuid4()})
+
+    def test_join_course_successful(self):
+        response = self.client_student_2.post(self.url)
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data["message"], "Successfully joined the course.")
+        course_student = CourseStudent.objects.get(student=self.student_2, course=self.course)
+        self.assertEqual(course_student.student, self.student_2)
+
+    def test_join_course_bad_request(self):
+        response = self.client_student_1.post(self.url)
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.data["message"], "You are already enrolled in the course.")
+
+    def test_join_course_not_found(self):
+        response = self.client_student_2.post(self.alt_url)
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.data["message"], "The course does not exist.")
+        with self.assertRaises(CourseStudent.DoesNotExist):
+            CourseStudent.objects.get(student=self.student_2)

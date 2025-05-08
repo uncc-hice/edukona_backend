@@ -8,6 +8,7 @@ from .models import (
     LectureSummary,
     Course,
     CourseStudent,
+    Student,
 )
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned, FieldError
 from django.shortcuts import get_object_or_404
@@ -163,3 +164,11 @@ class IsEnrolledInCourse(permissions.BasePermission):
                 return is_member
         except (ObjectDoesNotExist, MultipleObjectsReturned, FieldError):
             return False
+
+
+class AllowStudent(permissions.BasePermission):
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+
+        return Student.objects.filter(user=request.user).exists()
