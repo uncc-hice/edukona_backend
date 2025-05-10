@@ -17,6 +17,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient, APITestCase
 import random
 import string
+import uuid
 
 
 class BaseCourseTest(APITestCase):
@@ -365,6 +366,47 @@ class InstructorCoursesTests(CourseViewsTest):
         response = tmp_client.get(self.url)
 
         self.assertEqual(response.status_code, 401)
+
+
+class GetCourseByIdTests(CourseViewsTest):
+    def setUp(self):
+        super().setUp()
+        self.prim_url = reverse("get-course", kwargs={"course_id": self.course.id})
+        self.alt_url = reverse("get-course", kwargs={"course_id": self.alt_course.id})
+
+    def test_get_course_successful(self):
+        prim_response = self.prim_instructor_client.get(self.prim_url)
+        alt_response = self.alt_instructor_client.get(self.alt_url)
+        prim_data = prim_response.json()
+        alt_data = prim_response.json()
+
+        self.assertEqual(prim_response.status_code, 200)
+        self.assertEqual(alt_response.status_code, 200)
+        self.assertNotEqual(len(prim_data), 0)
+        self.assertNotEqual(len(alt_data), 0)
+
+    def test_get_course_unauthorized(self):
+        tmp_client = APIClient()
+        prim_response = tmp_client.get(self.prim_url)
+        alt_response = tmp_client.get(self.alt_url)
+
+        self.assertEqual(prim_response.status_code, 401)
+        self.assertEqual(alt_response.status_code, 401)
+
+    def test_get_course_forbidden(self):
+        prim_response = self.prim_instructor_client.get(self.alt_url)
+        alt_response = self.alt_instructor_client.get(self.prim_url)
+
+        self.assertEqual(prim_response.status_code, 403)
+        self.assertEqual(alt_response.status_code, 403)
+
+    def test_get_course_not_found(self):
+        tmp_url = reverse("get-course", kwargs={"course_id": uuid.uuid4()})
+        prim_response = self.prim_instructor_client.get(tmp_url)
+        alt_response = self.alt_instructor_client.get(tmp_url)
+
+        self.assertEqual(prim_response.status_code, 404)
+        self.assertEqual(alt_response.status_code, 404)
 
 
 class CourseSummariesTests(CourseViewsTest):
