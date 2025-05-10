@@ -11,8 +11,7 @@ from api.serializers import (
     CourseCreationSerializer,
 )
 from drf_spectacular.utils import extend_schema, OpenApiResponse
-
-from api.permissions import AllowInstructor, IsCourseOwner, IsEnrolledInCourse
+from api.permissions import AllowInstructor, IsCourseOwner, IsEnrolledInCourse, AllowStudent
 
 
 @extend_schema(tags=["Instructor Course Management"])
@@ -125,6 +124,43 @@ class CreateCourse(APIView):
             course.save()
             return Response(CourseSerializer(course).data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@extend_schema(tags=["Student Course Management"])
+class JoinCourse(APIView):
+    permission_classes = [AllowStudent]
+
+    @extend_schema(
+        responses={
+            201: OpenApiResponse(description="Successfully joined the course."),
+            400: OpenApiResponse(description="Already enrolled in the course."),
+            404: OpenApiResponse(description="Course not found"),
+            500: OpenApiResponse(description="Internal Server Error"),
+        },
+    )
+    def post(self, request, course_id):
+        try:
+            course = Course.objects.get(id=course_id)
+        except Course.DoesNotExist:
+            return Response(
+                {"message": "The course does not exist."}, status=status.HTTP_404_NOT_FOUND
+            )
+        if CourseStudent.objects.filter(student=request.user.student, course=course_id).exists():
+            return Response(
+                {"message": "You are already enrolled in the course."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            CourseStudent.objects.create(course=course, student=request.user.student)
+        except Exception:
+            return Response(
+                {"message": "Failed to join the course."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+        return Response(
+            {"message": "Successfully joined the course."}, status=status.HTTP_201_CREATED
+        )
 
 
 @extend_schema(tags=["Student Course Management"])
