@@ -17,7 +17,12 @@ from api.models import (
     QuizSessionStudent,
     UserResponse,
 )
-from hice_backend.asgi import application  # Ensure this path is correct
+from hice_backend.asgi import application
+
+import random
+from .test_services import BaseQuizTest
+
+from typing import List
 
 
 @pytest.mark.asyncio
@@ -282,3 +287,205 @@ class RecordingConsumerTest(TestCase):
 
         connected, _ = await communicator.connect()
         self.assertFalse(connected)
+
+
+class StudentConsumerReconnectTest(BaseQuizTest):
+    def setUp(self):
+        super().setUp(student_count=2)
+        self.student_responses = self._generate_responses()
+        self.student_grades = self._calculate_expected_grades(self.student_responses)
+        self.timeout = 1
+
+    def _generate_responses(self) -> List[List[str]]:
+        def generate_student_response():
+            responses = []
+            for question in self.questions:
+                options = question["incorrect_answer_list"] + [question["correct_answer"]]
+                responses.append(random.choice(options))
+            return responses
+
+        return [generate_student_response() for _ in range(self.student_count)]
+
+    def _calculate_expected_grades(self, responses: List[List[str]]) -> List[int]:
+        grades = []
+        for student_responses in responses:
+            score = 0
+            for i, response in enumerate(student_responses):
+                if response == self.questions[i]["correct_answer"]:
+                    score += 1
+            grades.append(score)
+        return grades
+
+    async def setUp_quiz_environment(self):
+        """Common setup to prepare a quiz with connected instructor and students."""
+        self.instructor_communicator = WebsocketCommunicator(
+            application, f"/ws/quiz-session-instructor/{self.code}/"
+        )
+        connected, _ = await self.instructor_communicator.connect()
+        assert connected, "Instructor failed to connect"
+
+        response = await self.instructor_communicator.receive_json_from(timeout=self.timeout)
+        assert response["type"] == "quiz_details", "Expected type: 'quiz_details' in message"
+        assert response["user_count"] == 0, "Expected initial user_count of 0"
+
+        # Connect students
+        for student in self.students:
+            student["communicator"] = await self.connect_student(student["username"])
+
+    async def connect_student(self, username):
+        communicator = WebsocketCommunicator(
+            application, f"/ws/student/join/{self.code}/?username={username}"
+        )
+        connected, _ = await communicator.connect()
+        assert connected, f"Student {username} failed to connect"
+
+        await communicator.send_json_to({"type": "join", "username": username})
+        response = await communicator.receive_json_from(timeout=self.timeout)
+        assert response["type"] == "success", "Expected 'success' message"
+
+        for student in self.students:
+            if student["username"] == username:
+                student["id"] = response["student_id"]
+                break
+
+        response = await self.instructor_communicator.receive_json_from(timeout=self.timeout)
+        assert response["type"] == "student_joined", "Expected 'student_joined' message"
+
+        return communicator
+
+    async def serve_question(self, question_index):
+        question = self.questions[question_index]
+        await self.instructor_communicator.send_json_to({"type": "next_question"})
+
+        response = await self.instructor_communicator.receive_json_from(timeout=self.timeout)
+        assert response["type"] == "next_question", "Expected 'next_question' message"
+        assert response["question"]["question_text"] == question["question_text"]
+
+        questions = [response["question"]["correct_answer"]]
+        questions.extend(response["question"]["incorrect_answer_list"])
+        random.shuffle(questions)
+        await self.instructor_communicator.send_json_to(
+            {"type": "update_order", "order": questions}
+        )
+
+        return response["question"]
+
+    async def submit_student_answer(self, student_index, question_index):
+        """Helper to submit a student answer and verify responses."""
+        student = self.students[student_index]
+        communicator = student["communicator"]
+
+        response = await communicator.receive_json_from(timeout=self.timeout)
+        assert response["type"] == "next_question", "Student didn't receive question"
+
+        # Submit answer
+        data = {
+            "student": {"id": student["id"]},
+            "question_id": self.questions[question_index]["id"],
+            "selected_answer": self.student_responses[student_index][question_index],
+            "quiz_session_code": self.code,
+        }
+        await communicator.send_json_to({"type": "response", "data": data})
+
+        # Verify student confirmation
+        response = await communicator.receive_json_from(timeout=self.timeout)
+        assert response["type"] == "answer", "Expected 'answer' confirmation"
+        assert response["status"] == "success", "Answer submission failed"
+
+        # Verify instructor receives the response (both update_answers and user_response)
+        response = await self.instructor_communicator.receive_json_from(timeout=self.timeout)
+        assert response["type"] == "update_answers", "Instructor didn't receive answer update"
+
+        response = await self.instructor_communicator.receive_json_from(timeout=self.timeout)
+        assert response["type"] == "user_response", "Instructor didn't receive user response"
+
+        return response
+
+    async def perform_reconnect(self, student_index):
+        student = self.students[student_index]
+        await student["communicator"].disconnect()
+
+        new_communicator = WebsocketCommunicator(
+            application, f"/ws/student/join/{self.code}/?username={student['username']}"
+        )
+        connected, _ = await new_communicator.connect()
+        assert connected, f"Student {student_index} failed to reconnect"
+
+        await new_communicator.send_json_to({"type": "reconnect", "student_id": student["id"]})
+        response = await new_communicator.receive_json_from(timeout=self.timeout)
+        assert response["type"] == "reconnect_success", "Failed to reconnect"
+
+        self.students[student_index]["communicator"] = new_communicator
+
+        return new_communicator
+
+    async def cleanup(self):
+        await self.instructor_communicator.disconnect()
+        for student in self.students:
+            if "communicator" in student:
+                await student["communicator"].disconnect()
+
+    @pytest.mark.asyncio
+    async def test_student_reconnection_during_quiz(self):
+        await self.setUp_quiz_environment()
+        student_foo = 0
+        student_bar = 1
+        await self.serve_question(0)
+        await self.submit_student_answer(student_foo, 0)
+        await self.submit_student_answer(student_bar, 0)
+
+        await self.serve_question(1)
+
+        # First student answers
+        await self.submit_student_answer(student_foo, 1)
+
+        # Second student disconnects and reconnects
+        reconnected_communicator = await self.perform_reconnect(student_bar)
+
+        response = await reconnected_communicator.receive_json_from(timeout=self.timeout)
+        assert response["type"] == "next_question", (
+            "Reconnected student didn't receive current question"
+        )
+        assert response["question"]["question_text"] == self.questions[1]["question_text"]
+
+        await self.cleanup()
+
+    @pytest.mark.asyncio
+    async def test_answering_after_reconnection(self):
+        await self.setUp_quiz_environment()
+        await self.serve_question(0)
+
+        # Disconnect and reconnect student
+        student_index = 0
+        await self.perform_reconnect(student_index)
+        await self.submit_student_answer(student_index, 0)
+
+        await self.cleanup()
+
+    @pytest.mark.asyncio
+    async def test_complete_quiz_with_reconnection(self):
+        await self.setUp_quiz_environment()
+
+        student_foo = 0
+        student_bar = 1
+
+        await self.serve_question(0)
+        await self.submit_student_answer(student_foo, 0)
+        await self.submit_student_answer(student_bar, 0)
+
+        # Question 2 with reconnection
+        await self.serve_question(1)
+        await self.submit_student_answer(student_foo, 1)
+        await self.perform_reconnect(student_bar)
+        await self.submit_student_answer(student_bar, 1)
+
+        await self.serve_question(2)
+        await self.submit_student_answer(student_foo, 2)
+        await self.submit_student_answer(student_bar, 2)
+
+        # End quiz
+        await self.instructor_communicator.send_json_to({"type": "next_question"})
+        response = await self.instructor_communicator.receive_json_from(timeout=self.timeout)
+        assert response["type"] == "quiz_ended", "Expected 'quiz_ended' message"
+
+        await self.cleanup()
